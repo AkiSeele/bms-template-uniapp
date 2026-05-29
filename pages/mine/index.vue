@@ -1,5 +1,5 @@
 <template>
-  <view class="page-container wot-bg-neutral-100 wot-min-h-screen">
+  <layout-provider>
     <!-- 自定义顶部导航栏，固定在顶部并生成占位元素 -->
     <wd-navbar :title="$t('bms.mine.title')" fixed safe-area-inset-top placeholder />
     
@@ -30,6 +30,23 @@
             </template>
           </wd-cell>
           
+          <!-- 新增的暗黑模式控制单元格，右侧通过 wd-switch 动态联动应用明暗状态 -->
+          <wd-cell 
+            :title="$t('bms.mine.darkMode')" 
+            center
+          >
+            <template #prefix>
+              <wd-icon css-icon="i-lucide-moon" size="20px" class="wot-mr-2" color="#858585" />
+            </template>
+            <template #value>
+              <wd-switch 
+                v-model="isDarkMode" 
+                @change="handleThemeChange" 
+                size="22px" 
+              />
+            </template>
+          </wd-cell>
+          
           <!-- 当前应用的版本信息单元格 -->
           <wd-cell 
             :title="$t('bms.mine.appVersion')" 
@@ -37,6 +54,16 @@
           >
             <template #prefix>
               <wd-icon css-icon="i-lucide-info" size="20px" class="wot-mr-2" color="#858585" />
+            </template>
+          </wd-cell>
+          
+          <!-- 设备基础信息展示单元格，实时解析展现设备品牌与操作系统（含鸿蒙） -->
+          <wd-cell 
+            :title="$t('bms.mine.deviceInfo')" 
+            :value="deviceDisplayInfo" 
+          >
+            <template #prefix>
+              <wd-icon css-icon="i-lucide-smartphone" size="20px" class="wot-mr-2" color="#858585" />
             </template>
           </wd-cell>
         </wd-cell-group>
@@ -52,12 +79,9 @@
       @select="handleLanguageSelect" 
     />
     
-    <!-- Toast 消息提示组件挂载点，wot-ui v2 的 useToast Hook 必须要显式挂载该实例组件 -->
-    <wd-toast />
-
     <!-- 自定义底部导航栏 -->
     <custom-tabbar active="mine" />
-  </view>
+  </layout-provider>
 </template>
 
 <script setup lang="ts">
@@ -70,6 +94,35 @@ import { useAppStore } from '@/stores/app'
 const { locale, t } = useI18n()
 const appStore = useAppStore()
 const toast = useToast()
+
+// 动态双向绑定当前应用是否处于暗黑模式的计算属性
+const isDarkMode = computed({
+  get: () => appStore.theme === "dark",
+  set: (val) => appStore.setTheme(val ? "dark" : "light"),
+})
+
+// 动态拼装并展示用户的设备和系统信息（兼容 Android、iOS 和鸿蒙系统）
+const deviceDisplayInfo = computed(() => {
+  const info = appStore.deviceInfo;
+  if (!info || !info.osName) return "Unknown";
+  
+  // 提取品牌并格式化首字母大写
+  const brand = info.deviceBrand
+    ? info.deviceBrand.charAt(0).toUpperCase() + info.deviceBrand.slice(1)
+    : "";
+  // 提取系统名称（如 harmonyos、ios、android），首字母大写
+  const os = info.osName.charAt(0).toUpperCase() + info.osName.slice(1);
+  
+  // 如果存在系统版本号，一并显示
+  const version = info.osVersion ? ` ${info.osVersion}` : "";
+  
+  return brand ? `${brand} (${os}${version})` : `${os}${version}`;
+})
+
+// 切换主题模式的回调，弹出 Toast 成功通知
+const handleThemeChange = (val: any) => {
+  toast.success(t("bms.mine.switchThemeSuccess"))
+}
 
 // 控制语言选择动作面板显隐的响应式状态
 const showLanguagePicker = ref(false)

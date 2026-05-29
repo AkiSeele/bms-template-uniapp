@@ -2,190 +2,226 @@
 trigger: always_on
 ---
 
-# BMS BLE uni-app 项目开发规范与 Ruler
+# BMS BLE uni-app 开发规范与 Ruler
 
-本规范旨在约束和指导 BMS BLE（低功耗蓝牙电池管理）uni-app 项目的开发，确保代码在 **Android、iOS、微信小程序** 三端具备优异的兼容性、性能和可维护性。
+本规范适用于 BMS BLE uni-app 项目（Android, iOS, 微信小程序），确保三端高兼容、极佳性能与强可维护性。所有开发与 AI 协同必须 100% 严格执行。
 
 ---
 
 ## 一、 技术栈与核心要求
-
-1. **核心框架**：uni-app (Vue 3)
-2. **代码风格**：新编写的页面和组件优先使用 `<script setup>` 语法，统一采用 TypeScript 进行开发（若涉及类型定义）。
-3. **UI 组件库**：优先使用 **wot-ui v2 (`wd-*`)** 组件。严禁擅自使用原生 HTML 标签或重写已有组件。
-4. **样式方案**：使用 **UnoCSS**。通用布局及尺寸类名必须使用 `wot-` 前缀（对应项目配置），如 `wot-flex`, `wot-w-24`。
-5. **图标方案**：
-   - **统一使用 `wd-icon` 组件** 承载 UnoCSS 图标，格式为：`<wd-icon css-icon="i-<前缀>-<图标名>" size="24px" color="#fff" />`。
-   - **绝对禁止** 在模板中直接编写 `svg` 标签或裸写 `<view class="i-...">` 作为图标。
+1. **核心框架**：uni-app (Vue 3) + TypeScript + `<script setup>` 组合式语法。
+2. **UI 组件库**：优先使用 **wot-ui v2 (`wd-*`)** 组件。严禁擅自使用原生 HTML 标签或重写组件。
+3. **样式方案**：使用 **UnoCSS**。通用布局及尺寸类名必须使用 `wot-` 前缀（如 `wot-flex`, `wot-w-24`）。
+4. **图标方案**：统一使用 `wd-icon` 承载 UnoCSS 图标，格式：`<wd-icon css-icon="i-<前缀>-<图名>" size="24px" color="#fff" />`。禁止在模板中裸写 `svg` 或 `<view class="i-...">`。
 
 ---
 
-## 二、 三端兼容性规范 (Android / iOS / 微信小程序)
-
-在开发 uni-app 时，必须时刻注意三端的底层差异，确保一套代码稳定运行：
-
-### 1. 条件编译规范
-
-- 任何具有平台特异性的代码（API、样式或结构），必须使用 uni-app 条件编译进行隔离，严禁直接在全平台运行：
-
-  ```javascript
-  // #ifdef MP-WEIXIN
-  // 微信小程序特有逻辑
-  // #endif
-
-  // #ifdef APP-PLUS
-  // App 端特有逻辑（Android/iOS）
-  // #endif
-
-  // #ifdef H5
-  // Web 端逻辑
-  // #endif
-  ```
-
-### 2. 微信小程序限制
-
-- **图片路径**：在 CSS (SCSS/CSS) 中使用 `background-image` 时，**禁止使用本地相对路径**（小程序真机不识别），必须使用 `Base64` 或是网络 URL，或直接在模板中用 `image` 标签替代。
-- **分包管理**：微信小程序单包大小限制为 2MB。在开发新页面时，非主包首屏引用的组件和页面应放入相应分包。
-- **原生组件层级**：`video`、`map`、`canvas` 等原生组件在小程序中层级最高。若需要在这些组件上覆盖自定义弹窗或按钮，必须使用 `cover-view` 和 `cover-image` 标签。
-
-### 3. iOS 与 Android APP 限制
-
-- **安全区适配**：必须考虑全面屏的顶部留白和底部安全区。
-  - 顶部：使用系统状态栏高度占位 `var(--status-bar-height)`。
-  - 底部：使用安全区距离 `safe-area-inset-bottom`。
-- **键盘与输入框**：输入框弹起时，需要注意软键盘遮挡输入框的问题。优先使用 wot-ui 内置的 `<wd-input>` 组件，其内部已做好大部分机型的输入框聚焦位置修正。
+## 二、 四端兼容性规范 (Android / iOS / HarmonyOS / 微信小程序)
+1. **条件编译**：任何具有平台特异性的逻辑/样式，必须使用条件编译（如 `#ifdef MP-WEIXIN`、`#ifdef APP-PLUS`）进行隔离。
+2. **微信小程序限制**：
+   - **图片路径**：SCSS/CSS 的 `background-image` 禁止使用本地相对路径，必须使用 Base64 或网络 URL，或用 `<image>` 标签替代。
+   - **分包管理**：单包限 2MB。非主包首屏引用的页面/组件必须放入分包（`subPackages`）。
+   - **原生层级**：`video`、`canvas` 等原生组件层级最高，其上覆盖自定义内容必须使用 `cover-view` 和 `cover-image`。
+3. **App 限制**：顶部安全留白使用 `var(--status-bar-height)`，底部使用 `safe-area-inset-bottom`；输入框防遮挡优先用 `<wd-input>`。
+4. **设备信息与鸿蒙自适应**：
+   - **单点抓取**：设备信息抓取**仅允许在 `App.vue` 的 `onLaunch`** 中通过 `uni.getDeviceInfo()` 获取并写入 Pinia `appStore`，严禁在页面零散高频调用。
+   - **鸿蒙适配**：微信小程序或 App 下鸿蒙返回的 `osName` 和 `platform` 均返回 `"harmonyos"`。任何权限与设备卡片逻辑必须基于 `deviceInfo` 进行分支自适应，配合 `try-catch` 防御。
 
 ---
 
 ## 三、 wot-ui v2 开发规范
-
-1. **反馈类 Hook 使用限制**：
-   - 在使用 `useToast()`、`useDialog()`、`useNotify()`、`useImagePreview()` 时，**必须在当前页面模板内显式挂载对应的实例组件**，否则页面无法弹窗：
-     ```html
-     <template>
-       <view>
-         <!-- 必须挂载，否则 useToast 不生效 -->
-         <wd-toast />
-         <wd-dialog />
-       </view>
-     </template>
-     ```
-2. **主题配置**：
-   - 主题色的定制统一采用 `ConfigProvider` 和全局 SCSS 变量（修改 `uni.scss` 或引入单文件主题），**禁止** 在业务代码中通过深层 CSS 选择器（如 `::v-deep`）去强行覆盖组件库的内部类名。
-3. **命名与 API 对齐**：
-   - 组件属性命名与官方文档严格一致（例如：显示隐藏使用 `v-model:visible`，选择器使用 `v-model`，阻止冒泡事件使用对应的 `.stop` 饰符）。
+1. **反馈 Hook**：使用 `useToast()`、`useDialog()` 时，**当前页面模板必须显式挂载对应实例**（如 `<wd-toast />`, `<wd-dialog />`），否则无法弹窗。
+2. **主题配置**：定制主题色统一采用 `ConfigProvider` 和全局 SCSS 变量，**禁止**在业务代码中使用 `::v-deep` 强行覆盖组件库内部类名。
+3. **命名对齐**：组件属性命名必须与官方文档严格一致（如 `v-model:visible`，阻止冒泡用 `.stop`）。
 
 ---
 
 ## 四、 国际化 (i18n) 强制约束
-
-为满足 BMS 项目在全球市场的使用要求，必须严格落实中英双语国际化：
-
-1. **禁止硬编码中文**：
-   - 在所有 `.vue`、`.js`、`.ts` 文件中，**除了 `console.log()` / `console.error()` 日志输出外，禁止出现任何硬编码中文字符**。
-2. **模板 i18n 语法**：
-   - 模板中的所有静态文本均必须使用 `$t()` 包裹：
-
-     ```html
-     <!-- 正确示例 -->
-     <text>{{ $t('bms.voltage') }}</text>
-
-     <!-- 错误示例 -->
-     <text>总电压</text>
-     ```
-3. **脚本 i18n 语法**：
-   - `<script>` 逻辑中的文本，如 `uni.showToast` 的提示文字，必须调用 `t()` 方法获取：
-
-     ```javascript
-     import { useI18n } from "vue-i18n";
-     const { t } = useI18n();
-
-     uni.showToast({
-       title: t("bms.connectSuccess"),
-       icon: "success",
-     });
-     ```
-4. **语言包组织**：
-   - 所有的中英文文本对照必须严格配置在 `locale/zh-Hans.json` 和 `locale/en.json` 中。
-   - 键名必须结构化、分类清晰，例如：`bms.status.charging`（充电中）、`bms.error.overVoltage`（过压错误）。
+1. **禁止硬编码中文**：所有 `.vue`、`.js`、`.ts` 文件中**除了 `console.log` / `console.error` 外，禁止出现任何硬编码中文字符**。
+2. **模板/脚本语法**：模板文本用 `{{ $t('key') }}`，脚本用 `t('key')`。
+3. **语言包组织**：配置在 `locale/zh-Hans.json`、`locale/zh-Hant.json` 和 `locale/en.json` 中。
+4. **禁止使用动态变量占位符**：语言包中**禁止**使用 `{key}` 等大括号占位符（兼容性差），统一配置为静态词条，在脚本中通过 `t('key') + 变量` 物理拼接。
+5. **繁体自适应**：通过全局 `locale/i18n.ts` 的 `initI18nLocale()` 检测系统语言，针对包含 `hant, tw, hk, mo` 的系统语言自动激活繁体包。
 
 ---
 
 ## 五、 低功耗蓝牙 (BLE) BMS 通讯规范
-
-由于 BMS 数据的实时性与蓝牙通讯的硬件不稳定性，开发 BLE 通讯时必须遵守以下规范：
-
-1. **异步 API 异常捕获**：
-   - 所有蓝牙 API（如 `uni.openBluetoothAdapter`、`uni.createBLEConnection` 等）调用必须进行 `try-catch` 或在 `fail` 回调中捕获异常，并使用 `i18n` 提示用户蓝牙未开启或连接失败。
-2. **连接生命周期管理**：
-   - **防止内存泄漏**：在页面的 `onUnload` 周期中，必须主动断开蓝牙连接（`uni.closeBLEConnection`）并注销特征值监听（`uni.onBLECharacteristicValueChange`）。
-3. **分包与 MTU 写入**：
-   - 向 BMS 写入特征值指令时，必须遵守硬件的 MTU 字节限制（一般为 20 字节，若协商成功可增加），大指令包必须在应用层做 **切片分包发送**，并配合适当的延时（如 50ms）防止发包阻塞。
+1. **异常捕获**：所有蓝牙 API 调用必须用 `try-catch` 或 `fail` 捕获异常，并使用 `i18n` 提示用户。
+2. **生命周期防泄露**：页面 `onUnload` 时必须断开连接（`uni.closeBLEConnection`）并注销特征值监听（`uni.onBLECharacteristicValueChange`）。
+3. **停止扫描防御（防 10003）**：在发起 `createBLEConnection` 前，**必须**先调用 `stopBluetoothDevicesDiscovery` 彻底停止扫描。
+4. **强制发现时序（防 10004）**：建立物理连接后，**必须**依次显式调用 `getBLEDeviceServices` 与 `getBLEDeviceCharacteristics` 成功发现服务与特征值，方可启动监听（Notify）或写入（Write）。
+5. **MTU 协商与动态分包**：服务发现后，Android/小程序端**必须**调用 `setBLEMTU` 协商（推荐 247）。写入数据时，应根据实际 MTU 自适应切片分包下发（扣除 3 字节协议开销），并配合 50ms 物理延时，严禁死板硬编码 20 字节。
+6. **MAC 地址解析**：iOS/鸿蒙扫描返回的 `deviceId` 均为系统随机 UUID。必须调用工具函数 `resolveDeviceMac(device)` 从广播包数据段中物理提取解析真实物理 MAC。
 
 ---
 
 ## 六、 工具类与公共文件规范
-
-1. **工具方法归口**：
-   - 通用的工具方法（如十六进制转换、BMS 数据帧校验、温度/电压单位换算）必须编写在 `utils/` 目录下（如 `utils/bms-helper.ts`），禁止在页面中重复手写算法。
-2. **样式重用**：
-   - 非通用排版可以使用 UnoCSS 工具类；对于高度定制的局部布局，统一编写在页面的 `<style lang="scss">` 内，推荐开启 `scoped`。
+1. **工具归口**：通用工具方法（如十六进制转换、BMS 数据帧校验）必须编写在 `utils/` 下（如 `utils/bms-helper.ts`），严禁重复手写。
+2. **样式重用**：非通用排版使用 UnoCSS 工具类；定制的局部布局编写在页面的 `<style scoped lang="scss">` 内。
 
 ---
 
 ## 七、 代码注释规范（强制约束）
-
-1. **必须使用中文注释**：
-   - **禁止** 在所有代码文件（包括 `.vue`, `.ts`, `.js`, `.json` 等）中出现任何英文或其它非中文的代码注释。
-   - 所有单行注释、多行注释及 `JSDoc/TSDoc` 说明，**必须统一且只能使用简体中文**进行书写。
-2. **注释详尽性与质量**：
-   - 严禁简单的敷衍式注释，核心的组件 Props、Pinia 状态、API 请求、复杂的蓝牙数据帧校验逻辑以及多端兼容的条件编译块处，必须编写尽可能详尽、完善的中文说明，解释“为什么这样做”以及“关键逻辑是如何流转的”。
+1. **全中文注释**：**禁止**出现任何英文注释。所有单行、多行及 `JSDoc/TSDoc` 注释**必须统一使用简体中文**书写。
+2. **注释质量**：在 Props、Pinia 状态、API 请求、复杂数据校验和条件编译处，必须详写解释“为什么这样做”。
 
 ---
 
-## 八、 模块架构与分层规范（强制约束）
-
-为保证项目架构的可维护性，必须严格执行以下物理及逻辑分层设计，严禁交叉混淆：
-
-1. **`config/` (配置层)**：仅存放应用全局静态环境变量、网络基准 URL 以及多套蓝牙 UUID 组等配置。
-2. **`service/` (服务层)**：存放核心底层长线服务逻辑。包括通用的 HTTP 拦截器与响应器 (`service/request.ts`)、全局蓝牙通信连接管理器 (`service/ble.ts`)。**禁止** 放置具体 API 接口。
-3. **`api/` (接口层)**：按业务模块分别建立 API 接口请求文件（如 `api/user.ts`），专门定义接口的传参及 Promise 请求，**禁止** 直接在组件或 Store 里硬编码 `url` 发送请求。
-4. **`types/` (类型定义层)**：存放共享的 TypeScript 类型定义文件（如 `types/bms.d.ts`），统一规范全局数据结构实体。
-5. **`utils/` (纯工具函数层)**：只放与网络、鉴权及具体业务状态无关的纯函数算法（如十六进制转换、累加和计算等 `utils/bms-helper.ts`），**禁止** 在该目录下写任何网络请求和全局配置。
+## 八、 模块架构与目录职责规范（现代化 App 架构指引）
+必须严格遵循物理目录职责分工，严禁任何职责混淆：
+1. **`config/` (配置层)**：仅存放全局静态运行参数、URL、蓝牙 UUID 及自定义主题变量。**红线**：严禁在此编写带有运行期副作用或依赖 Pinia 状态的代码。
+2. **`service/` (服务层)**：托管底层长线服务（原生权限诊断、蓝牙适配管理器、HTTP 拦截器）。**红线**：禁止放置具体业务接口请求或视图状态控制。
+3. **`api/` (接口层)**：按业务模块定义后端 Promise 网络请求端点。**红线**：严禁在组件、Store 或工具类中硬编码 URL。
+4. **`stores/` (Pinia 状态层)**：全站数据/事件总线，存放通信状态和遥测数据。**红线**：状态变迁必须单向且由 Action 执行，禁止外部脏修改。
+5. **`pages/` (业务页面层)**：业务 Vue 页面，每个页面容器必须被全局高阶组件 `<layout-provider>` 包裹。
+6. **`components/` (公共/共享组件层)**：存放自治的共享组件（easycom）。**允许子目录下存在与组件层紧密耦合的配套 `.ts` 辅助文件**（如视图层 `panel-registry.ts` 分发器），这类配套文件**严禁**放入 `service/` 或 `utils/`，防止职责污染。
+7. **`composables/` (视图复用 Hook 层)**：存放与视图交互、联动相关的 Hooks 函数。**红线**：禁止编写复杂的系统 API 检测或硬件底层判断，必须委托给 `service/`。
+8. **`types/` (类型定义层)**：存放共享 TS 类型。**支持并存**：`.d.ts`（环境/全局类型声明文件）与 `.ts`（模块化类型定义文件）。**红线**：仅限类型契约声明，**严禁**编写任何含有具体业务运行逻辑的代码。
+9. **`utils/` (纯工具函数层)**：仅存放与网络、全局配置、Pinia 完全解耦的纯算法。**红线**：严禁导入网络拦截器或 Store。
 
 ---
 
 ## 九、 TypeScript 类型校验与兼容规范（强制约束）
-
-1. **严禁遗留编译错误**：
-   - 编写或修改任何 `.vue`、`.ts` 等文件后，**必须主动、彻底地检查是否还存在 TypeScript 编译或静态语法红线报错**，并全部予以解决。
-2. **兼容官方三方库类型声明 Bug**：
-   - 在 uni-app 官方类型库 (`@dcloudio/types`) 中，存在部分 API 声明不严谨或错误的 Bug（如蓝牙特征值读写中的 `value` 字段被错标为 `any[]` 数组，导致传入正常的 `ArrayBuffer` 报错）。
-   - 针对此种官方定义 Bug，**允许且强制使用 `as any`、`as ArrayBuffer` 或通用的 `UniApp.GeneralCallbackResult` 进行类型断言和兜底**，以确保顺利通过 TS 编译器校验并完美运行。
+1. **严禁遗留编译错误**：修改代码后，必须主动执行 `npx tsc --noEmit` 检查并解决所有报错。
+2. **第三方库类型兼容**：针对 uni-app 官方类型库的声明 Bug（如蓝牙 `value` 被标为 `any[]`），允许且强制使用 `as any` 或 `as ArrayBuffer` 类型断言进行兜底。
 
 ---
 
 ## 十、 代码格式规范（强制约束）
-
-1. **严格遵守 Prettier 配置**：
-   - 所有编写、重构和修改的代码文件（包括 `.vue`、`.ts`、`.js`、`.json`、`.scss` 等）**必须完全符合根目录下的 `.prettierrc.json` 规则**，并在保存或交付前进行格式化。
-2. **核心格式化细节要求**：
-   - **禁止使用 Tab 缩进**，统一使用 **2 个空格** 缩进。
-   - **字符串必须使用双引号**（`"singleQuote": false`），严禁在普通字符串中混用单引号（除模板字符串外）。
-   - **每行结尾必须补齐分号**（`"semi": true`）。
-   - **对象/数组多行排版时必须保留尾随逗号**（`"trailingComma": "all"`）。
-3. **尊重忽略规则**：
-   - 任何处于 `.prettierignore` 规则涵盖的编译产物、依赖包以及自动生成文件，严禁进行强制格式化或擅自修改。
+所有代码必须完全符合 `.prettierrc.json` 规则。核心要求：
+1. **禁止 Tab 缩进**，统一使用 **2 个空格**。
+2. **字符串必须使用双引号** (`"singleQuote": false`)。
+3. **每行结尾必须补齐分号** (`"semi": true`)。
+4. **对象/数组多行排版时必须保留尾随逗号** (`"trailingComma": "all"`)。
 
 ---
 
 ## 十一、 开发设备与命令行执行规范（强制约束）
+1. **Windows (PowerShell) 兼容**：终端 Shell 为 PowerShell。**严禁**执行仅限 Unix 运行的 shell 脚本或专有参数，系统文件操作必须使用 PowerShell 原生或 Node 跨平台命令。
+2. **工作区清理**：严禁遗留调试临时脚本或编译日志。临时测试脚本验证后必须立即物理删除。
 
-1. **Windows (PowerShell) 环境兼容**：
-   - 用户的开发设备为 Windows x64 系统，终端 Shell 为 **PowerShell**。
-   - **严禁** 编写或执行任何仅限 Unix/Linux 运行的 shell 脚本（如 `.sh`）或专有命令参数（如直接调用 `rm -rf`，`mkdir -p`，`grep` 等）。
-   - 执行系统级文件操作或脚本时，必须使用 PowerShell 兼容的原生命令或 Node.js 跨平台命令（例如，使用 `Remove-Item -Recurse -Force` 代替 `rm -rf`，使用 `New-Item -ItemType Directory` 代替 `mkdir -p`，或使用 `npx rimraf` 等）。
-2. **工作区临时文件与脚本清理**：
-   - 严禁在项目开发工作区（即项目文件夹根目录及各子目录下）长期遗留任何为了调试、验证而临时编写的脚本文件（如测试用的 `.js`、`.ts`、`.ps1`、`.bat`、`.py` 等脚本文件）或编译日志临时文件。
-   - 任何临时脚本在完成其验证任务后，**必须立即主动物理删除**，绝不允许残留在工作区中或随项目代码一同提交。
-   - 调试测试脚本必须存放在指定的临时缓存目录（如系统指定的 `<appDataDir>\brain\<conversation-id>/scratch/` 目录），确保项目工作区维持干净无污染的状态。
+---
+
+## 十二、 GSAP (GreenSock) 高级动画开发规范（强制约束）
+1. **禁止操作 DOM**：小程序无 DOM，**必须使用状态补间驱动**（绑定 Vue 的 `ref` 数值渲染到 CSS/SVG 样式中）或类名选择器，避免原生报错。
+2. **防内存泄漏**：在组件卸载 `onUnmounted`（或页面 `onUnload`）中，**必须显式且主动调用 `tween.kill()` 或 `gsap.killTweensOf(target)`** 彻底终结所有动画。
+3. **GPU 硬件加速与 Reflow 防御**：禁止对重排属性（如 `top`, `left`, `width`）进行补间，**必须**优先使用 GPU 加速的 `x`, `y`, `scale`, `rotation`, `opacity` 变换属性，并在活跃节点上显式添加 `will-change: transform`。
+
+---
+
+## 十三、 全局 Pinia 状态管理与数据联动规范（强制约束）
+1. **响应式解构防丢失**：**必须**使用 **`storeToRefs(store)`** 来解构 Pinia Store 中的 state 或 getters。**绝对禁止**直接使用 ES6 的解构赋值（会导致响应式断裂）。
+2. **状态修改归口**：绝对禁止绕过 Store 在外部伪造或脏修改蓝牙连接状态或遥测数据。核心状态变迁统一且只能由 `bleStore` 导出的 Action 执行。
+
+---
+
+## 十四、 z-paging 高效分页与设备列表去重规范（强制约束）
+1. **扫描设备去重**：蓝牙广播包推送到 `z-paging` 渲染前，**必须**在 `startScan` 回调中基于物理 MAC 地址（`deviceId`）去重过滤，防重复项导致频繁重绘。
+2. **自适应高度插槽**：自定义顶部导航栏必须声明在 `z-paging` 的 **`top` 插槽（`#top`）** 内部，以防内容重叠。
+
+---
+
+## 十五、 异步接口防御、防连点与超时熔断规范（强制约束）
+1. **防连点与 Loading 死锁防御**：写入或提交操作前**必须**开启 Loading 遮罩（如 `toast.show({ mask: true })`）。必须使用 `try-catch-finally` 结构，并且在 **`finally` 块中显式关闭 Loading**，防因未捕获异常导致遮罩死锁。
+2. **离线拦截**：前置校验 `APP_CONFIG.APP_MODE === "offline"`，离线模式下直接拦截并 reject 抛出 `OFFLINE_MODE` 错误。
+
+---
+
+## 十六、 移动端全面屏与微信小程序安全区适配（强制约束）
+1. **状态栏与贴底安全区**：无原生导航栏顶部使用 **`var(--status-bar-height)`** 留白；贴底组件 padding-bottom使用 **`env(safe-area-inset-bottom)`**。
+2. **小程序 CSS 路径**：SCSS/CSS 样式表中的 `background-image` **绝对禁止**使用任何本地相对路径，必须使用 Base64、网络 URL，或模板内的 `<image>` 标签。
+
+---
+
+## 十七、 Composables 组合式函数与系统权限安全申请（强制约束）
+1. **职责隔离**：`composables/` 只处理视图交互（NoticeBar 提示、Dialog 确认弹窗）。底层核心权限状态诊断必须委托给 `service/permission.ts`。
+2. **原生修复自适应**：权限缺失时，小程序调用 `uni.openSetting`；APP 端通过原生反射调起系统 Intent 页面，并用 `try-catch` 包裹保障稳定性。
+
+---
+
+## 十八、 遥测数据（Telemetry）通信时序与主动轮询控制（性能与实时性规范）
+1. **主动轮询控制（Request-Response Model）**：本项目 BMS 通信采用“一发一收”的主动轮询机制，控制权在 APP 端。APP 必须在前置收发完毕后，通过定时器/时序队列下发查询指令（推荐间隔 500ms - 1000ms）。严禁在上一帧未响应或超时熔断前，并发/重叠下发新指令。
+2. **高精度与实时性物理写回**：**绝对禁止**采用任何“数值精度差过滤”或“接收端丢帧节流”算法。BMS 遥测数据（如电压、电流）对精度与安全预警要求极高，只要解析到合法数据帧，**必须立即且完整**更新到响应式展示 State 中。
+3. **计算属性性能保障**：均压差、温差、均温等高阶计算属性（`computed`）合理依赖被及时更新的响应式遥测状态，利用 Vue 缓存减少无意义的二次计算。
+
+---
+
+## 十九、 微信小程序与 App 端体积容量分包与打包按需引入（构建规范）
+1. **首屏外绝对分包**：主包（限 2MB）仅存放首屏与核心初始化逻辑。非首屏、重度 UI 功能（如曲线、设置、校准）必须划分至分包。
+2. **大资源外置**：超过 40KB 的静态图片或演示 JSON 绝对禁止放入主包，推荐网络存储或放于对应分包。
+3. **Vite 打包清理**：在 `vite.config.ts` 中配置生产打包剥离 `console.log()` 及 `debugger`（仅保留核心 `error`）。
+4. **按需自动引入**：组件库必须采用按需引入（Tree-Shaking），严禁在 `main.ts` 全量注册 wot-ui。
+
+---
+
+## 二十、 UI 设计美学与高保真动效原则（Wow 体验保障）
+1. **色彩与拟物搭配**：**绝对禁止**直出高饱和纯红（`#ff0000`）、纯绿（`#00ff00`）等。选用经过语义化和谐配色的 HSL/HEX 渐变方案，搭配 `12px` - `16px` 深色卡片圆角。
+2. **UnoCSS 规范**：网格及 Flex 布局统一使用配备 `wot-` 前缀的 UnoCSS 全局预设，杜绝无序 ad-hoc 类。
+
+---
+
+## 二十一、 AI 协同、IDE 插件联动与多分支决策规约
+1. **定义求证前置**：修改或扩展接口、实体、蓝牙服务前，**必须**调用 `codegraph` 工具进行定义求证，**绝对禁止**凭空假设字段。
+2. **复杂改动的 Planning**：涉及核心架构与通信校验逻辑变动，AI 必须启动 `Planning Mode`，生成 `implementation_plan.md`，唤起审阅，人类批准后方可执行。
+3. **i18n ally 联动**：配置 `"zh-Hans"` 为主显示语言，翻译字段必须完整补齐 `"bms."` 命名空间前缀。
+
+---
+
+## 二十二、 多协议多厂商硬件热兼容与解耦规约（核心架构规范）
+确保应用无缝兼容不同厂商、不同报文格式的 BMS 电池硬件。**代码中严禁出现任何具体厂商商业名称**，统一使用中性的协议序号/小写连字符（如 `protocol-a`、`protocol-b` 等）占位。
+
+### 1. 协议规格声明区强制规范（核心红线）
+每个协议实现文件顶部必须声明一个 `PROTOCOL_SPEC` 常量，实现 `types/protocol.ts` 的 `ProtocolSpec` 接口。包含：帧头字节（frameHeader）、最小帧长（minFrameLength）、字节序（byteOrder）、校验算法名（checksumAlgorithm）、校验范围（checksumRange）、下行指令字典（commandSet）。
+- **红线**：严禁将帧头魔数、指令字节码、校验算法等参数散落在解析代码中，必须全部集中在规格常量中，并通过 `readonly spec = PROTOCOL_SPEC` 暴露。
+
+### 2. 策略模式解耦
+各协议封装为独立的协议策略类，统一实现 `types/protocol.ts` 的 `BmsProtocolParser` 接口。Store、组件中严禁硬编码帧结构或解析逻辑，所有指令组包与解包**统一且只能**委托给激活的协议策略实例（`activeProtocolParser`）。
+
+### 3. 协议注册表强制注册（消灭 if-else）
+- 通过 `service/protocol/protocol-registry.ts` 的 `registerProtocol()` 将蓝牙服务 UUID 与对应协议解析器工厂绑定注册。
+- `ble-store.ts` 中的协议匹配**必须且只能**通过 `resolveProtocol(serviceUuid)` 调用注册表查找，**绝对禁止**编写基于 UUID 的 `if-else` 硬编码判断。
+- 新增协议时，仅允许新建协议类文件并于注册表追加一行注册，无需修改 Store 或任何现有文件。
+
+### 4. 校验算法可插拔
+- 所有协议的校验验证必须调用 `utils/bms-helper.ts` 中的 `verifyChecksum(bytes, algorithm, range)` 通用分发函数。**绝对禁止**在协议类中手写校验循环。
+- 内置算法：`sum8`、`sum16le`、`crc16-modbus`。新增算法时仅在 `bms-helper.ts` 新增并于分发器配置分支，协议类代码无感。
+
+### 5. 基于 UUID 动态分流与视图容错
+- 服务发现后，通过注册表实例化协议策略对象挂载至 `bleStore.activeProtocolParser` 上。
+- 视图层消费 `extendedProtocolData` 时，**必须**使用可选链（`?.`）兜底防缺失崩溃。
+- `protocolType` 为 `string` 开放类型，命名统一小写连字符，禁止使用商业名称。
+- 遵循开闭原则（OCP），单一协议的补丁逻辑必须封装在对应协议类内，严禁外溢至全局。
+
+### 6. 协议驱动视图自适应（双注册表架构）
+首页、控制页等布局可能完全不同，必须通过数据层注册表加视图层注册表的“双注册表”实现零侵入 UI 自适应，**严禁**在业务页面编写基于 `protocolType` 的分支判断。
+
+**双注册表架构组成：**
+- 数据层：`service/protocol/protocol-registry.ts` 匹配解析器。
+- 视图层：`components/protocol-panels/panel-registry.ts` 匹配 Vue 组件对象引用。
+
+**小程序兼容性红线（核心约束）：**
+- 禁止运行时动态 `import()` 加载组件，禁止使用组件的字符串名称绑定 `<component :is>`。
+- **必须在 `panel-registry.ts` 中静态 import 所有组件**，通过 `protocolType` 键值查找组件对象引用后，将对象引用传给 `<component :is>`。
+
+**页面使用姿势：**
+```vue
+<script setup lang="ts">
+import { computed } from "vue";
+import { storeToRefs } from "pinia";
+import { useBleStore } from "@/stores/ble-store";
+import { resolveHomePanel } from "@/components/protocol-panels/panel-registry";
+
+const { activeProtocolParser } = storeToRefs(useBleStore());
+// 获取组件对象引用，以支持小程序端动态渲染
+const homePanelComponent = computed(() => resolveHomePanel(activeProtocolParser.value?.protocolType));
+</script>
+
+<template>
+  <component :is="homePanelComponent" v-if="homePanelComponent" />
+  <default-home-panel v-else />
+</template>
+```
+
+**新增协议专属面板时：**
+1. 新建 `components/protocol-panels/protocol-x-home-panel.vue`。
+2. 于 `panel-registry.ts` 静态 `import` 并配置在 Map 映射中即可完成，无任何页面侵入。

@@ -1,8 +1,5 @@
 <template>
-  <view class="page-container wot-bg-neutral-100 wot-min-h-screen">
-    <!-- 反馈组件实例挂载，用于在 useToast / useDialog 触发时提供全局弹窗交互 -->
-    <wd-toast />
-    <wd-dialog />
+  <layout-provider>
 
     <!-- 
       使用 z-paging 插件进行列表展示
@@ -71,7 +68,7 @@
         </view>
       </template>
     </z-paging>
-  </view>
+  </layout-provider>
 </template>
 
 <script setup lang="ts">
@@ -187,7 +184,7 @@ const handleConnect = async (device: any) => {
   // 2. 呼出加载中提示，防止用户在连接期间重复连点
   toast.show({
     type: "loading",
-    msg: t("bms.ble.connecting", { name: device.name || "BMS" }),
+    msg: t("bms.ble.connectingPrefix") + (device.name || "BMS") + t("bms.ble.connectingSuffix"),
     loadingType: "circular",
   });
 
@@ -208,13 +205,6 @@ const handleConnect = async (device: any) => {
   }
 };
 
-// 页面加载时执行环境诊断检测，若检测不通过则立刻弹出 Dialog 强引导弹窗
-onLoad(async () => {
-  const isReady = await checkStatus();
-  if (!isReady) {
-    resolveEnvAlert();
-  }
-});
 
 // 页面卸载时，强制清理长扫描进程，防止内存泄漏
 onUnload(() => {

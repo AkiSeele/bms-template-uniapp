@@ -1,5 +1,5 @@
 <template>
-  <view class="page-container wot-bg-neutral-100 wot-min-h-screen">
+  <layout-provider>
     <!-- 自定义顶部导航栏，固定在顶部并生成占位元素 -->
     <wd-navbar :title="$t('bms.tab.params')" fixed safe-area-inset-top placeholder />
     
@@ -13,7 +13,7 @@
     
     <!-- 自定义底部导航栏 -->
     <custom-tabbar active="param" />
-  </view>
+  </layout-provider>
 </template>
 
 <script setup lang="ts">

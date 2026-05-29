@@ -3,19 +3,22 @@
     "title": "BMS 电池管理",
     "ble": {
       "disconnected": "蓝牙未连接",
-      "signalStrength": "设备信号强度: {value}",
+      "signalStrength": "设备信号强度: ",
       "promptConnect": "点击右侧按钮连接蓝牙设备",
       "disconnect": "断开",
       "connect": "连接",
       "searchTitle": "蓝牙搜索",
       "scanning": "正在搜索蓝牙设备...",
       "scanStopped": "搜索已结束",
-      "connecting": "正在连接设备 {name}...",
+      "connectingPrefix": "正在连接设备 ",
+      "connectingSuffix": "...",
       "connectSuccess": "连接成功",
       "connectFailed": "连接失败",
-      "disconnectConfirm": "确定要断开与设备 {name} 的连接吗？",
+      "disconnectConfirmPrefix": "确定要断开与设备 ",
+      "disconnectConfirmSuffix": " 的连接吗？",
       "searchEmpty": "未搜寻到任何蓝牙设备",
-      "deviceRssi": "信号强度: {rssi} dBm",
+      "deviceRssiPrefix": "信号强度: ",
+      "deviceRssiSuffix": " dBm",
       "deviceMac": "设备地址: ",
       "env": {
         "bluetoothDisabled": "手机蓝牙未开启，请先在控制中心或系统设置中打开蓝牙开关。",
@@ -39,7 +42,10 @@
       "totalVoltage": "总电压",
       "realtimeCurrent": "实时电流",
       "maxTemp": "电池最高温",
-      "soh": "健康度 SOH"
+      "soh": "健康度 SOH",
+      "cycleCount": "循环充电次数",
+      "runTime": "运行总时长",
+      "temperatures": "路温度"
     },
     "protect": {
       "title": "BMS 安全保护状态",
@@ -54,7 +60,12 @@
       "chargeMos": "充电 MOS 状态",
       "chargeMosDesc": "控制电池包是否允许充入电流",
       "dischargeMos": "放电 MOS 状态",
-      "dischargeMosDesc": "控制电池包是否允许向外输出电流"
+      "dischargeMosDesc": "控制电池包是否允许向外输出电流",
+      "heatMos": "自加热开关",
+      "heatMosDesc": "开启/关闭电池低温自加热功能",
+      "clearStatus": "清除异常状态",
+      "forceSleep": "强制休眠保护",
+      "forceStart": "强制拉起启动"
     },
     "tab": {
       "realtime": "实时",
@@ -68,9 +79,13 @@
       "currentLanguage": "当前语言",
       "chinese": "简体中文",
       "english": "English",
+      "traditional": "繁體中文",
       "appVersion": "版本信息",
       "deviceInfo": "设备信息",
-      "switchSuccess": "语言切换成功"
+      "switchSuccess": "语言切换成功",
+      "darkMode": "暗黑模式",
+      "darkModeDesc": "开启深邃暗黑护眼模式",
+      "switchThemeSuccess": "主题切换成功"
     },
     "common": {
       "cancel": "取消",
@@ -85,6 +100,12 @@
       "goSettings": "去设置",
       "goOpen": "去开启",
       "authorize": "授权申请"
+    },
+    "request": {
+      "offlineMode": "当前处于单机离线模式，已拦截网络请求",
+      "loginExpired": "登录状态已失效，请重新登录",
+      "serverError": "服务器异常，状态码: ",
+      "networkFailed": "网络连接失败，请检查网络设置"
     }
   }
 }

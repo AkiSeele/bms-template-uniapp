@@ -51,7 +51,7 @@ export function initI18nLocale(): void {
   try {
     // 优先读取用户手动选择的本地缓存语言
     const savedLocale = uni.getStorageSync("app_locale");
-    if (savedLocale === "zh-Hans" || savedLocale === "en") {
+    if (savedLocale === "zh-Hans" || savedLocale === "zh-Hant" || savedLocale === "en") {
       // @ts-ignore
       _i18nInstance.global.locale.value = savedLocale;
       uni.setLocale(savedLocale);
@@ -59,12 +59,23 @@ export function initI18nLocale(): void {
       return;
     }
 
-    // 读取系统语言，并进行简体中文的兼容性归一化映射
-    // 微信小程序中繁体中文也会携带 zh 前缀，统一归并为 zh-Hans
+    // 读取系统语言，并进行简体与繁体中文的兼容性精细化映射
     let systemLocale = uni.getLocale() || "zh-Hans";
     systemLocale = systemLocale.toLowerCase().replace("_", "-");
 
-    const targetLocale = systemLocale.startsWith("zh") ? "zh-Hans" : "en";
+    let targetLocale = "en";
+    if (systemLocale.startsWith("zh")) {
+      if (
+        systemLocale.includes("hant") ||
+        systemLocale.includes("tw") ||
+        systemLocale.includes("hk") ||
+        systemLocale.includes("mo")
+      ) {
+        targetLocale = "zh-Hant";
+      } else {
+        targetLocale = "zh-Hans";
+      }
+    }
 
     // @ts-ignore
     _i18nInstance.global.locale.value = targetLocale;

@@ -1,11 +1,17 @@
 <template>
-  <view class="page-container wot-bg-neutral-100 wot-min-h-screen">
+  <layout-provider>
     <!-- 自定义顶部导航栏组件，fixed 属性用于固定在顶端，placeholder 用于在流中保留占位避免内容遮挡 -->
-    <wd-navbar :title="$t('bms.title')" fixed safe-area-inset-top placeholder />
-
-    <!-- 实例组件挂载，确保全局 Toast 和 Dialog 可以成功弹窗 -->
-    <wd-toast />
-    <wd-dialog />
+    <wd-navbar :title="$t('bms.title')" fixed safe-area-inset-top placeholder>
+      <template #right>
+        <!-- 顶部导航栏右侧明暗模式一键切换图标 -->
+        <wd-icon
+          :css-icon="theme === 'dark' ? 'i-lucide-sun' : 'i-lucide-moon'"
+          size="20px"
+          @click="toggleTheme"
+          class="wot-flex wot-items-center wot-justify-center"
+        />
+      </template>
+    </wd-navbar>
 
     <view class="wot-p-main wot-pb-10">
       <!-- 头部区域：蓝牙连接状态栏 -->
@@ -80,7 +86,7 @@
           <text class="wot-text-caption wot-text-text-secondary">|</text>
           <text class="wot-text-caption wot-text-text-secondary">
             {{ $t("bms.battery.remainingCapacity") }}:
-            {{ isConnected ? (batteryPercent * 1.0).toFixed(1) + " Ah / 100.0" + " Ah" : "-- Ah" }}
+            {{ remainCap }}
           </text>
         </view>
       </view>
@@ -143,7 +149,60 @@
           <view class="wot-flex wot-flex-col">
             <text class="wot-text-caption wot-text-text-secondary">{{ $t("bms.params.soh") }}</text>
             <text class="wot-text-body-main wot-font-bold wot-text-text-main wot-mt-0.5">
-              {{ isConnected ? "98.5 %" : "-- %" }}
+              {{ sohDisplay }}
+            </text>
+          </view>
+        </view>
+
+        <!-- 聚力威独有参数：循环充电次数 -->
+        <view
+          v-if="isConnected && protocolType === 'jlw'"
+          class="param-card wot-bg-filled-oppo wot-rounded-xl wot-p-main wot-shadow-sm wot-flex wot-items-center wot-gap-3"
+        >
+          <wd-icon css-icon="i-lucide-rotate-cw" size="28px" color="#0052d9" />
+          <view class="wot-flex wot-flex-col">
+            <text class="wot-text-caption wot-text-text-secondary">{{ $t("bms.params.cycleCount") }}</text>
+            <text class="wot-text-body-main wot-font-bold wot-text-text-main wot-mt-0.5">
+              {{ extendedProtocolData?.cycleCount ?? 0 }} {{ $t("bms.mine.appVersion") ? "次" : "Cycles" }}
+            </text>
+          </view>
+        </view>
+
+        <!-- 聚力威独有参数：运行总时长 -->
+        <view
+          v-if="isConnected && protocolType === 'jlw'"
+          class="param-card wot-bg-filled-oppo wot-rounded-xl wot-p-main wot-shadow-sm wot-flex wot-items-center wot-gap-3"
+        >
+          <wd-icon css-icon="i-lucide-clock" size="28px" color="#10b981" />
+          <view class="wot-flex wot-flex-col">
+            <text class="wot-text-caption wot-text-text-secondary">{{ $t("bms.params.runTime") }}</text>
+            <text class="wot-text-body-main wot-font-bold wot-text-text-main wot-mt-0.5 wot-text-xs">
+              {{ runTimeStr }}
+            </text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 聚力威高阶 6 路温度自适应渲染网格面板 -->
+      <view
+        v-if="isConnected && temperatureList.length > 0"
+        class="wot-bg-filled-oppo wot-rounded-2xl wot-p-main wot-shadow-sm wot-mb-4"
+      >
+        <view class="wot-flex wot-items-center wot-gap-2 wot-mb-3 wot-border-b wot-border-border-main wot-pb-2">
+          <wd-icon css-icon="i-lucide-thermometer-sun" size="24px" color="#d54941" />
+          <text class="wot-text-body-main wot-font-bold wot-text-text-main">
+            {{ protocolType === "jlw" ? "多路温度监测" : "温度传感器状态" }}
+          </text>
+        </view>
+        <view class="wot-grid wot-grid-cols-3 wot-gap-2">
+          <view
+            v-for="(tItem, index) in temperatureList"
+            :key="index"
+            class="wot-bg-filled-main wot-rounded-lg wot-p-2 wot-flex wot-flex-col wot-items-center wot-justify-center"
+          >
+            <text class="wot-text-caption wot-text-text-secondary wot-scale-90">{{ tItem.name }}</text>
+            <text class="wot-text-body-main wot-font-bold wot-text-text-main wot-mt-0.5">
+              {{ tItem.value }} °C
             </text>
           </view>
         </view>
@@ -245,14 +304,16 @@
 
     <!-- 自定义底部 Tabbar 组件 -->
     <custom-tabbar active="realtime" />
-  </view>
+  </layout-provider>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed } from "vue";
+import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
 import { useToast, useDialog } from "@/uni_modules/wot-ui";
 import { useBleStore } from "@/stores/ble-store";
+import { useAppStore } from "@/stores/app";
 
 // 初始化 wot-ui 交互 Hooks 与国际化翻译实例
 const toast = useToast();
@@ -262,18 +323,104 @@ const { t } = useI18n();
 // 获取全局蓝牙 Store 管理器
 const bleStore = useBleStore();
 
-// 联动全局蓝牙连接状态和已连接设备名称及真实 MAC
-const isConnected = computed(() => bleStore.isBleConnected);
-const connectedName = computed(() => bleStore.connectedDeviceName);
-const connectedMac = computed(() => bleStore.connectedDeviceMac);
+// 获取全局应用配置 Store 并以响应式方式解构 theme
+const appStore = useAppStore();
+const { theme } = storeToRefs(appStore);
 
-// 电池物理状态，直接联动全局蓝牙 Store 的响应式字段
-const isCharging = computed(() => bleStore.isCharging);
-const isDischarging = computed(() => bleStore.isDischarging);
-const batteryPercent = computed(() => bleStore.batteryPercent);
-const totalVoltage = computed(() => bleStore.totalVoltage);
-const realtimeCurrent = computed(() => bleStore.realtimeCurrent);
-const temperature = computed(() => bleStore.temperature);
+// 一键在亮色模式 (light) 与暗黑模式 (dark) 之间切换主题
+const toggleTheme = () => {
+  const nextTheme = theme.value === "dark" ? "light" : "dark";
+  appStore.setTheme(nextTheme);
+  toast.success(t("bms.mine.switchThemeSuccess"));
+};
+
+// 联动全局蓝牙连接状态、已连接设备信息及电池物理遥测响应式状态
+const {
+  isBleConnected: isConnected,
+  connectedDeviceName: connectedName,
+  connectedDeviceMac: connectedMac,
+  isCharging,
+  isDischarging,
+  batteryPercent,
+  totalVoltage,
+  realtimeCurrent,
+  temperature,
+  extendedProtocolData,
+} = storeToRefs(bleStore);
+
+// 提取当前挂载的协议类型
+const protocolType = computed(() => bleStore.activeProtocolParser?.protocolType || "");
+
+// 动态处理容量显示
+const remainCap = computed(() => {
+  if (!isConnected.value) return "-- Ah";
+  if (
+    extendedProtocolData.value?.remainingCapacity !== undefined &&
+    extendedProtocolData.value?.fullCapacity !== undefined
+  ) {
+    return `${extendedProtocolData.value.remainingCapacity.toFixed(1)} Ah / ${extendedProtocolData.value.fullCapacity.toFixed(1)} Ah`;
+  }
+  return `${(batteryPercent.value * 1.0).toFixed(1)} Ah / 100.0 Ah`;
+});
+
+// 动态处理 SOH 显示
+const sohDisplay = computed(() => {
+  if (!isConnected.value) return "-- %";
+  if (extendedProtocolData.value?.soh !== undefined) {
+    return `${extendedProtocolData.value.soh} %`;
+  }
+  return "98.5 %";
+});
+
+// 动态拼接聚力威专属运行时间格式
+const runTimeStr = computed(() => {
+  if (!isConnected.value) return "--";
+  const d = extendedProtocolData.value?.runTimeDays ?? 0;
+  const h = extendedProtocolData.value?.runTimeHours ?? 0;
+  const m = extendedProtocolData.value?.runTimeMinutes ?? 0;
+  return `${d}天 ${h}时 ${m}分`;
+});
+
+// 动态组织多路温度传感器监测列表
+interface TempDisplayItem {
+  name: string;
+  value: number;
+}
+const temperatureList = computed<TempDisplayItem[]>(() => {
+  if (!isConnected.value) return [];
+  const list: TempDisplayItem[] = [];
+
+  // 如果聚力威协议推入了多传感器数组
+  if (extendedProtocolData.value?.temperatures) {
+    extendedProtocolData.value.temperatures.forEach((val, idx) => {
+      // 过滤未接传感器的默认无效值 (0 和 0xff/255)
+      if (val !== 0 && val !== 0xff && val !== 255) {
+        list.push({
+          name: `${t("bms.params.temperatures") || "通道"}${idx + 1}`,
+          value: val,
+        });
+      }
+    });
+  }
+
+  // 挂载 MOS 温度
+  if (extendedProtocolData.value?.mosTemperature !== undefined && extendedProtocolData.value.mosTemperature !== 0) {
+    list.push({
+      name: "MOS",
+      value: extendedProtocolData.value.mosTemperature,
+    });
+  }
+
+  // 挂载环境温度
+  if (extendedProtocolData.value?.envTemperature !== undefined && extendedProtocolData.value.envTemperature !== 0) {
+    list.push({
+      name: t("bms.params.envTemperature") || "环境",
+      value: extendedProtocolData.value.envTemperature,
+    });
+  }
+
+  return list;
+});
 
 // 处理连接/断开蓝牙按钮点击事件
 const toggleConnection = () => {
@@ -287,7 +434,7 @@ const toggleConnection = () => {
     dialog
       .confirm({
         title: t("bms.common.prompt"),
-        msg: t("bms.ble.disconnectConfirm", { name: connectedName.value }),
+        msg: t("bms.ble.disconnectConfirmPrefix") + connectedName.value + t("bms.ble.disconnectConfirmSuffix"),
       })
       .then(async () => {
         try {
@@ -303,14 +450,37 @@ const toggleConnection = () => {
   }
 };
 
-// 切换充电 MOS 开关状态
-const toggleCharge = (e: any) => {
-  isCharging.value = e.detail.value;
+// 切换充电 MOS 开关状态并附防连点 Loading 遮罩
+const toggleCharge = async (e: any) => {
+  const nextVal = e.detail.value;
+  try {
+    toast.loading({ message: "发送指令中...", mask: true });
+    await bleStore.sendControlCommand("charge", nextVal);
+    toast.success("充电开关下发成功");
+  } catch (err: any) {
+    console.error("充电开关指令下发物理失败:", err);
+    toast.error(err.message || "下发失败");
+    // 恢复原界面状态
+    isCharging.value = !nextVal;
+  } finally {
+    toast.close();
+  }
 };
 
-// 切换放电 MOS 开关状态
-const toggleDischarge = (e: any) => {
-  isDischarging.value = e.detail.value;
+// 切换放电 MOS 开关状态并附防连点 Loading 遮罩
+const toggleDischarge = async (e: any) => {
+  const nextVal = e.detail.value;
+  try {
+    toast.loading({ message: "发送指令中...", mask: true });
+    await bleStore.sendControlCommand("discharge", nextVal);
+    toast.success("放电开关下发成功");
+  } catch (err: any) {
+    console.error("放电开关指令下发物理失败:", err);
+    toast.error(err.message || "下发失败");
+    isDischarging.value = !nextVal;
+  } finally {
+    toast.close();
+  }
 };
 </script>
 

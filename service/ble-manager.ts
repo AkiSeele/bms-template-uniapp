@@ -8,6 +8,9 @@ import { APP_CONFIG } from "@/config";
 import { hexStringToUint8Array } from "@/utils/bms-helper";
 import { translate } from "@/locale/i18n";
 
+// 全局低功耗蓝牙当前协商成功的最大单包数据发送载荷限额（默认为 20 字节，协商成功后自动拓宽，iOS 自动，Android 手动）
+let currentMtu = 20;
+
 export const bleManager = {
   /**
    * 初始化手机蓝牙适配器模块
@@ -109,6 +112,9 @@ export const bleManager = {
    */
   disconnect(deviceId: string): Promise<UniApp.GeneralCallbackResult> {
     return new Promise((resolve, reject) => {
+      // 每次断开连接时，强制重置本地的 MTU 协商状态缓存，退回默认的 20 字节限额
+      currentMtu = 20;
+
       // H5 平台防护拦截
       if (typeof uni.closeBLEConnection !== "function") {
         return resolve({ errMsg: "closeBLEConnection:ok" });
@@ -208,6 +214,37 @@ export const bleManager = {
   },
 
   /**
+   * 协商并设定低功耗蓝牙的 MTU 传输单元大小 (仅在 Android 平台及微信小程序等非 iOS 平台生效)
+   * @param deviceId 蓝牙设备 ID
+   * @param mtu 期望协商的 MTU 字节数 (推荐 247)
+   */
+  setMTU(deviceId: string, mtu: number): Promise<UniApp.GeneralCallbackResult> {
+    return new Promise((resolve) => {
+      // #ifdef APP-PLUS || MP-WEIXIN
+      // iOS 不支持在应用层主动设置 MTU，由系统自动协商；Android 与微信小程序必须手动发起
+      if (typeof uni.setBLEMTU === "function") {
+        uni.setBLEMTU({
+          deviceId,
+          mtu,
+          success: (res) => {
+            // 扣除 3 字节的 L2CAP 协议头部开销，得到实际的最大数据发送载荷
+            currentMtu = Math.max(20, res.mtu - 3);
+            console.log(`[BLE Manager] MTU 协商成功，设定实际发送载荷: ${currentMtu} 字节`);
+            resolve(res);
+          },
+          fail: (err) => {
+            console.warn("[BLE Manager] MTU 协商失败，沿用默认 20 字节限额:", err);
+            resolve({ errMsg: "setBLEMTU:fail, fallback to 20" });
+          },
+        });
+        return;
+      }
+      // #endif
+      resolve({ errMsg: "setBLEMTU:not supported on this platform" });
+    });
+  },
+
+  /**
    * 向 BMS 蓝牙设备写入指令字节数据（支持底层自动分包以避让 MTU 字节限制）
    * @param deviceId 蓝牙设备 ID
    * @param commandHex 十六进制指令字符串，如 "A55A010100"
@@ -229,9 +266,10 @@ export const bleManager = {
       try {
         const rawBytes = hexStringToUint8Array(commandHex);
         const buffer = rawBytes.buffer;
-        const mtu = 20; // 多数低功耗蓝牙单次最大传输载荷默认限制为 20 字节
+        // 动态使用已协商成功或默认的物理载荷限额（默认为 20 字节，协商成功后自动拓宽）
+        const mtu = currentMtu; 
 
-        // 对大包数据执行切片分包下发
+        // 对大包数据执行动态切片分包下发
         for (let i = 0; i < buffer.byteLength; i += mtu) {
           const chunk = buffer.slice(i, i + mtu);
 

@@ -1,0 +1,111 @@
+{
+  "bms": {
+    "title": "BMS 電池管理",
+    "ble": {
+      "disconnected": "藍牙未連接",
+      "signalStrength": "設備信號強度: ",
+      "promptConnect": "點擊右側按鈕連接藍牙設備",
+      "disconnect": "斷開",
+      "connect": "連接",
+      "searchTitle": "藍牙搜尋",
+      "scanning": "正在搜尋藍牙設備...",
+      "scanStopped": "搜尋已結束",
+      "connectingPrefix": "正在連接設備 ",
+      "connectingSuffix": "...",
+      "connectSuccess": "連接成功",
+      "connectFailed": "連接失敗",
+      "disconnectConfirmPrefix": "確定要斷開與設備 ",
+      "disconnectConfirmSuffix": " 的連接嗎？",
+      "searchEmpty": "未搜尋到任何藍牙設備",
+      "deviceRssiPrefix": "信號強度: ",
+      "deviceRssiSuffix": " dBm",
+      "deviceMac": "設備地址: ",
+      "env": {
+        "bluetoothDisabled": "手機藍牙未開啟，請先在控制中心或系統設定中打開藍牙開關。",
+        "locationDisabled": "手機系統定位(GPS)開關未開啟。為了能夠順利搜尋到藍牙電池包設備，請開啟手機定位功能。",
+        "locationNotAuthorized": "微信用戶端未被授予位置資訊權限。請在手機「系統設定 -> 權限管理 -> 微信」中開啟位置授權。",
+        "wechatBluetoothRefused": "需要您的藍牙服務授權以連接電池包，請點擊「去設定」開啟藍牙權限。",
+        "wechatLocationRefused": "藍牙設備搜尋需要位置資訊授權，請點擊「去設定」開啟位置服務。",
+        "androidNearbyDesc": "為了掃描並連接附近的 BMS 藍牙電池管理硬體，我們需要申請您的「附近設備（藍牙掃描和連接）」權限。",
+        "androidLocationDesc": "由於 Android 系統的安全規範，搜尋周圍的藍牙外設需要您授予「位置資訊」權限。",
+        "androidPermissionDenied": "您拒絕了連接所需的藍牙/定位權限，App 將無法獲取電池數據。如需開啟，請前往「系統設定 -> 權限管理」手動授權。",
+        "androidGpsDisabled": "掃描附近的藍牙外設需要開啟「手機定位服務」，請點擊「去開啟」前往系統設定頁打開定位服務。"
+      }
+    },
+    "battery": {
+      "remainingCapacity": "剩餘容量",
+      "charging": "正在充電...",
+      "discharging": "放電中",
+      "noData": "無數據"
+    },
+    "params": {
+      "totalVoltage": "總電壓",
+      "realtimeCurrent": "即時電流",
+      "maxTemp": "電池最高溫",
+      "soh": "健康度 SOH",
+      "cycleCount": "循環充電次數",
+      "runTime": "運行總時長",
+      "temperatures": "路溫度"
+    },
+    "protect": {
+      "title": "BMS 安全保護狀態",
+      "overTemp": "單體過溫保護",
+      "overVolt": "單體過壓保護",
+      "shortCircuit": "放電短路保護",
+      "normal": "正常",
+      "unmonitored": "未監聽"
+    },
+    "control": {
+      "title": "MOS 管控制開關",
+      "chargeMos": "充電 MOS 狀態",
+      "chargeMosDesc": "控制電池包是否允許充入電流",
+      "dischargeMos": "放電 MOS 狀態",
+      "dischargeMosDesc": "控制電池包是否允許向外輸出電流",
+      "heatMos": "自加熱開關",
+      "heatMosDesc": "開啟/關閉電池低溫自加熱功能",
+      "clearStatus": "清除異常狀態",
+      "forceSleep": "強制休眠保護",
+      "forceStart": "強制拉起啟動"
+    },
+    "tab": {
+      "realtime": "即時",
+      "params": "參數",
+      "control": "控制",
+      "mine": "我的"
+    },
+    "mine": {
+      "title": "我的",
+      "language": "語言設定",
+      "currentLanguage": "當前語言",
+      "chinese": "簡體中文",
+      "english": "English",
+      "traditional": "繁體中文",
+      "appVersion": "版本資訊",
+      "deviceInfo": "設備資訊",
+      "switchSuccess": "語言切換成功",
+      "darkMode": "暗黑模式",
+      "darkModeDesc": "開啟深邃暗黑護眼模式",
+      "switchThemeSuccess": "主題切換成功"
+    },
+    "common": {
+      "cancel": "取消",
+      "confirm": "確定",
+      "selectLanguage": "選擇語言",
+      "prompt": "提示",
+      "authPrompt": "授權提示",
+      "permissionTitle": "權限申請說明",
+      "permissionDeniedTitle": "權限拒絕提示",
+      "bluetoothTitle": "藍牙開關未開啟",
+      "gpsTitle": "定位開關未開啟",
+      "goSettings": "去設定",
+      "goOpen": "去開啟",
+      "authorize": "授權申請"
+    },
+    "request": {
+      "offlineMode": "當前處於單機離线模式，已攔截網路請求",
+      "loginExpired": "登入狀態已失效，請重新登入",
+      "serverError": "伺服器異常，狀態碼: ",
+      "networkFailed": "網路連接失敗，請檢查網路設定"
+    }
+  }
+}

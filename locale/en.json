@@ -3,19 +3,22 @@
     "title": "BMS Battery Management",
     "ble": {
       "disconnected": "Bluetooth Disconnected",
-      "signalStrength": "Signal Strength: {value}",
+      "signalStrength": "Signal Strength: ",
       "promptConnect": "Tap connect to search BLE device",
       "disconnect": "Disconnect",
       "connect": "Connect",
       "searchTitle": "Search Bluetooth",
       "scanning": "Scanning for Bluetooth devices...",
       "scanStopped": "Scan stopped",
-      "connecting": "Connecting to {name}...",
+      "connectingPrefix": "Connecting to ",
+      "connectingSuffix": "...",
       "connectSuccess": "Connected successfully",
       "connectFailed": "Connection failed",
-      "disconnectConfirm": "Are you sure to disconnect from {name}?",
+      "disconnectConfirmPrefix": "Are you sure to disconnect from ",
+      "disconnectConfirmSuffix": "?",
       "searchEmpty": "No Bluetooth devices found",
-      "deviceRssi": "RSSI: {rssi} dBm",
+      "deviceRssiPrefix": "RSSI: ",
+      "deviceRssiSuffix": " dBm",
       "deviceMac": "Address: ",
       "env": {
         "bluetoothDisabled": "Bluetooth is disabled. Please turn on Bluetooth in control center or system settings.",
@@ -39,7 +42,10 @@
       "totalVoltage": "Total Voltage",
       "realtimeCurrent": "Realtime Current",
       "maxTemp": "Max Temp",
-      "soh": "Health (SOH)"
+      "soh": "Health (SOH)",
+      "cycleCount": "Cycles Count",
+      "runTime": "Total Run Time",
+      "temperatures": "Temp Ch"
     },
     "protect": {
       "title": "BMS Protection Status",
@@ -54,7 +60,12 @@
       "chargeMos": "Charge MOS",
       "chargeMosDesc": "Controls whether current can charge into the battery pack",
       "dischargeMos": "Discharge MOS",
-      "dischargeMosDesc": "Controls whether current can discharge from the battery pack"
+      "dischargeMosDesc": "Controls whether current can discharge from the battery pack",
+      "heatMos": "Heater MOSFET",
+      "heatMosDesc": "Enable/Disable low-temperature heater",
+      "clearStatus": "Clear State",
+      "forceSleep": "Force Sleep",
+      "forceStart": "Force Start"
     },
     "tab": {
       "realtime": "Realtime",
@@ -68,9 +79,13 @@
       "currentLanguage": "Current Language",
       "chinese": "简体中文",
       "english": "English",
+      "traditional": "繁體中文",
       "appVersion": "App Version",
       "deviceInfo": "Device Info",
-      "switchSuccess": "Language switched successfully"
+      "switchSuccess": "Language switched successfully",
+      "darkMode": "Dark Mode",
+      "darkModeDesc": "Enable immersive dark mode for eyes",
+      "switchThemeSuccess": "Theme switched successfully"
     },
     "common": {
       "cancel": "Cancel",
@@ -85,6 +100,12 @@
       "goSettings": "Settings",
       "goOpen": "Enable",
       "authorize": "Authorize"
+    },
+    "request": {
+      "offlineMode": "Currently in offline mode, network request has been intercepted.",
+      "loginExpired": "Login session has expired, please log in again.",
+      "serverError": "Server exception, status code: ",
+      "networkFailed": "Network connection failed, please check your network settings."
     }
   }
 }
