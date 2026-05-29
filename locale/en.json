@@ -45,7 +45,8 @@
       "soh": "Health (SOH)",
       "cycleCount": "Cycles Count",
       "runTime": "Total Run Time",
-      "temperatures": "Temp Ch"
+      "temperatures": "Temp Ch",
+      "envTemperature": "Env Temp"
     },
     "protect": {
       "title": "BMS Protection Status",

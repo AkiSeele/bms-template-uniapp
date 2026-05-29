@@ -45,7 +45,8 @@
       "soh": "健康度 SOH",
       "cycleCount": "循環充電次數",
       "runTime": "運行總時長",
-      "temperatures": "路溫度"
+      "temperatures": "路溫度",
+      "envTemperature": "環境溫度"
     },
     "protect": {
       "title": "BMS 安全保護狀態",

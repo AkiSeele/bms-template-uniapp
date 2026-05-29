@@ -13,6 +13,7 @@ trigger: always_on
 2. **UI 组件库**：优先使用 **wot-ui v2 (`wd-*`)** 组件。严禁擅自使用原生 HTML 标签或重写组件。
 3. **样式方案**：使用 **UnoCSS**。通用布局及尺寸类名必须使用 `wot-` 前缀（如 `wot-flex`, `wot-w-24`）。
 4. **图标方案**：统一使用 `wd-icon` 承载 UnoCSS 图标，格式：`<wd-icon css-icon="i-<前缀>-<图名>" size="24px" color="#fff" />`。禁止在模板中裸写 `svg` 或 `<view class="i-...">`。
+5. **模板表达式规范**：**绝对禁止在 HTML 模板中嵌套多重三目运算符**。模板应保持极简和声明式；**必须收拢于 `<script setup>` 中编写为 `computed` 计算属性**，以利用 Vue 依赖缓存并保障可读性与可维护性。
 
 ---
 

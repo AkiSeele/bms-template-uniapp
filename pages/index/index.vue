@@ -52,15 +52,9 @@
         <!-- 电池状态图标：在断开连接、充电、普通放电状态下切换展示不同的 Lucide 图标 -->
         <view class="wot-relative wot-flex wot-items-center wot-justify-center wot-mb-3">
           <wd-icon
-            :css-icon="
-              !isConnected
-                ? 'i-lucide-battery'
-                : isCharging
-                  ? 'i-lucide-battery-charging animate-pulse'
-                  : 'i-lucide-battery-medium'
-            "
+            :css-icon="batteryStatusIcon"
             size="96px"
-            :color="!isConnected ? '#858585' : isCharging ? '#2ba471' : '#0052d9'"
+            :color="batteryStatusColor"
           />
         </view>
 
@@ -75,13 +69,7 @@
             class="wot-text-body-main wot-font-medium"
             :class="isCharging ? 'wot-text-success-main' : 'wot-text-text-secondary'"
           >
-            {{
-              isConnected
-                ? isCharging
-                  ? $t("bms.battery.charging")
-                  : $t("bms.battery.discharging")
-                : $t("bms.battery.noData")
-            }}
+            {{ batteryStatusText }}
           </text>
           <text class="wot-text-caption wot-text-text-secondary">|</text>
           <text class="wot-text-caption wot-text-text-secondary">
@@ -350,6 +338,34 @@ const {
 
 // 提取当前挂载的协议类型
 const protocolType = computed(() => bleStore.activeProtocolParser?.protocolType || "");
+
+// 动态计算当前电池状态的图标
+const batteryStatusIcon = computed(() => {
+  if (!isConnected.value) {
+    return "i-lucide-battery";
+  }
+  return isCharging.value
+    ? "i-lucide-battery-charging animate-pulse"
+    : "i-lucide-battery-medium";
+});
+
+// 动态计算当前电池状态的颜色
+const batteryStatusColor = computed(() => {
+  if (!isConnected.value) {
+    return "#858585";
+  }
+  return isCharging.value ? "#2ba471" : "#0052d9";
+});
+
+// 动态计算当前电池状态的文本描述（充电中 / 放电中 / 未连接等）
+const batteryStatusText = computed(() => {
+  if (!isConnected.value) {
+    return t("bms.battery.noData");
+  }
+  return isCharging.value
+    ? t("bms.battery.charging")
+    : t("bms.battery.discharging");
+});
 
 // 动态处理容量显示
 const remainCap = computed(() => {

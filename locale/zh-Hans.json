@@ -45,7 +45,8 @@
       "soh": "健康度 SOH",
       "cycleCount": "循环充电次数",
       "runTime": "运行总时长",
-      "temperatures": "路温度"
+      "temperatures": "路温度",
+      "envTemperature": "环境温度"
     },
     "protect": {
       "title": "BMS 安全保护状态",
