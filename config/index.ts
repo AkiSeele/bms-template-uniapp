@@ -22,9 +22,7 @@ export interface BleServiceConfig {
   serviceId: string;
   /** 写入特征值 UUID（向蓝牙外设下发指令时使用） */
   writeCharacteristicId: string;
-  /** 读取特征值 UUID（主动轮询读取外设状态时使用） */
-  readCharacteristicId: string;
-  /** 通知特征值 UUID（监听外设主动上报数据时订阅此特征值） */
+  /** 通知特征值 UUID（监听外设数据上报时订阅该特征值，即启用 notify/indicate 订阅） */
   notifyCharacteristicId: string;
 }
 
@@ -82,7 +80,6 @@ export const APP_CONFIG = {
     PROTOCOL_A_SERVICE: {
       serviceId: "00010203-0405-0607-0809-0a0b0c0d1912",
       writeCharacteristicId: "00010203-0405-0607-0809-0a0b0c0d2b12",
-      readCharacteristicId: "00010203-0405-0607-0809-0a0b0c0d2b12",
       notifyCharacteristicId: "00010203-0405-0607-0809-0a0b0c0d2b12",
     } as BleServiceConfig,
 
@@ -93,7 +90,6 @@ export const APP_CONFIG = {
     PROTOCOL_B_SERVICE: {
       serviceId: "0000FF00-0000-1000-8000-00805F9B34FB",
       writeCharacteristicId: "0000FF01-0000-1000-8000-00805F9B34FB",
-      readCharacteristicId: "0000FF02-0000-1000-8000-00805F9B34FB",
       notifyCharacteristicId: "0000FF02-0000-1000-8000-00805F9B34FB",
     } as BleServiceConfig,
 
@@ -101,7 +97,6 @@ export const APP_CONFIG = {
     // PROTOCOL_C_SERVICE: {
     //   serviceId: "YOUR-PROTOCOL-C-SERVICE-UUID",
     //   writeCharacteristicId: "YOUR-PROTOCOL-C-WRITE-CHAR-UUID",
-    //   readCharacteristicId: "YOUR-PROTOCOL-C-READ-CHAR-UUID",
     //   notifyCharacteristicId: "YOUR-PROTOCOL-C-NOTIFY-CHAR-UUID",
     // } as BleServiceConfig,
   },

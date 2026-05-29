@@ -80,7 +80,7 @@ export const getRegisteredUuids = (): string[] => {
 // 注意：导入语句放在文件顶部，注册调用放在此处，保持文件结构整洁
 // 每行注册对应一个协议，注释说明对应的协议文件和协议名称
 
-import { ProtocolAParser } from "@/service/protocol/protocol-a";
+import { ProtocolAParser } from "./protocol-a";
 
 /**
  * 协议 A（基于聚力威通讯协议规格实现的示例协议）
@@ -92,8 +92,8 @@ registerProtocol(() => new ProtocolAParser(), "00010203-0405-0607-0809-0A0B0C0D1
 // ============================================================
 // 以下为待接入协议的预留注册位（获取协议文档后解除注释并实现）
 // ============================================================
-// import { ProtocolBParser } from "@/service/protocol/protocol-b";
+// import { ProtocolBParser } from "./protocol-b";
 // registerProtocol(() => new ProtocolBParser(), "0000FF00-0000-1000-8000-00805F9B34FB");
 //
-// import { ProtocolCParser } from "@/service/protocol/protocol-c";
+// import { ProtocolCParser } from "./protocol-c";
 // registerProtocol(() => new ProtocolCParser(), "YOUR-PROTOCOL-C-SERVICE-UUID-HERE");
