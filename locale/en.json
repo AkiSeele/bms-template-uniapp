@@ -1,0 +1,90 @@
+{
+  "bms": {
+    "title": "BMS Battery Management",
+    "ble": {
+      "disconnected": "Bluetooth Disconnected",
+      "signalStrength": "Signal Strength: {value}",
+      "promptConnect": "Tap connect to search BLE device",
+      "disconnect": "Disconnect",
+      "connect": "Connect",
+      "searchTitle": "Search Bluetooth",
+      "scanning": "Scanning for Bluetooth devices...",
+      "scanStopped": "Scan stopped",
+      "connecting": "Connecting to {name}...",
+      "connectSuccess": "Connected successfully",
+      "connectFailed": "Connection failed",
+      "disconnectConfirm": "Are you sure to disconnect from {name}?",
+      "searchEmpty": "No Bluetooth devices found",
+      "deviceRssi": "RSSI: {rssi} dBm",
+      "deviceMac": "Address: ",
+      "env": {
+        "bluetoothDisabled": "Bluetooth is disabled. Please turn on Bluetooth in control center or system settings.",
+        "locationDisabled": "GPS/Location service is disabled. Please enable location service to scan for Bluetooth devices.",
+        "locationNotAuthorized": "WeChat has no location permission. Please grant WeChat location permission in system settings.",
+        "wechatBluetoothRefused": "Bluetooth permission is required. Click 'Settings' to enable Bluetooth permission.",
+        "wechatLocationRefused": "Location permission is required. Click 'Settings' to enable location permission.",
+        "androidNearbyDesc": "To scan and connect nearby BMS hardware, we need to request 'Nearby Devices' permission.",
+        "androidLocationDesc": "According to Android guidelines, scanning Bluetooth requires 'Location' permission.",
+        "androidPermissionDenied": "Bluetooth/Location permission denied. App cannot get battery data. Please enable it in system settings.",
+        "androidGpsDisabled": "Scanning Bluetooth requires location service. Click 'Enable' to open location settings."
+      }
+    },
+    "battery": {
+      "remainingCapacity": "Remaining Capacity",
+      "charging": "Charging...",
+      "discharging": "Discharging",
+      "noData": "No Data"
+    },
+    "params": {
+      "totalVoltage": "Total Voltage",
+      "realtimeCurrent": "Realtime Current",
+      "maxTemp": "Max Temp",
+      "soh": "Health (SOH)"
+    },
+    "protect": {
+      "title": "BMS Protection Status",
+      "overTemp": "Over-temperature Protection",
+      "overVolt": "Over-voltage Protection",
+      "shortCircuit": "Short-circuit Protection",
+      "normal": "Normal",
+      "unmonitored": "Unmonitored"
+    },
+    "control": {
+      "title": "MOS Switch Control",
+      "chargeMos": "Charge MOS",
+      "chargeMosDesc": "Controls whether current can charge into the battery pack",
+      "dischargeMos": "Discharge MOS",
+      "dischargeMosDesc": "Controls whether current can discharge from the battery pack"
+    },
+    "tab": {
+      "realtime": "Realtime",
+      "params": "Params",
+      "control": "Control",
+      "mine": "Mine"
+    },
+    "mine": {
+      "title": "Mine",
+      "language": "Language",
+      "currentLanguage": "Current Language",
+      "chinese": "简体中文",
+      "english": "English",
+      "appVersion": "App Version",
+      "deviceInfo": "Device Info",
+      "switchSuccess": "Language switched successfully"
+    },
+    "common": {
+      "cancel": "Cancel",
+      "confirm": "Confirm",
+      "selectLanguage": "Select Language",
+      "prompt": "Prompt",
+      "authPrompt": "Authorize Prompt",
+      "permissionTitle": "Permission Request",
+      "permissionDeniedTitle": "Permission Denied",
+      "bluetoothTitle": "Bluetooth Disabled",
+      "gpsTitle": "Location Service Disabled",
+      "goSettings": "Settings",
+      "goOpen": "Enable",
+      "authorize": "Authorize"
+    }
+  }
+}

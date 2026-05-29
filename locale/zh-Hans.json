@@ -1,0 +1,90 @@
+{
+  "bms": {
+    "title": "BMS 电池管理",
+    "ble": {
+      "disconnected": "蓝牙未连接",
+      "signalStrength": "设备信号强度: {value}",
+      "promptConnect": "点击右侧按钮连接蓝牙设备",
+      "disconnect": "断开",
+      "connect": "连接",
+      "searchTitle": "蓝牙搜索",
+      "scanning": "正在搜索蓝牙设备...",
+      "scanStopped": "搜索已结束",
+      "connecting": "正在连接设备 {name}...",
+      "connectSuccess": "连接成功",
+      "connectFailed": "连接失败",
+      "disconnectConfirm": "确定要断开与设备 {name} 的连接吗？",
+      "searchEmpty": "未搜寻到任何蓝牙设备",
+      "deviceRssi": "信号强度: {rssi} dBm",
+      "deviceMac": "设备地址: ",
+      "env": {
+        "bluetoothDisabled": "手机蓝牙未开启，请先在控制中心或系统设置中打开蓝牙开关。",
+        "locationDisabled": "手机系统定位(GPS)开关未开启。为了能够顺利搜索到蓝牙电池包设备，请开启手机定位功能。",
+        "locationNotAuthorized": "微信客户端未被授予位置信息权限。请在手机“系统设置 -> 权限管理 -> 微信”中开启位置授权。",
+        "wechatBluetoothRefused": "需要您的蓝牙服务授权以连接电池包，请点击“去设置”开启蓝牙权限。",
+        "wechatLocationRefused": "蓝牙设备搜索需要位置信息授权，请点击“去设置”开启位置服务。",
+        "androidNearbyDesc": "为了扫描并连接附近的 BMS 蓝牙电池管理硬件，我们需要申请您的“附近设备（蓝牙扫描和连接）”权限。",
+        "androidLocationDesc": "由于 Android 系统的安全规范，搜索周围的蓝牙外设需要您授予“位置信息”权限。",
+        "androidPermissionDenied": "您拒绝了连接所需的蓝牙/定位权限，App 将无法获取电池数据。如需开启，请前往“系统设置 -> 权限管理”手动授权。",
+        "androidGpsDisabled": "扫描附近的蓝牙外设需要开启“手机定位服务”，请点击“去开启”前往系统设置页打开定位服务。"
+      }
+    },
+    "battery": {
+      "remainingCapacity": "剩余容量",
+      "charging": "正在充电...",
+      "discharging": "放电中",
+      "noData": "无数据"
+    },
+    "params": {
+      "totalVoltage": "总电压",
+      "realtimeCurrent": "实时电流",
+      "maxTemp": "电池最高温",
+      "soh": "健康度 SOH"
+    },
+    "protect": {
+      "title": "BMS 安全保护状态",
+      "overTemp": "单体过温保护",
+      "overVolt": "单体过压保护",
+      "shortCircuit": "放电短路保护",
+      "normal": "正常",
+      "unmonitored": "未监听"
+    },
+    "control": {
+      "title": "MOS 管控制开关",
+      "chargeMos": "充电 MOS 状态",
+      "chargeMosDesc": "控制电池包是否允许充入电流",
+      "dischargeMos": "放电 MOS 状态",
+      "dischargeMosDesc": "控制电池包是否允许向外输出电流"
+    },
+    "tab": {
+      "realtime": "实时",
+      "params": "参数",
+      "control": "控制",
+      "mine": "我的"
+    },
+    "mine": {
+      "title": "我的",
+      "language": "语言设置",
+      "currentLanguage": "当前语言",
+      "chinese": "简体中文",
+      "english": "English",
+      "appVersion": "版本信息",
+      "deviceInfo": "设备信息",
+      "switchSuccess": "语言切换成功"
+    },
+    "common": {
+      "cancel": "取消",
+      "confirm": "确定",
+      "selectLanguage": "选择语言",
+      "prompt": "提示",
+      "authPrompt": "授权提示",
+      "permissionTitle": "权限申请说明",
+      "permissionDeniedTitle": "权限拒绝提示",
+      "bluetoothTitle": "蓝牙开关未开启",
+      "gpsTitle": "定位开关未开启",
+      "goSettings": "去设置",
+      "goOpen": "去开启",
+      "authorize": "授权申请"
+    }
+  }
+}

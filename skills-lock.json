@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "skills": {
+    "create-wot-ui-theme": {
+      "source": "wot-ui/open-wot",
+      "sourceType": "github",
+      "skillPath": "skills/create-wot-ui-theme/SKILL.md",
+      "computedHash": "36441903b59fee88de19d89e155d0619d98f6e63161f81a1c69e7ec1bc12d5f5"
+    },
+    "uniapp-project": {
+      "source": "teachingai/full-stack-skills",
+      "sourceType": "github",
+      "skillPath": "skills/uniapp-skills/uniapp-project/SKILL.md",
+      "computedHash": "e7c1ebeda47b3efba5270d2c7e84ae132aa00865af174837709183f9dda3d093"
+    },
+    "wot-ui-unocss-preset-guide": {
+      "source": "wot-ui/open-wot",
+      "sourceType": "github",
+      "skillPath": "skills/wot-ui-unocss-preset-guide/SKILL.md",
+      "computedHash": "76a7e529251c230aa83f6f39678f77782a1797c4bbef081719df223dce13a808"
+    },
+    "wot-ui-v2": {
+      "source": "wot-ui/open-wot",
+      "sourceType": "github",
+      "skillPath": "skills/wot-ui-v2/SKILL.md",
+      "computedHash": "4585202353a8282d5029eb13a1665865ff6b0d4a547466ecade20463fc5c9c8b"
+    }
+  }
+}

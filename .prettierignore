@@ -1,0 +1,21 @@
+# 编译产物与构建缓存目录
+unpackage/
+dist/
+
+# 依赖包目录
+node_modules/
+
+# 自动生成的 uni_modules 类型声明文件，无需格式化
+uni_modules/**/components/**
+uni_modules/**/utssdk/**
+
+# 锁文件，由包管理器自动维护
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+
+# HBuilderX IDE 内部配置，无需 Prettier 介入
+.hbuilderx/
+
+# UnoCSS 生成的样式文件
+uno.css

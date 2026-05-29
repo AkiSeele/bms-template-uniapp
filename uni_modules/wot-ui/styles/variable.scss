@@ -1,0 +1,472 @@
+/* 基础颜色 */
+$base-black: var(--wot-base-black, #000000FF) !default;
+$base-transparent: var(--wot-base-transparent, transparent) !default;
+$base-white: var(--wot-base-white, #FFFFFFFF) !default;
+
+/* 蓝色系列 */
+$blue-1: var(--wot-blue-1, #F5F8FFFF) !default;
+$blue-2: var(--wot-blue-2, #E5EDFFFF) !default;
+$blue-3: var(--wot-blue-3, #B8CFFFFF) !default;
+$blue-4: var(--wot-blue-4, #7CA4FFFF) !default;
+$blue-5: var(--wot-blue-5, #4480FFFF) !default;
+$blue-6: var(--wot-blue-6, #1C64FDFF) !default;
+$blue-7: var(--wot-blue-7, #164ED1FF) !default;
+$blue-8: var(--wot-blue-8, #1341ADFF) !default;
+$blue-9: var(--wot-blue-9, #0F3285FF) !default;
+$blue-10: var(--wot-blue-10, #0A235CFF) !default;
+$blue-opac: var(--wot-blue-opac, #1C64FD14) !default;
+
+/* 亮蓝系列 */
+$lightblue-1: var(--wot-lightblue-1, #E8FBFFFF) !default;
+$lightblue-2: var(--wot-lightblue-2, #BFF2FFFF) !default;
+$lightblue-3: var(--wot-lightblue-3, #96E7FFFF) !default;
+$lightblue-4: var(--wot-lightblue-4, #6ED8FFFF) !default;
+$lightblue-5: var(--wot-lightblue-5, #45C7FFFF) !default;
+$lightblue-6: var(--wot-lightblue-6, #1CB2FDFF) !default;
+$lightblue-7: var(--wot-lightblue-7, #0D8CD6FF) !default;
+$lightblue-8: var(--wot-lightblue-8, #026AB0FF) !default;
+$lightblue-9: var(--wot-lightblue-9, #004E8AFF) !default;
+$lightblue-10: var(--wot-lightblue-10, #003563FF) !default;
+$lightblue-opac: var(--wot-lightblue-opac, #1CB2FD14) !default;
+
+/* 粉色系列 */
+$pink-1: var(--wot-pink-1, #FFF0F6FF) !default;
+$pink-2: var(--wot-pink-2, #FFDEEBFF) !default;
+$pink-3: var(--wot-pink-3, #FCC2D7FF) !default;
+$pink-4: var(--wot-pink-4, #FAA2C1FF) !default;
+$pink-5: var(--wot-pink-5, #F783ACFF) !default;
+$pink-6: var(--wot-pink-6, #FF357CFF) !default;
+$pink-7: var(--wot-pink-7, #FF0A60FF) !default;
+$pink-8: var(--wot-pink-8, #E0004FFF) !default;
+$pink-9: var(--wot-pink-9, #B80040FF) !default;
+$pink-10: var(--wot-pink-10, #8F0032FF) !default;
+$pink-opac: var(--wot-pink-opac, #FF357C14) !default;
+
+/* 红色系列 */
+$red-1: var(--wot-red-1, #FFF5F5FF) !default;
+$red-2: var(--wot-red-2, #FFE3E3FF) !default;
+$red-3: var(--wot-red-3, #FFC9C9FF) !default;
+$red-4: var(--wot-red-4, #FFA8A8FF) !default;
+$red-5: var(--wot-red-5, #FB7C7CFF) !default;
+$red-6: var(--wot-red-6, #F14646FF) !default;
+$red-7: var(--wot-red-7, #DC2C2CFF) !default;
+$red-8: var(--wot-red-8, #BC2626FF) !default;
+$red-9: var(--wot-red-9, #A01515FF) !default;
+$red-10: var(--wot-red-10, #790909FF) !default;
+$red-opac: var(--wot-red-opac, #F1464614) !default;
+
+/* 橘红色系列 */
+$volcano-1: var(--wot-volcano-1, #FFF2E8FF) !default;
+$volcano-2: var(--wot-volcano-2, #FFDABFFF) !default;
+$volcano-3: var(--wot-volcano-3, #FFBF96FF) !default;
+$volcano-4: var(--wot-volcano-4, #FFA16EFF) !default;
+$volcano-5: var(--wot-volcano-5, #FF8045FF) !default;
+$volcano-6: var(--wot-volcano-6, #FD5C1CFF) !default;
+$volcano-7: var(--wot-volcano-7, #D63F0DFF) !default;
+$volcano-8: var(--wot-volcano-8, #B02802FF) !default;
+$volcano-9: var(--wot-volcano-9, #8A1900FF) !default;
+$volcano-10: var(--wot-volcano-10, #630F00FF) !default;
+$volcano-opac: var(--wot-volcano-opac, #FD5C1C14) !default;
+
+/* 橙色系列 */
+$orange-1: var(--wot-orange-1, #FFF6EBFF) !default;
+$orange-2: var(--wot-orange-2, #FFE8CCFF) !default;
+$orange-3: var(--wot-orange-3, #FFD8A8FF) !default;
+$orange-4: var(--wot-orange-4, #FFC078FF) !default;
+$orange-5: var(--wot-orange-5, #FFA94DFF) !default;
+$orange-6: var(--wot-orange-6, #F57F00FF) !default;
+$orange-7: var(--wot-orange-7, #D05706FF) !default;
+$orange-8: var(--wot-orange-8, #A94605FF) !default;
+$orange-9: var(--wot-orange-9, #813604FF) !default;
+$orange-10: var(--wot-orange-10, #592503FF) !default;
+$orange-opac: var(--wot-orange-opac, #F57F0014) !default;
+
+/* 黄色系列 */
+$yellow-1: var(--wot-yellow-1, #FFFAF1FF) !default;
+$yellow-2: var(--wot-yellow-2, #FDE5B4FF) !default;
+$yellow-3: var(--wot-yellow-3, #FDD78CFF) !default;
+$yellow-4: var(--wot-yellow-4, #FCC964FF) !default;
+$yellow-5: var(--wot-yellow-5, #FBBB3CFF) !default;
+$yellow-6: var(--wot-yellow-6, #FAAD14FF) !default;
+$yellow-7: var(--wot-yellow-7, #E19705FF) !default;
+$yellow-8: var(--wot-yellow-8, #B97C04FF) !default;
+$yellow-9: var(--wot-yellow-9, #916103FF) !default;
+$yellow-10: var(--wot-yellow-10, #694702FF) !default;
+$yellow-opac: var(--wot-yellow-opac, #FAAD1414) !default;
+
+/* 绿色系列 */
+$green-1: var(--wot-green-1, #F3FBF9FF) !default;
+$green-2: var(--wot-green-2, #E7F8F3FF) !default;
+$green-3: var(--wot-green-3, #B8EADBFF) !default;
+$green-4: var(--wot-green-4, #88DBC3FF) !default;
+$green-5: var(--wot-green-5, #59CDAAFF) !default;
+$green-6: var(--wot-green-6, #12B886FF) !default;
+$green-7: var(--wot-green-7, #0F956CFF) !default;
+$green-8: var(--wot-green-8, #0B6F51FF) !default;
+$green-9: var(--wot-green-9, #074A36FF) !default;
+$green-10: var(--wot-green-10, #04251BFF) !default;
+$green-opac: var(--wot-green-opac, #12B88614) !default;
+
+/* 青色系列 */
+$cyan-1: var(--wot-cyan-1, #F4FBFDFF) !default;
+$cyan-2: var(--wot-cyan-2, #E9F8FAFF) !default;
+$cyan-3: var(--wot-cyan-3, #BDEAF1FF) !default;
+$cyan-4: var(--wot-cyan-4, #90DBE7FF) !default;
+$cyan-5: var(--wot-cyan-5, #64CDDDFF) !default;
+$cyan-6: var(--wot-cyan-6, #22B8CFFF) !default;
+$cyan-7: var(--wot-cyan-7, #1C98ABFF) !default;
+$cyan-8: var(--wot-cyan-8, #167988FF) !default;
+$cyan-9: var(--wot-cyan-9, #115A65FF) !default;
+$cyan-10: var(--wot-cyan-10, #0B3A42FF) !default;
+$cyan-opac: var(--wot-cyan-opac, #22B8CF14) !default;
+
+/* 紫色系列 */
+$purple-1: var(--wot-purple-1, #F9F8FFFF) !default;
+$purple-2: var(--wot-purple-2, #E5DBFFFF) !default;
+$purple-3: var(--wot-purple-3, #D0BFFFFF) !default;
+$purple-4: var(--wot-purple-4, #B197FCFF) !default;
+$purple-5: var(--wot-purple-5, #9775FAFF) !default;
+$purple-6: var(--wot-purple-6, #8059F3FF) !default;
+$purple-7: var(--wot-purple-7, #5B29EFFF) !default;
+$purple-8: var(--wot-purple-8, #4511DFFF) !default;
+$purple-9: var(--wot-purple-9, #390EB9FF) !default;
+$purple-10: var(--wot-purple-10, #2D0B93FF) !default;
+$purple-opac: var(--wot-purple-opac, #8059F314) !default;
+
+/* 靛色系列 */
+$grape-1: var(--wot-grape-1, #FBF6FDFF) !default;
+$grape-2: var(--wot-grape-2, #F3D9FAFF) !default;
+$grape-3: var(--wot-grape-3, #EEBEFAFF) !default;
+$grape-4: var(--wot-grape-4, #E599F7FF) !default;
+$grape-5: var(--wot-grape-5, #DA77F2FF) !default;
+$grape-6: var(--wot-grape-6, #AE3EC9FF) !default;
+$grape-7: var(--wot-grape-7, #9731AFFF) !default;
+$grape-8: var(--wot-grape-8, #7B288FFF) !default;
+$grape-9: var(--wot-grape-9, #601F70FF) !default;
+$grape-10: var(--wot-grape-10, #451650FF) !default;
+$grape-opac: var(--wot-grape-opac, #AE3EC914) !default;
+
+/* 冷灰系列 */
+$coolgrey-1: var(--wot-coolgrey-1, #F7F8FAFF) !default;
+$coolgrey-10: var(--wot-coolgrey-10, #1D1F29FF) !default;
+$coolgrey-2: var(--wot-coolgrey-2, #F2F3F5FF) !default;
+$coolgrey-3: var(--wot-coolgrey-3, #E5E6EBFF) !default;
+$coolgrey-4: var(--wot-coolgrey-4, #C9CBD4FF) !default;
+$coolgrey-5: var(--wot-coolgrey-5, #A9ACB8FF) !default;
+$coolgrey-6: var(--wot-coolgrey-6, #868A9CFF) !default;
+$coolgrey-7: var(--wot-coolgrey-7, #6B7085FF) !default;
+$coolgrey-8: var(--wot-coolgrey-8, #4E5369FF) !default;
+$coolgrey-9: var(--wot-coolgrey-9, #272B3BFF) !default;
+
+/* 中性灰系列 */
+$neutralgrey-1: var(--wot-neutralgrey-1, #FAFAFAFF) !default;
+$neutralgrey-10: var(--wot-neutralgrey-10, #292929FF) !default;
+$neutralgrey-2: var(--wot-neutralgrey-2, #F5F5F5FF) !default;
+$neutralgrey-3: var(--wot-neutralgrey-3, #EBEBEBFF) !default;
+$neutralgrey-4: var(--wot-neutralgrey-4, #D4D4D4FF) !default;
+$neutralgrey-5: var(--wot-neutralgrey-5, #B8B8B8FF) !default;
+$neutralgrey-6: var(--wot-neutralgrey-6, #9C9C9CFF) !default;
+$neutralgrey-7: var(--wot-neutralgrey-7, #858585FF) !default;
+$neutralgrey-8: var(--wot-neutralgrey-8, #696969FF) !default;
+$neutralgrey-9: var(--wot-neutralgrey-9, #3D3D3DFF) !default;
+
+/* 暖灰系列 */
+$warmgrey-1: var(--wot-warmgrey-1, #FAF8F7FF) !default;
+$warmgrey-10: var(--wot-warmgrey-10, #292321FF) !default;
+$warmgrey-2: var(--wot-warmgrey-2, #F5F3F2FF) !default;
+$warmgrey-3: var(--wot-warmgrey-3, #EBE7E5FF) !default;
+$warmgrey-4: var(--wot-warmgrey-4, #D4CECCFF) !default;
+$warmgrey-5: var(--wot-warmgrey-5, #B8B0ADFF) !default;
+$warmgrey-6: var(--wot-warmgrey-6, #9C918CFF) !default;
+$warmgrey-7: var(--wot-warmgrey-7, #857A75FF) !default;
+$warmgrey-8: var(--wot-warmgrey-8, #695E5AFF) !default;
+$warmgrey-9: var(--wot-warmgrey-9, #3B332FFF) !default;
+
+/* 遮罩系列 */
+$opac-1_02: var(--wot-opac-1_02, #00000005) !default;
+$opac-2_04: var(--wot-opac-2_04, #0000000A) !default;
+$opac-3_08: var(--wot-opac-3_08, #00000014) !default;
+$opac-4_15: var(--wot-opac-4_15, #00000026) !default;
+$opac-5_20: var(--wot-opac-5_20, #00000033) !default;
+$opac-6_30: var(--wot-opac-6_30, #0000004D) !default;
+$opac-7_45: var(--wot-opac-7_45, #00000073) !default;
+$opac-7_55: var(--wot-opac-7_55, #0000008C) !default;
+$opac-8_65: var(--wot-opac-8_65, #000000A6) !default;
+$opac-9_75: var(--wot-opac-9_75, #000000BF) !default;
+$opac-10_85: var(--wot-opac-10_85, #000000D9) !default;
+
+/* 白遮罩系列 */
+$opacwhite-1_02: var(--wot-opacwhite-1_02, #FFFFFF05) !default;
+$opacwhite-2_04: var(--wot-opacwhite-2_04, #FFFFFF0A) !default;
+$opacwhite-3_08: var(--wot-opacwhite-3_08, #FFFFFF14) !default;
+$opacwhite-4_15: var(--wot-opacwhite-4_15, #FFFFFF26) !default;
+$opacwhite-5_20: var(--wot-opacwhite-5_20, #FFFFFF33) !default;
+$opacwhite-6_30: var(--wot-opacwhite-6_30, #FFFFFF4D) !default;
+$opacwhite-7_45: var(--wot-opacwhite-7_45, #FFFFFF73) !default;
+$opacwhite-7_55: var(--wot-opacwhite-7_55, #FFFFFF8C) !default;
+$opacwhite-8_65: var(--wot-opacwhite-8_65, #FFFFFFA6) !default;
+$opacwhite-9_75: var(--wot-opacwhite-9_75, #FFFFFFBF) !default;
+$opacwhite-10_85: var(--wot-opacwhite-10_85, #FFFFFFD9) !default;
+
+/* 透明度系列 */
+$opacity-disabled: var(--wot-opacity-disabled, 0.4) !default;
+$opacity-dimmer: var(--wot-opacity-dimmer, 0.6) !default;
+$opacity-overlay: var(--wot-opacity-overlay, 0.75) !default;
+$opacity-backdrop: var(--wot-opacity-backdrop, 0.3) !default;
+$opacity-main: var(--wot-opacity-main, 1) !default;
+
+/* 基础数字 */
+$n-0: var(--wot-n-0, 0px) !default;
+$n-1: var(--wot-n-1, 1px) !default;
+$n-2: var(--wot-n-2, 2px) !default;
+$n-3: var(--wot-n-3, 3px) !default;
+$n-4: var(--wot-n-4, 4px) !default;
+$n-05: var(--wot-n-05, 0.5px) !default;
+$n-5: var(--wot-n-5, 5px) !default;
+$n-6: var(--wot-n-6, 6px) !default;
+$n-8: var(--wot-n-8, 8px) !default;
+$n-9: var(--wot-n-9, 9px) !default;
+$n-10: var(--wot-n-10, 10px) !default;
+$n-11: var(--wot-n-11, 11px) !default;
+$n-12: var(--wot-n-12, 12px) !default;
+$n-14: var(--wot-n-14, 14px) !default;
+$n-15: var(--wot-n-15, 15px) !default;
+$n-16: var(--wot-n-16, 16px) !default;
+$n-17: var(--wot-n-17, 17px) !default;
+$n-18: var(--wot-n-18, 18px) !default;
+$n-20: var(--wot-n-20, 20px) !default;
+$n-22: var(--wot-n-22, 22px) !default;
+$n-24: var(--wot-n-24, 24px) !default;
+$n-26: var(--wot-n-26, 26px) !default;
+$n-28: var(--wot-n-28, 28px) !default;
+$n-32: var(--wot-n-32, 32px) !default;
+$n-34: var(--wot-n-34, 34px) !default;
+$n-36: var(--wot-n-36, 36px) !default;
+$n-40: var(--wot-n-40, 40px) !default;
+$n-44: var(--wot-n-44, 44px) !default;
+$n-48: var(--wot-n-48, 48px) !default;
+$n-50: var(--wot-n-50, 50px) !default;
+$n-52: var(--wot-n-52, 52px) !default;
+$n-56: var(--wot-n-56, 56px) !default;
+$n-60: var(--wot-n-60, 60px) !default;
+$n-64: var(--wot-n-64, 64px) !default;
+$n-88: var(--wot-n-88, 88px) !default;
+$n-98: var(--wot-n-98, 98px) !default;
+$n-248: var(--wot-n-248, 248px) !default;
+$n-375: var(--wot-n-375, 375px) !default;
+$n-full: var(--wot-n-full, 9999px) !default;
+
+/* 字重系列 */
+$font-weight-ultra-light: var(--wot-font-weight-ultra-light, 100) !default;
+$font-weight-thin: var(--wot-font-weight-thin, 200) !default;
+$font-weight-light: var(--wot-font-weight-light, 300) !default;
+$font-weight-regular: var(--wot-font-weight-regular, 400) !default;
+$font-weight-medium: var(--wot-font-weight-medium, 600) !default;
+$font-weight-semibold: var(--wot-font-weight-semibold, 700) !default;
+$font-weight-bold: var(--wot-font-weight-bold, 700) !default;
+
+
+/* 排版系列 */
+/* label */
+$typography-label-font-family: var(--wot-typography-label-font-family, PingFang SC) !default;
+$typography-label-size-small: var(--wot-typography-label-size-small, $n-11) !default;
+$typography-label-size-main: var(--wot-typography-label-size-main, $n-12) !default;
+$typography-label-size-large: var(--wot-typography-label-size-large, $n-14) !default;
+$typography-label-font-weight-main: var(--wot-typography-label-font-weight-main, $font-weight-regular) !default;
+$typography-label-font-weight-strong: var(--wot-typography-label-font-weight-strong, $font-weight-medium) !default;
+$typography-label-line-height-size-extra-small: var(--wot-typography-label-line-height-size-extra-small, $n-16) !default;
+$typography-label-line-height-size-large: var(--wot-typography-label-line-height-size-large, $n-18) !default;
+$typography-label-line-height-size-main: var(--wot-typography-label-line-height-size-main, $n-18) !default;
+$typography-label-line-height-size-small: var(--wot-typography-label-line-height-size-small, $n-16) !default;
+$typography-label-line-height-size-super-small: var(--wot-typography-label-line-height-size-super-small, $n-14) !default;
+$typography-label-size-extra-small: var(--wot-typography-label-size-extra-small, $n-10) !default;
+$typography-label-size-super-small: var(--wot-typography-label-size-super-small, $n-9) !default;
+
+/* body */
+$typography-body-font-family: var(--wot-typography-body-font-family, PingFang SC) !default;
+$typography-body-size-main: var(--wot-typography-body-size-main, $n-14) !default;
+$typography-body-size-large: var(--wot-typography-body-size-large, $n-15) !default;
+$typography-body-font-weight-main: var(--wot-typography-body-font-weight-main, $font-weight-regular) !default;
+$typography-body-font-weight-strong: var(--wot-typography-body-font-weight-strong, $font-weight-medium) !default;
+$typography-body-font-weight-extra-strong: var(--wot-typography-body-font-weight-extra-strong, $font-weight-semibold) !default;
+$typography-body-line-height-size-extra-large: var(--wot-typography-body-line-height-size-extra-large, $n-24) !default;
+$typography-body-line-height-size-large: var(--wot-typography-body-line-height-size-large, $n-22) !default;
+$typography-body-line-height-size-main: var(--wot-typography-body-line-height-size-main, $n-20) !default;
+$typography-body-line-height-size-super-large: var(--wot-typography-body-line-height-size-super-large, $n-24) !default;
+$typography-body-line-height-size-ultra-large: var(--wot-typography-body-line-height-size-ultra-large, $n-26) !default;
+$typography-body-size-extra-large: var(--wot-typography-body-size-extra-large, $n-16) !default;
+$typography-body-size-super-large: var(--wot-typography-body-size-super-large, $n-17) !default;
+$typography-body-size-ultra-large: var(--wot-typography-body-size-ultra-large, $n-18) !default;
+
+/* title */
+$typography-title-font-family: var(--wot-typography-title-font-family, PingFang SC) !default;
+$typography-title-size-main: var(--wot-typography-title-size-main, $n-18) !default;
+$typography-title-size-large: var(--wot-typography-title-size-large, $n-20) !default;
+$typography-title-size-extra-large: var(--wot-typography-title-size-extra-large, $n-24) !default;
+$typography-title-font-weight-light: var(--wot-typography-title-font-weight-light, $font-weight-regular) !default;
+$typography-title-font-weight-main: var(--wot-typography-title-font-weight-main, $font-weight-medium) !default;
+$typography-title-font-weight-strong: var(--wot-typography-title-font-weight-strong, $font-weight-semibold) !default;
+$typography-title-line-height-size-main: var(--wot-typography-title-line-height-size-main, $n-26) !default;
+$typography-title-line-height-size-large: var(--wot-typography-title-line-height-size-large, $n-28) !default;
+$typography-title-line-height-size-extra-large: var(--wot-typography-title-line-height-size-extra-large, $n-34) !default;
+
+/* 圆角系列 */
+$radius-zero: var(--wot-radius-zero, $n-0) !default;
+$radius-small: var(--wot-radius-small, $n-2) !default;
+$radius-main: var(--wot-radius-main, $n-4) !default;
+$radius-large: var(--wot-radius-large, $n-8) !default;
+$radius-extra-large: var(--wot-radius-extra-large, $n-12) !default;
+$radius-super-large: var(--wot-radius-super-large, $n-16) !default;
+$radius-ultra-large: var(--wot-radius-ultra-large, $n-20) !default;
+$radius-full: var(--wot-radius-full, $n-full) !default;
+
+/* 内边距系列 */
+$padding-zero: var(--wot-padding-zero, $n-0) !default;
+$padding-ultra-tight: var(--wot-padding-ultra-tight, $n-2) !default;
+$padding-super-tight: var(--wot-padding-super-tight, $n-4) !default;
+$padding-extra-tight: var(--wot-padding-extra-tight, $n-6) !default;
+$padding-tight: var(--wot-padding-tight, $n-8) !default;
+$padding-main: var(--wot-padding-main, $n-10) !default;
+$padding-loose: var(--wot-padding-loose, $n-12) !default;
+$padding-extra-loose: var(--wot-padding-extra-loose, $n-16) !default;
+$padding-super-loose: var(--wot-padding-super-loose, $n-20) !default;
+$padding-ultra-loose: var(--wot-padding-ultra-loose, $n-24) !default;
+$padding-spacious: var(--wot-padding-spacious, $n-28) !default;
+$padding-extra-spacious: var(--wot-padding-extra-spacious, $n-32) !default;
+$padding-super-spacious: var(--wot-padding-super-spacious, $n-40) !default;
+$padding-ultra-spacious: var(--wot-padding-ultra-spacious, $n-48) !default;
+
+/* 间距系列 */
+$spacing-zero: var(--wot-spacing-zero, $n-0) !default;
+$spacing-ultra-tight: var(--wot-spacing-ultra-tight, $n-2) !default;
+$spacing-super-tight: var(--wot-spacing-super-tight, $n-4) !default;
+$spacing-extra-tight: var(--wot-spacing-extra-tight, $n-6) !default;
+$spacing-tight: var(--wot-spacing-tight, $n-8) !default;
+$spacing-main: var(--wot-spacing-main, $n-10) !default;
+$spacing-loose: var(--wot-spacing-loose, $n-12) !default;
+$spacing-extra-loose: var(--wot-spacing-extra-loose, $n-16) !default;
+$spacing-super-loose: var(--wot-spacing-super-loose, $n-20) !default;
+$spacing-ultra-loose: var(--wot-spacing-ultra-loose, $n-24) !default;
+$spacing-spacious: var(--wot-spacing-spacious, $n-28) !default;
+$spacing-extra-spacious: var(--wot-spacing-extra-spacious, $n-32) !default;
+$spacing-super-spacious: var(--wot-spacing-super-spacious, $n-40) !default;
+$spacing-ultra-spacious: var(--wot-spacing-ultra-spacious, $n-48) !default;
+
+/* 边框线系列 */
+$stroke-zero: var(--wot-stroke-zero, $n-0) !default;
+$stroke-light: var(--wot-stroke-light, $n-05) !default;
+$stroke-main: var(--wot-stroke-main, $n-1) !default;
+$stroke-bold: var(--wot-stroke-bold, $n-2) !default;
+
+
+/* 语义变量(light) */
+/* 主色系列 */
+$primary-1: var(--wot-primary-1, $blue-1) !default;
+$primary-2: var(--wot-primary-2, $blue-2) !default;
+$primary-3: var(--wot-primary-3, $blue-3) !default;
+$primary-4: var(--wot-primary-4, $blue-4) !default;
+$primary-5: var(--wot-primary-5, $blue-5) !default;
+$primary-6: var(--wot-primary-6, $blue-6) !default;
+$primary-7: var(--wot-primary-7, $blue-7) !default;
+$primary-8: var(--wot-primary-8, $blue-8) !default;
+$primary-9: var(--wot-primary-9, $blue-9) !default;
+$primary-10: var(--wot-primary-10, $blue-10) !default;
+
+/* 危险色系列 */
+$danger-clicked: var(--wot-danger-clicked, $red-7) !default;
+$danger-disabled: var(--wot-danger-disabled, $red-3) !default;
+$danger-hover: var(--wot-danger-hover, $red-5) !default;
+$danger-main: var(--wot-danger-main, $red-6) !default;
+$danger-particular: var(--wot-danger-particular, $red-2) !default;
+$danger-surface: var(--wot-danger-surface, $red-1) !default;
+
+/* 成功色系列 */
+$success-clicked: var(--wot-success-clicked, $green-7) !default;
+$success-disabled: var(--wot-success-disabled, $green-3) !default;
+$success-hover: var(--wot-success-hover, $green-5) !default;
+$success-main: var(--wot-success-main, $green-6) !default;
+$success-particular: var(--wot-success-particular, $green-2) !default;
+$success-surface: var(--wot-success-surface, $green-1) !default;
+
+/* 警告色系列 */
+$warning-clicked: var(--wot-warning-clicked, $orange-7) !default;
+$warning-disabled: var(--wot-warning-disabled, $orange-3) !default;
+$warning-hover: var(--wot-warning-hover, $orange-5) !default;
+$warning-main: var(--wot-warning-main, $orange-6) !default;
+$warning-particular: var(--wot-warning-particular, $orange-2) !default;
+$warning-surface: var(--wot-warning-surface, $orange-1) !default;
+
+/* 文字色系列 */
+$text-main: var(--wot-text-main, $coolgrey-10) !default;
+$text-secondary: var(--wot-text-secondary, $coolgrey-8) !default;
+$text-auxiliary: var(--wot-text-auxiliary, $coolgrey-6) !default;
+$text-disabled: var(--wot-text-disabled, $coolgrey-4) !default;
+$text-placeholder: var(--wot-text-placeholder, $coolgrey-5) !default;
+$text-white: var(--wot-text-white, $base-white) !default;
+
+/* 图标色系列 */
+/* 图标 */
+$icon-main: var(--wot-icon-main, $coolgrey-10) !default;
+$icon-secondary: var(--wot-icon-secondary, $coolgrey-8) !default;
+$icon-auxiliary: var(--wot-icon-auxiliary, $coolgrey-6) !default;
+$icon-disabled: var(--wot-icon-disabled, $coolgrey-4) !default;
+$icon-placeholder: var(--wot-icon-placeholder, $coolgrey-5) !default;
+$icon-white: var(--wot-icon-white, $base-white) !default;
+
+/* 边框色系列 */
+$border-extra-strong: var(--wot-border-extra-strong, $coolgrey-6) !default;
+$border-strong: var(--wot-border-strong, $coolgrey-4) !default;
+$border-main: var(--wot-border-main, $coolgrey-3) !default;
+$border-light: var(--wot-border-light, $coolgrey-2) !default;
+$border-white: var(--wot-border-white, $base-white) !default;
+$border-zero: var(--wot-border-zero, $base-transparent) !default;
+
+/* 填充色系列 */
+$filled-extra-strong: var(--wot-filled-extra-strong, $coolgrey-4) !default;
+$filled-strong: var(--wot-filled-strong, $coolgrey-3) !default;
+$filled-content: var(--wot-filled-content, $coolgrey-2) !default;
+$filled-bottom: var(--wot-filled-bottom, $coolgrey-1) !default;
+$filled-oppo: var(--wot-filled-oppo, $base-white) !default;
+$filled-zero: var(--wot-filled-zero, $base-transparent) !default;
+
+/* 分割线系列 */
+$divider-main: var(--wot-divider-main, $opac-3_08) !default;
+$divider-light: var(--wot-divider-light, $opac-2_04) !default;
+$divider-strong: var(--wot-divider-strong, $opac-4_15) !default;
+$divider-white: var(--wot-divider-white, $base-white) !default;
+
+/* 反馈色系列 */
+$feedback-accent: var(--wot-feedback-accent, $blue-opac) !default;
+$feedback-active: var(--wot-feedback-active, $opac-3_08) !default;
+$feedback-hover: var(--wot-feedback-hover, $opac-2_04) !default;
+
+/* 透明度填充 */
+$opacfilled-light-cover: var(--wot-opacfilled-light-cover, $opac-6_30) !default;
+$opacfilled-main-cover: var(--wot-opacfilled-main-cover, $opac-7_55) !default;
+$opacfilled-tooltip-toast-cover: var(--wot-opacfilled-tooltip-toast-cover, $opac-9_75) !default;
+
+/* 分类色系列 */
+/* 黄色 */
+$classifyapplication-yellow-background: var(--wot-classifyapplication-yellow-background, $yellow-1) !default;
+$classifyapplication-yellow-border: var(--wot-classifyapplication-yellow-border, $yellow-3) !default;
+$classifyapplication-yellow-content: var(--wot-classifyapplication-yellow-content, $yellow-6) !default;
+
+/* 蓝色 */
+$classifyapplication-cyan-background: var(--wot-classifyapplication-cyan-background, $cyan-1) !default;
+$classifyapplication-cyan-border: var(--wot-classifyapplication-cyan-border, $cyan-3) !default;
+$classifyapplication-cyan-content: var(--wot-classifyapplication-cyan-content, $cyan-6) !default;
+
+/* 紫色 */
+$classifyapplication-purple-background: var(--wot-classifyapplication-purple-background, $purple-1) !default;
+$classifyapplication-purple-border: var(--wot-classifyapplication-purple-border, $purple-3) !default;
+$classifyapplication-purple-content: var(--wot-classifyapplication-purple-content, $purple-6) !default;
+
+/* 靛色 */
+$classifyapplication-grape-background: var(--wot-classifyapplication-grape-background, $grape-1) !default;
+$classifyapplication-grape-border: var(--wot-classifyapplication-grape-border, $grape-3) !default;
+$classifyapplication-grape-content: var(--wot-classifyapplication-grape-content, $grape-6) !default;
+
+/* 粉色 */
+$classifyapplication-pink-background: var(--wot-classifyapplication-pink-background, $pink-1) !default;
+$classifyapplication-pink-border: var(--wot-classifyapplication-pink-border, $pink-3) !default;
+$classifyapplication-pink-content: var(--wot-classifyapplication-pink-content, $pink-6) !default;
