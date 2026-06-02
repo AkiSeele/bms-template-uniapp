@@ -79,7 +79,7 @@ const PROTOCOL_SPEC: ProtocolSpec = {
   },
 
   /** 协议版本（对应协议文档版本，便于日后追溯） */
-  version: "TODO: 请在此填写协议文档版本号",
+  version: "TODO: Please fill in protocol document version number",
 };
 // ============================================================
 // 协议规格声明区 结束
@@ -101,7 +101,7 @@ export class ProtocolAParser implements BmsProtocolParser {
   readonly protocolType = "protocol-a";
 
   /** 协议显示名称（用于日志和界面展示） */
-  readonly protocolName = "协议 A（BMS 蓝牙通信协议）";
+  readonly protocolName = "Protocol A (BMS BLE)";
 
   /** 暴露协议规格声明对象，供 Store 层和调试工具读取 */
   readonly spec: ProtocolSpec = PROTOCOL_SPEC;

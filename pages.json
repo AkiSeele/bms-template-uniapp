@@ -29,6 +29,42 @@
       "style": {
         "navigationStyle": "custom"
       }
+    },
+    {
+      "path": "pages/mine/settings",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/mine/permission-check",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/mine/auth",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/mine/system-logs",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/scan/scan",
+      "style": {
+        "navigationStyle": "custom",
+        "disableScroll": true,
+        "app-plus": {
+          "animationType": "slide-in-bottom",
+          "animationDuration": 250,
+          "background": "#000000"
+        }
+      }
     }
   ],
   "globalStyle": {

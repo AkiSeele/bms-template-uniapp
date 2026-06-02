@@ -44,6 +44,426 @@ function createBleEnvError(code: string, translateKey: string): Error {
 
 export const permissionManager = {
   /**
+   * 诊断并获取当前系统的所有硬件服务开关和应用级权限状态，返回结构化状态数据
+   * 包含：系统蓝牙硬件、系统定位硬件、蓝牙应用级授权、定位应用级授权
+   */
+  async diagnosePermissions(): Promise<{
+    btHardware: boolean;
+    gpsHardware: boolean;
+    btPermission: boolean;
+    locPermission: boolean;
+  }> {
+    return new Promise(async (resolve) => {
+      const state = {
+        btHardware: false,
+        gpsHardware: false,
+        btPermission: false,
+        locPermission: false,
+      };
+
+      try {
+        const systemInfo = uni.getSystemInfoSync();
+        const platform = (systemInfo.platform || "").toLowerCase();
+
+        // 1. 系统硬件层面（蓝牙硬件开关）
+        let btEnabled = systemInfo.bluetoothEnabled !== false;
+
+        let isAndroidApp = false;
+        // #ifdef APP-PLUS
+        isAndroidApp = platform === "android";
+        // #endif
+
+        if (isAndroidApp) {
+          // Android App 原生层直接获取底层 BluetoothAdapter 状态，百分之百实时且无缓存 Bug
+          // #ifdef APP-PLUS
+          try {
+            const BluetoothAdapter = plus.android.importClass("android.bluetooth.BluetoothAdapter");
+            const adapter = BluetoothAdapter.getDefaultAdapter();
+            btEnabled = adapter ? adapter.isEnabled() : false;
+          } catch (e) {
+            console.error("[BLE 权限诊断] Android 获取蓝牙物理开关异常:", e);
+            btEnabled = systemInfo.bluetoothEnabled !== false;
+          }
+          // #endif
+        } else {
+          // 微信小程序、iOS App 及其他支持蓝牙的客户端，通过实时探测蓝牙适配器状态获取物理硬件开关
+          // #ifndef H5
+          try {
+            await new Promise<void>((r) => {
+              uni.getBluetoothAdapterState({
+                success: (adapter) => {
+                  btEnabled = !!adapter.available;
+                  r();
+                },
+                fail: async (err: any) => {
+                  const code = err.errCode || err.code;
+                  if (code === 10001) {
+                    // 10001 代表蓝牙未开启，状态百分之百确定
+                    btEnabled = false;
+                    r();
+                  } else if (code === 10000) {
+                    // 10000 代表蓝牙未初始化，需要临时初始化一次以探测物理开关状态
+                    try {
+                      uni.openBluetoothAdapter({
+                        success: () => {
+                          btEnabled = true;
+                          // 探测成功后立即关闭，释放蓝牙适配器资源
+                          uni.closeBluetoothAdapter();
+                          r();
+                        },
+                        fail: (openErr: any) => {
+                          const openCode = openErr.errCode || openErr.code;
+                          if (openCode === 10001) {
+                            btEnabled = false;
+                          } else {
+                            // 其他异常（如微信无系统蓝牙授权）则 fallback 回系统缓存信息
+                            btEnabled = systemInfo.bluetoothEnabled !== false;
+                          }
+                          r();
+                        }
+                      });
+                    } catch (e) {
+                      btEnabled = systemInfo.bluetoothEnabled !== false;
+                      r();
+                    }
+                  } else {
+                    btEnabled = systemInfo.bluetoothEnabled !== false;
+                    r();
+                  }
+                },
+              });
+            });
+          } catch (e) {
+            btEnabled = systemInfo.bluetoothEnabled !== false;
+          }
+          // #endif
+        }
+
+        state.btHardware = btEnabled;
+
+        // 2. 系统硬件层面（定位硬件开关）
+        if (platform === "ios") {
+          // iOS 系统的蓝牙扫描不需要系统 GPS 定位服务开启，做免定位硬件校验
+          state.gpsHardware = true;
+        } else {
+          // #ifdef APP-PLUS
+          if (platform === "android") {
+            state.gpsHardware = this.checkAndroidGps();
+          } else {
+            state.gpsHardware = systemInfo.locationEnabled !== false;
+          }
+          // #endif
+
+          // #ifndef APP-PLUS
+          state.gpsHardware = systemInfo.locationEnabled !== false;
+          // #endif
+        }
+
+        // #ifdef MP-WEIXIN
+        // 3. 微信小程序环境下的权限状态检测核查
+        uni.getSetting({
+          success: (res) => {
+            const auth = res.authSetting || {};
+            // 小程序蓝牙状态 = 微信有系统级蓝牙授权 && 小程序自身已授权蓝牙 scope
+            const wechatBtOk = (systemInfo as any).bluetoothAuthorized !== false;
+            state.btPermission = wechatBtOk && (auth as any)["scope.bluetooth"] === true;
+
+            // 小程序位置状态 = 微信有系统级定位授权 && 小程序自身已授权位置 scope
+            const wechatLocOk = (systemInfo as any).locationAuthorized !== false;
+            state.locPermission = wechatLocOk && (auth as any)["scope.userLocation"] === true;
+            resolve(state);
+          },
+          fail: () => {
+            state.btPermission = false;
+            state.locPermission = false;
+            resolve(state);
+          },
+        });
+        // #endif
+
+        // #ifdef APP-PLUS
+        // 4. Android / iOS APP 原生层权限状态检测核查
+        if (platform === "android") {
+          try {
+            const context = plus.android.runtimeMainActivity();
+            const Build = plus.android.importClass("android.os.Build");
+            const sdkVersion = Build.VERSION.SDK_INT;
+
+            // Android 12+ (sdkVersion >= 31) 附近设备权限
+            if (sdkVersion >= 31) {
+              const hasBtScan = context.checkSelfPermission(APP_CONFIG.ANDROID_PERMISSIONS.BLUETOOTH_SCAN) === 0;
+              const hasBtConnect = context.checkSelfPermission(APP_CONFIG.ANDROID_PERMISSIONS.BLUETOOTH_CONNECT) === 0;
+              state.btPermission = hasBtScan && hasBtConnect;
+            } else {
+              state.btPermission = true;
+            }
+
+            // Android 应用级定位权限
+            state.locPermission = context.checkSelfPermission(APP_CONFIG.ANDROID_PERMISSIONS.ACCESS_FINE_LOCATION) === 0;
+          } catch (e) {
+            console.error("[BLE 权限诊断] Android 原生权限诊断异常:", e);
+          }
+          resolve(state);
+        } else if (platform === "ios") {
+          try {
+            // iOS 定位权限免检
+            state.locPermission = true;
+
+            if (typeof uni.getAppAuthorizeSetting === "function") {
+              const authSetting = uni.getAppAuthorizeSetting();
+              state.btPermission = authSetting.bluetoothAuthorized === "authorized";
+            } else {
+              state.btPermission = true;
+            }
+          } catch (e) {
+            console.error("[BLE 权限诊断] iOS 原生权限诊断异常:", e);
+          }
+          resolve(state);
+        } else {
+          // 其他 APP 平台（比如鸿蒙 APP fallback）
+          state.btPermission = true;
+          state.locPermission = true;
+          resolve(state);
+        }
+        // #endif
+
+        // #ifndef MP-WEIXIN || APP-PLUS
+        // H5 或其他未区分的环境默认返回已授权（防止 Web 端卡死）
+        state.btPermission = true;
+        state.locPermission = true;
+        resolve(state);
+        // #endif
+      } catch (err) {
+        console.error("[BLE 权限诊断] diagnosePermissions 遇到未捕获异常:", err);
+        resolve(state);
+      }
+    });
+  },
+
+  /**
+   * 引导用户修复或授予特定权限
+   */
+  async requestSettingOrResolve(type: "btHardware" | "gpsHardware" | "btPermission" | "locPermission"): Promise<boolean> {
+    try {
+      const systemInfo = uni.getSystemInfoSync();
+      const platform = (systemInfo.platform || "").toLowerCase();
+
+      return new Promise((resolve) => {
+        // 1. 系统蓝牙硬件开关
+        if (type === "btHardware") {
+          // #ifdef APP-PLUS
+          if (platform === "android") {
+            try {
+              const main = plus.android.runtimeMainActivity();
+              const Intent = plus.android.importClass("android.content.Intent");
+              const Settings = plus.android.importClass("android.provider.Settings");
+              const intent = new Intent(Settings.ACTION_BLUETOOTH_SETTINGS);
+              main.startActivity(intent);
+              return resolve(true);
+            } catch (e) {
+              console.error("[BLE 权限修复] Android 蓝牙硬件页面跳转失败:", e);
+            }
+          }
+          // #endif
+          
+          // 微信小程序、iOS 或者跳转失败的 Android，均弹出 Toast 提示引导
+          uni.showModal({
+            title: translate("bms.common.bluetoothTitle"),
+            content: translate("bms.ble.env.bluetoothDisabled"),
+            showCancel: false,
+            confirmText: translate("bms.common.confirm"),
+          });
+          return resolve(false);
+        }
+
+        // 2. 系统定位硬件开关
+        if (type === "gpsHardware") {
+          // #ifdef APP-PLUS
+          if (platform === "android") {
+            try {
+              const main = plus.android.runtimeMainActivity();
+              const Intent = plus.android.importClass("android.content.Intent");
+              const Settings = plus.android.importClass("android.provider.Settings");
+              const intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+              main.startActivity(intent);
+              return resolve(true);
+            } catch (e) {
+              console.error("[BLE 权限修复] Android 位置硬件页面跳转失败:", e);
+            }
+          }
+          // #endif
+
+          uni.showModal({
+            title: translate("bms.common.gpsTitle"),
+            content: translate("bms.ble.env.locationDisabled"),
+            showCancel: false,
+            confirmText: translate("bms.common.confirm"),
+          });
+          return resolve(false);
+        }
+
+        // 3. 应用级蓝牙授权
+        if (type === "btPermission") {
+          // #ifdef MP-WEIXIN
+          // 如果系统没有授权微信，需引导用户开启系统微信权限；如果微信开启了但小程序自身被拒绝，用 openSetting
+          if ((systemInfo as any).bluetoothAuthorized === false) {
+            uni.showModal({
+              title: translate("bms.common.authPrompt"),
+              content: translate("bms.ble.env.locationNotAuthorized"),
+              showCancel: false,
+            });
+            return resolve(false);
+          } else {
+            uni.openSetting({
+              success: (res) => {
+                resolve(!!(res.authSetting as any)["scope.bluetooth"]);
+              },
+              fail: () => resolve(false),
+            });
+            return;
+          }
+          // #endif
+
+          // #ifdef APP-PLUS
+          if (platform === "android") {
+            // 重新动态申请权限
+            const permissions = [
+              APP_CONFIG.ANDROID_PERMISSIONS.BLUETOOTH_SCAN,
+              APP_CONFIG.ANDROID_PERMISSIONS.BLUETOOTH_CONNECT,
+            ];
+            plus.android.requestPermissions(permissions, (res: any) => {
+              const isAllGranted = permissions.every(p => (res.granted || []).includes(p));
+              if (isAllGranted) {
+                resolve(true);
+              } else {
+                // 永久拒绝或直接被拒，引导去应用详情设置页
+                uni.showModal({
+                  title: translate("bms.common.permissionDeniedTitle"),
+                  content: translate("bms.ble.env.androidPermissionDenied"),
+                  confirmText: translate("bms.common.goSettings"),
+                  success: (modalRes) => {
+                    if (modalRes.confirm) {
+                      try {
+                        const main = plus.android.runtimeMainActivity();
+                        const Intent = plus.android.importClass("android.content.Intent");
+                        const Settings = plus.android.importClass("android.provider.Settings");
+                        const Uri = plus.android.importClass("android.net.Uri");
+                        const intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                        const uri = Uri.fromParts("package", main.getPackageName(), null);
+                        intent.setData(uri);
+                        main.startActivity(intent);
+                      } catch (e) {
+                        console.error("[BLE 权限修复] Android 应用设置跳转失败:", e);
+                      }
+                    }
+                    resolve(false);
+                  },
+                });
+              }
+            });
+            return;
+          } else if (platform === "ios") {
+            // iOS 调起 App 系统设置页
+            try {
+              const UIApplication = plus.ios.importClass("UIApplication");
+              const NSURL = plus.ios.importClass("NSURL");
+              const sharedApplication = UIApplication.sharedApplication();
+              const settingsURL = NSURL.URLWithString("app-settings:");
+              if (sharedApplication.canOpenURL(settingsURL)) {
+                sharedApplication.openURL(settingsURL);
+              }
+            } catch (e) {
+              console.error("[BLE 权限修复] iOS 设置页面跳转失败:", e);
+            }
+            return resolve(false);
+          }
+          // #endif
+
+          return resolve(false);
+        }
+
+        // 4. 应用级定位授权
+        if (type === "locPermission") {
+          // #ifdef MP-WEIXIN
+          if (systemInfo.locationAuthorized === false) {
+            uni.showModal({
+              title: translate("bms.common.authPrompt"),
+              content: translate("bms.ble.env.locationNotAuthorized"),
+              showCancel: false,
+            });
+            return resolve(false);
+          } else {
+            uni.openSetting({
+              success: (res) => {
+                resolve(!!res.authSetting["scope.userLocation"]);
+              },
+              fail: () => resolve(false),
+            });
+            return;
+          }
+          // #endif
+
+          // #ifdef APP-PLUS
+          if (platform === "android") {
+            const permissions = [APP_CONFIG.ANDROID_PERMISSIONS.ACCESS_FINE_LOCATION];
+            plus.android.requestPermissions(permissions, (res: any) => {
+              const isAllGranted = permissions.every(p => (res.granted || []).includes(p));
+              if (isAllGranted) {
+                resolve(true);
+              } else {
+                uni.showModal({
+                  title: translate("bms.common.permissionDeniedTitle"),
+                  content: translate("bms.ble.env.androidPermissionDenied"),
+                  confirmText: translate("bms.common.goSettings"),
+                  success: (modalRes) => {
+                    if (modalRes.confirm) {
+                      try {
+                        const main = plus.android.runtimeMainActivity();
+                        const Intent = plus.android.importClass("android.content.Intent");
+                        const Settings = plus.android.importClass("android.provider.Settings");
+                        const Uri = plus.android.importClass("android.net.Uri");
+                        const intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                        const uri = Uri.fromParts("package", main.getPackageName(), null);
+                        intent.setData(uri);
+                        main.startActivity(intent);
+                      } catch (e) {
+                        console.error("[BLE 权限修复] Android 定位设置跳转失败:", e);
+                      }
+                    }
+                    resolve(false);
+                  },
+                });
+              }
+            });
+            return;
+          } else if (platform === "ios") {
+            try {
+              const UIApplication = plus.ios.importClass("UIApplication");
+              const NSURL = plus.ios.importClass("NSURL");
+              const sharedApplication = UIApplication.sharedApplication();
+              const settingsURL = NSURL.URLWithString("app-settings:");
+              if (sharedApplication.canOpenURL(settingsURL)) {
+                sharedApplication.openURL(settingsURL);
+              }
+            } catch (e) {
+              console.error("[BLE 权限修复] iOS 设置页面跳转失败:", e);
+            }
+            return resolve(false);
+          }
+          // #endif
+
+          return resolve(false);
+        }
+
+        resolve(false);
+      });
+    } catch (err) {
+      console.error("[BLE 权限修复] requestSettingOrResolve 抛错:", err);
+      return Promise.resolve(false);
+    }
+  },
+
+  /**
    * 诊断并检测当前运行环境下的蓝牙和位置相关权限状态
    * 包含：手机蓝牙开关检测、手机 GPS 开关检测、应用权限（位置/附近设备蓝牙扫描连接）检测与动态申请
    * 确保在 Android、iOS、微信小程序三端均具备完美兼容与防错能力
@@ -235,12 +655,28 @@ export const permissionManager = {
           if (isAllGranted) {
             console.log("[BLE 权限] 核心权限全部授权通过，放行蓝牙流程");
             resolve(true);
-          } else if (deniedAlways.length > 0) {
-            console.error("[BLE 权限] 关键权限被用户永久拒绝，抛出错误引导去设置页");
-            reject(createBleEnvError(BLE_ENV_ERROR.ANDROID_PERMISSION_DENIED, "bms.ble.env.androidPermissionDenied"));
           } else {
-            console.error("[BLE 权限] 用户本次拒绝了权限申请");
-            reject(createBleEnvError(BLE_ENV_ERROR.ANDROID_PERMISSION_DENIED, "bms.ble.env.androidPermissionDenied"));
+            // 收集被拒绝的权限对应友好名称，实现通用且可插拔的动态替换
+            const deniedFriendlyNames: string[] = [];
+            const allDenied = permissions.filter((p) => !granted.includes(p));
+
+            if (allDenied.some((p) => p.includes("BLUETOOTH"))) {
+              deniedFriendlyNames.push(translate("bms.common.nearbyDevicesPermission"));
+            }
+            if (allDenied.some((p) => p.includes("LOCATION"))) {
+              deniedFriendlyNames.push(translate("bms.common.locationPermission"));
+            }
+
+            const missingStr = deniedFriendlyNames.join("、");
+            const errMsg =
+              translate("bms.ble.env.permissionDeniedPrefix") +
+              missingStr +
+              translate("bms.ble.env.permissionDeniedSuffix");
+
+            console.error(`[BLE 权限] 用户拒绝了权限请求，构建动态错误: ${errMsg}`);
+            const err = new Error(errMsg);
+            err.name = BLE_ENV_ERROR.ANDROID_PERMISSION_DENIED;
+            reject(err);
           }
         },
         (error: any) => {

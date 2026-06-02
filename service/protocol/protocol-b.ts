@@ -48,7 +48,7 @@ const PROTOCOL_SPEC: ProtocolSpec = {
   },
 
   /** 协议文档版本（待填写） */
-  version: "TODO: 填写协议文档版本号",
+  version: "TODO: Please fill in protocol document version number",
 };
 // ============================================================
 // 协议规格声明区 结束
@@ -67,7 +67,7 @@ export class ProtocolBParser implements BmsProtocolParser {
   readonly protocolType = "protocol-b";
 
   /** 协议显示名称（用于日志和界面展示） */
-  readonly protocolName = "协议 B（待实现）";
+  readonly protocolName = "Protocol B (To be implemented)";
 
   /** 暴露协议规格声明对象 */
   readonly spec: ProtocolSpec = PROTOCOL_SPEC;

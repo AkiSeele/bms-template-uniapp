@@ -1,9 +1,9 @@
 {
-    "name" : "bms-jlw-uniapp",
+    "name" : "bms-template-uniapp",
     "appid" : "__UNI__FCF87A4",
     "description" : "",
-    "versionName" : "1.0.0",
-    "versionCode" : "100",
+    "versionName" : "1.0.3",
+    "versionCode" : 103,
     "transformPx" : false,
     /* 5+App特有相关 */
     "app-plus" : {
@@ -19,48 +19,46 @@
         /* 模块配置：声明应用使用蓝牙模块，HBuilderX 打包时需要包含 BLE 相关 SDK */
         "modules" : {
             "Bluetooth" : {},
-            "Barcode" : {}
+            "Barcode" : {
+                "provider" : "scanplus"
+            },
+            "Camera" : {}
         },
         /* 应用发布信息 */
         "distribute" : {
             /* android打包配置 */
             "android" : {
-                "targetSdkVersion" : 32,
+                "targetSdkVersion" : 34,
                 "permissions" : [
-                    "<uses-permission android:name=\"android.permission.CHANGE_NETWORK_STATE\"/>",
-                    "<uses-permission android:name=\"android.permission.MOUNT_UNMOUNT_FILESYSTEMS\"/>",
+                    "<!-- 震动反馈：用户交互提示 -->",
                     "<uses-permission android:name=\"android.permission.VIBRATE\"/>",
-                    "<uses-permission android:name=\"android.permission.READ_LOGS\"/>",
-                    "<uses-permission android:name=\"android.permission.ACCESS_WIFI_STATE\"/>",
-                    "<uses-feature android:name=\"android.hardware.camera.autofocus\"/>",
-                    "<uses-permission android:name=\"android.permission.ACCESS_NETWORK_STATE\"/>",
-                    "<uses-permission android:name=\"android.permission.CAMERA\"/>",
-                    "<uses-permission android:name=\"android.permission.GET_ACCOUNTS\"/>",
-                    "<uses-permission android:name=\"android.permission.READ_PHONE_STATE\"/>",
-                    "<uses-permission android:name=\"android.permission.CHANGE_WIFI_STATE\"/>",
-                    "<uses-permission android:name=\"android.permission.WAKE_LOCK\"/>",
-                    "<uses-permission android:name=\"android.permission.FLASHLIGHT\"/>",
+                    "<!-- 相机与扫码：二维码扫描、相册选图功能 -->",
                     "<uses-feature android:name=\"android.hardware.camera\"/>",
-                    "<uses-permission android:name=\"android.permission.WRITE_SETTINGS\"/>",
-                    "<!-- 蓝牙基础权限：兼容全平台 Android 版本 -->",
-                    "<uses-permission android:name=\"android.permission.BLUETOOTH\" android:maxSdkVersion=\"30\"/>",
-                    "<uses-permission android:name=\"android.permission.BLUETOOTH_ADMIN\" android:maxSdkVersion=\"30\"/>",
-                    "<!-- Android 12+ (API 31+) 附近设备权限：扫描+连接蓝牙设备必须同时申请 -->",
-                    "<uses-permission android:name=\"android.permission.BLUETOOTH_SCAN\" android:usesPermissionFlags=\"neverForLocation\"/>",
-                    "<uses-permission android:name=\"android.permission.BLUETOOTH_CONNECT\"/>",
-                    "<!-- 位置信息权限：Android 11 及以下蓝牙扫描强依赖定位权限 -->",
+                    "<uses-feature android:name=\"android.hardware.camera.autofocus\"/>",
+                    "<uses-permission android:name=\"android.permission.CAMERA\"/>",
+                    "<!-- 网络状态：离线模式拦截检测 -->",
+                    "<uses-permission android:name=\"android.permission.ACCESS_NETWORK_STATE\"/>",
+                    "<!-- 屏幕常亮：BLE 长连接通信期间保持 CPU 唤醒 -->",
+                    "<uses-permission android:name=\"android.permission.WAKE_LOCK\"/>",
+                    "<!-- 位置信息权限：Android 11 及以下 BLE 扫描强依赖定位权限 -->",
                     "<uses-permission android:name=\"android.permission.ACCESS_FINE_LOCATION\"/>",
                     "<uses-permission android:name=\"android.permission.ACCESS_COARSE_LOCATION\"/>",
-                    "<!-- 声明应用使用低功耗蓝牙 (BLE) 特性 -->",
-                    "<uses-feature android:name=\"android.hardware.bluetooth_le\" android:required=\"true\"/>"
+                    "<!-- 声明应用使用低功耗蓝牙 (BLE) 特性，HBuilderX Bluetooth 模块已自动注入蓝牙基础权限 -->",
+                    "<uses-feature android:name=\"android.hardware.bluetooth_le\" android:required=\"true\"/>",
+                    "<!-- Android 13+ 相册读取权限：扫相册二维码时从图库选图须声明。-->",
+                    "<!-- Android 12+ 的 BLUETOOTH_SCAN/BLUETOOTH_CONNECT 已由 nativeResources/android/AndroidManifest.xml 统一管理，此处不重复声明 -->",
+                    "<uses-permission android:name=\"android.permission.READ_MEDIA_IMAGES\"/>"
                 ],
-                "abiFilters" : [ "armeabi-v7a", "arm64-v8a", "x86" ],
+                "abiFilters" : [ "armeabi-v7a", "arm64-v8a" ],
                 "minSdkVersion" : 28
             },
             /* ios打包配置 */
             "ios" : {
                 "idfa" : false,
-                "dSYMs" : false
+                "dSYMs" : false,
+                /* iOS 必须声明相机与相册使用用途，否则 App Store 审核会被拒 */
+                "NSCameraUsageDescription" : "扫描二维码以配对蓝牙设备",
+                "NSPhotoLibraryUsageDescription" : "从相册中选取二维码图片以配对蓝牙设备"
             },
             /* SDK配置 */
             "sdkConfigs" : {},

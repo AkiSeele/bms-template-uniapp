@@ -1,19 +1,38 @@
 <template>
-  <layout-provider>
-    <!-- 自定义顶部导航栏组件，fixed 属性用于固定在顶端，placeholder 用于在流中保留占位避免内容遮挡 -->
-    <wd-navbar :title="$t('bms.title')" fixed safe-area-inset-top placeholder>
+  <view class="wot-min-h-screen">
+    <layout-provider>
+      <!-- 自定义顶部导航栏组件，固定在顶部，防内容遮挡，并在右侧绑定扫码动作 -->
+    <!-- Source: uni_modules/wot-ui/components/wd-navbar/wd-navbar.vue -->
+    <wd-navbar
+      :title="$t('bms.title')"
+      fixed
+      safe-area-inset-top
+      placeholder
+      @click-right="handleScanConnect"
+    >
+      <template #left v-if="!isOfflineMode">
+        <!-- 自适应展示云联机胶囊式微型提示 -->
+        <view class="wot-flex wot-items-center wot-gap-1">
+          <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
+          <wd-icon
+            css-icon="i-lucide-cloud"
+            size="16px"
+            color="#0052d9"
+          />
+          <text
+            class="wot-text-primary wot-text-caption wot-font-bold wot-scale-90"
+          >
+            {{ $t("bms.mine.cloudOnline") }}
+          </text>
+        </view>
+      </template>
       <template #right>
-        <!-- 顶部导航栏右侧明暗模式一键切换图标 -->
-        <wd-icon
-          :css-icon="theme === 'dark' ? 'i-lucide-sun' : 'i-lucide-moon'"
-          size="20px"
-          @click="toggleTheme"
-          class="wot-flex wot-items-center wot-justify-center"
-        />
+        <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
+        <wd-icon css-icon="i-lucide-scan" size="20px" />
       </template>
     </wd-navbar>
 
-    <view class="wot-p-main wot-pb-10">
+    <view class="wot-px-3 wot-py-4 wot-pb-10">
       <!-- 头部区域：蓝牙连接状态栏 -->
       <view
         class="header-card wot-bg-filled-oppo wot-rounded-2xl wot-p-main wot-shadow-sm wot-mb-4 wot-flex wot-items-center wot-justify-between"
@@ -151,7 +170,7 @@
           <view class="wot-flex wot-flex-col">
             <text class="wot-text-caption wot-text-text-secondary">{{ $t("bms.params.cycleCount") }}</text>
             <text class="wot-text-body-main wot-font-bold wot-text-text-main wot-mt-0.5">
-              {{ extendedProtocolData?.cycleCount ?? 0 }} {{ $t("bms.mine.appVersion") ? "次" : "Cycles" }}
+              {{ extendedProtocolData?.cycleCount ?? 0 }} {{ $t("bms.common.cyclesUnit") }}
             </text>
           </view>
         </view>
@@ -179,7 +198,7 @@
         <view class="wot-flex wot-items-center wot-gap-2 wot-mb-3 wot-border-b wot-border-border-main wot-pb-2">
           <wd-icon css-icon="i-lucide-thermometer-sun" size="24px" color="#d54941" />
           <text class="wot-text-body-main wot-font-bold wot-text-text-main">
-            {{ protocolType === "jlw" ? "多路温度监测" : "温度传感器状态" }}
+            {{ protocolType === "jlw" ? $t("bms.params.multiTempMonitor") : $t("bms.params.tempSensorStatus") }}
           </text>
         </view>
         <view class="wot-grid wot-grid-cols-3 wot-gap-2">
@@ -290,20 +309,36 @@
       </view>
     </view>
 
+
     <!-- 自定义底部 Tabbar 组件 -->
     <custom-tabbar active="realtime" />
-  </layout-provider>
+    </layout-provider>
+
+    <!-- Source: uni_modules/wot-ui/components/wd-toast/wd-toast.vue -->
+    <wd-toast />
+    <!-- Source: uni_modules/wot-ui/components/wd-dialog/wd-dialog.vue -->
+    <wd-dialog />
+  </view>
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, onMounted, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
 import { useToast, useDialog } from "@/uni_modules/wot-ui";
 import { useBleStore } from "@/stores/ble-store";
 import { useAppStore } from "@/stores/app";
+import { useScanConnect } from "@/composables/use-scan-connect";
+import { useAutoConnect } from "@/composables/use-auto-connect";
+import { APP_CONFIG } from "@/config";
 
-// 初始化 wot-ui 交互 Hooks 与国际化翻译实例
+// 挂载扫码一键连接的业务交互组合式函数
+const { handleScanConnect } = useScanConnect();
+
+// 挂载自动连接业务交互组合式函数
+const { triggerAutoConnect } = useAutoConnect();
+
+// 初始化交互弹出组件与国际化翻译实例
 const toast = useToast();
 const dialog = useDialog();
 const { t } = useI18n();
@@ -311,16 +346,8 @@ const { t } = useI18n();
 // 获取全局蓝牙 Store 管理器
 const bleStore = useBleStore();
 
-// 获取全局应用配置 Store 并以响应式方式解构 theme
+// 获取全局应用配置 Store
 const appStore = useAppStore();
-const { theme } = storeToRefs(appStore);
-
-// 一键在亮色模式 (light) 与暗黑模式 (dark) 之间切换主题
-const toggleTheme = () => {
-  const nextTheme = theme.value === "dark" ? "light" : "dark";
-  appStore.setTheme(nextTheme);
-  toast.success(t("bms.mine.switchThemeSuccess"));
-};
 
 // 联动全局蓝牙连接状态、已连接设备信息及电池物理遥测响应式状态
 const {
@@ -338,6 +365,9 @@ const {
 
 // 提取当前挂载的协议类型
 const protocolType = computed(() => bleStore.activeProtocolParser?.protocolType || "");
+
+// 判定当前运行模式是否为单机离线模式
+const isOfflineMode = computed(() => APP_CONFIG.APP_MODE === "offline");
 
 // 动态计算当前电池状态的图标
 const batteryStatusIcon = computed(() => {
@@ -412,7 +442,7 @@ const temperatureList = computed<TempDisplayItem[]>(() => {
       // 过滤未接传感器的默认无效值 (0 和 0xff/255)
       if (val !== 0 && val !== 0xff && val !== 255) {
         list.push({
-          name: `${t("bms.params.temperatures") || "通道"}${idx + 1}`,
+          name: t("bms.params.temperatures") + (idx + 1),
           value: val,
         });
       }
@@ -430,7 +460,7 @@ const temperatureList = computed<TempDisplayItem[]>(() => {
   // 挂载环境温度
   if (extendedProtocolData.value?.envTemperature !== undefined && extendedProtocolData.value.envTemperature !== 0) {
     list.push({
-      name: t("bms.params.envTemperature") || "环境",
+      name: t("bms.params.envTemperature"),
       value: extendedProtocolData.value.envTemperature,
     });
   }
@@ -455,7 +485,7 @@ const toggleConnection = () => {
       .then(async () => {
         try {
           await bleStore.disconnectDevice();
-          toast.success(t("bms.ble.disconnected"));
+          toast.show({ msg: t("bms.ble.disconnected") });
         } catch (e) {
           console.error("断开蓝牙连接出现异常:", e);
         }
@@ -470,12 +500,12 @@ const toggleConnection = () => {
 const toggleCharge = async (e: any) => {
   const nextVal = e.detail.value;
   try {
-    toast.loading({ message: "发送指令中...", mask: true });
+    toast.loading({ msg: t("bms.control.sending"), cover: true });
     await bleStore.sendControlCommand("charge", nextVal);
-    toast.success("充电开关下发成功");
+    toast.success(t("bms.control.chargeSuccess"));
   } catch (err: any) {
     console.error("充电开关指令下发物理失败:", err);
-    toast.error(err.message || "下发失败");
+    toast.error(err.message || t("bms.control.sendFailed"));
     // 恢复原界面状态
     isCharging.value = !nextVal;
   } finally {
@@ -487,17 +517,29 @@ const toggleCharge = async (e: any) => {
 const toggleDischarge = async (e: any) => {
   const nextVal = e.detail.value;
   try {
-    toast.loading({ message: "发送指令中...", mask: true });
+    toast.loading({ msg: t("bms.control.sending"), cover: true });
     await bleStore.sendControlCommand("discharge", nextVal);
-    toast.success("放电开关下发成功");
+    toast.success(t("bms.control.dischargeSuccess"));
   } catch (err: any) {
     console.error("放电开关指令下发物理失败:", err);
-    toast.error(err.message || "下发失败");
+    toast.error(err.message || t("bms.control.sendFailed"));
     isDischarging.value = !nextVal;
   } finally {
     toast.close();
   }
 };
+
+// 监听全局蓝牙连接成功状态，触发高保真视觉成功回执
+watch(isConnected, (newVal) => {
+  if (newVal) {
+    toast.success(t("bms.ble.connectSuccess"));
+  }
+});
+
+// 页面挂载时自动触发一次重连检测时序
+onMounted(() => {
+  triggerAutoConnect();
+});
 </script>
 
 <style scoped>
@@ -530,4 +572,5 @@ const toggleDischarge = async (e: any) => {
 .animate-pulse {
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
+
 </style>

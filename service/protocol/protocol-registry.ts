@@ -1,4 +1,5 @@
 import { BmsProtocolParser } from "@/types/protocol";
+import { APP_CONFIG } from "@/config";
 
 /**
  * BMS BLE 协议注册表（Protocol Registry）
@@ -82,18 +83,20 @@ export const getRegisteredUuids = (): string[] => {
 
 import { ProtocolAParser } from "./protocol-a";
 
-/**
- * 协议 A（基于聚力威通讯协议规格实现的示例协议）
- * 特征：帧头 0xAA，小端字节序，双字节累加和校验
- * 协议文档：参见 service/protocol/protocol-a.ts 文件顶部 PROTOCOL_SPEC 规格声明区
- */
-registerProtocol(() => new ProtocolAParser(), "00010203-0405-0607-0809-0A0B0C0D1912");
+// 动态从 config/index.ts 的 BLE_SERVICES 区域拉取协议 A 的所有服务 UUID 并注册
+// 实现单一配置源（Single Source of Truth），后续只需修改 config/index.ts 即可自动生效
+const protocolAUuids = (APP_CONFIG.BLE_SERVICES.PROTOCOL_A_SERVICES || []).map(
+  (s) => s.serviceId,
+);
+registerProtocol(() => new ProtocolAParser(), ...protocolAUuids);
 
 // ============================================================
 // 以下为待接入协议的预留注册位（获取协议文档后解除注释并实现）
 // ============================================================
 // import { ProtocolBParser } from "./protocol-b";
-// registerProtocol(() => new ProtocolBParser(), "0000FF00-0000-1000-8000-00805F9B34FB");
+// const protocolBUuids = (APP_CONFIG.BLE_SERVICES.PROTOCOL_B_SERVICES || []).map(s => s.serviceId);
+// registerProtocol(() => new ProtocolBParser(), ...protocolBUuids);
 //
 // import { ProtocolCParser } from "./protocol-c";
-// registerProtocol(() => new ProtocolCParser(), "YOUR-PROTOCOL-C-SERVICE-UUID-HERE");
+// const protocolCUuids = ((APP_CONFIG.BLE_SERVICES as any).PROTOCOL_C_SERVICES || []).map((s: any) => s.serviceId);
+// registerProtocol(() => new ProtocolCParser(), ...protocolCUuids);

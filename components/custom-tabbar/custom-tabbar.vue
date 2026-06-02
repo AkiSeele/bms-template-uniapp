@@ -32,7 +32,8 @@
       </template>
     </wd-tabbar-item>
     <!-- 个人中心 Tab 选项项 -->
-    <wd-tabbar-item name="mine" :title="$t('bms.tab.mine')">
+    <!-- Source: uni_modules/wot-ui/components/wd-tabbar-item/wd-tabbar-item.vue -->
+    <wd-tabbar-item name="mine" :title="$t('bms.tab.mine')" @click="handleMineClick">
       <template #icon="{ active }">
         <wd-icon 
           css-icon="i-lucide-user" 
@@ -45,10 +46,22 @@
 </template>
 
 <script setup lang="ts">
+import { useLogStore } from "@/stores/log-store";
+
 // 接收父组件传入的 active，代表当前页面高亮的 Tab 标识
 const props = defineProps<{
   active: string
 }>()
+
+// 个人中心 Tab 点击回调，用于连续点击计数解锁系统调试日志
+const handleMineClick = () => {
+  try {
+    const logStore = useLogStore();
+    logStore.recordMineTabClick();
+  } catch (e) {
+    console.error("记录我的 Tab 点击失败:", e);
+  }
+};
 
 // 处理底部 Tabbar 切换的核心跳转逻辑
 const handleChange = ({ value }: { value: string }) => {

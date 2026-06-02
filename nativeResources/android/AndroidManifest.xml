@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    自定义 AndroidManifest 合并补丁
+    ================================
+    uni-app nativeResources/android/AndroidManifest.xml 会在打包时与
+    HBuilderX 自动生成的 Manifest 进行 Merge。
+
+    目的：
+    - HBuilderX Bluetooth 模块自动注入 BLUETOOTH_SCAN 时不携带 neverForLocation 标记，
+      导致 Android 12+ 设备扫描 BLE 时系统仍要求位置权限授权。
+    - 通过 tools:replace="android:usesPermissionFlags" 覆盖注入值，
+      声明本应用的 BLE 扫描不用于推断位置，消除不必要的位置权限摩擦。
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!--
+        Android 12+ (API 31+) 附近的设备权限
+        ======================================
+        tools:replace 指令：告知 Manifest Merger 用此声明替换同名权限的属性，
+        避免与 HBuilderX Bluetooth 模块自动注入的同名权限产生 duplicate 冲突。
+    -->
+
+    <!-- 蓝牙扫描权限：neverForLocation 声明本应用扫描 BLE 不用于位置推断，
+         Android 12+ 用户无需额外授予位置权限即可扫描 BMS 设备 -->
+    <uses-permission
+        android:name="android.permission.BLUETOOTH_SCAN"
+        android:usesPermissionFlags="neverForLocation"
+        tools:replace="android:usesPermissionFlags" />
+
+    <!-- 蓝牙连接权限：与已配对或目标 BMS 设备建立 GATT 连接必须申请 -->
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+
+</manifest>

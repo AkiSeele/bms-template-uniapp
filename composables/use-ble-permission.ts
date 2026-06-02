@@ -69,6 +69,10 @@ export function useBlePermission() {
   const resolveEnv = () => {
     if (!envErrorType.value) return;
 
+    // 只要有任何环境错误处理引导跳转，都标记 returned_from_settings 为 true
+    // 这样当用户操作完设置返回 App 时，蓝牙连接页能够安全地重新触发环境核验与扫描刷新
+    uni.setStorageSync("returned_from_settings", true);
+
     if (envErrorType.value === "bluetooth") {
       // #ifdef APP-PLUS
       // 安卓端直接反射调起系统的原生蓝牙开启请求询问框，免除手动翻设置的痛苦
@@ -127,7 +131,7 @@ export function useBlePermission() {
   /**
    * 主动弹出强引导确认 Dialog 弹窗
    */
-  const resolveEnvAlert = () => {
+  const resolveEnvAlert = (onCancel?: () => void) => {
     const errMsg = envWarningText.value;
     console.log("[useBlePermission] resolveEnvAlert: errMsg=", errMsg, "type=", envErrorType.value);
     if (!errMsg) return;
@@ -160,6 +164,9 @@ export function useBlePermission() {
       })
       .catch(() => {
         // 用户取消或关闭弹窗
+        if (typeof onCancel === "function") {
+          onCancel();
+        }
       });
   };
 

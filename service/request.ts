@@ -1,6 +1,7 @@
 import { APP_CONFIG } from "@/config";
 import { useUserStore } from "@/stores/user";
 import { translate as t } from "@/locale/i18n";
+import { useLogStore } from "@/stores/log-store";
 
 // 基础网络请求配置扩展，增加 noAuth 配置项决定是否跳过 Token 鉴权
 interface RequestOptions extends UniApp.RequestOptions {
@@ -13,6 +14,16 @@ interface RequestOptions extends UniApp.RequestOptions {
  */
 export const request = <T = any>(options: RequestOptions): Promise<T> => {
   return new Promise((resolve, reject) => {
+    const logStore = useLogStore();
+
+    // 判定云平台 API 请求主地址
+    let fullUrl = options.url;
+    if (!fullUrl.startsWith("http://") && !fullUrl.startsWith("https://")) {
+      // 规整斜杠连接符
+      const separator = fullUrl.startsWith("/") ? "" : "/";
+      fullUrl = `${APP_CONFIG.BASE_URL}${separator}${fullUrl}`;
+    }
+
     // 1. 请求拦截 - 判定单机离线模式
     if (APP_CONFIG.APP_MODE === "offline") {
       console.warn("[BMS 离线单机模式拦截] 已成功拦截网络请求:", options.url);
@@ -20,15 +31,9 @@ export const request = <T = any>(options: RequestOptions): Promise<T> => {
         title: t("bms.request.offlineMode"),
         icon: "none",
       });
+      // 记录离线拦截接口日志
+      logStore.addApiLog(fullUrl, options.method || "GET", options.data, 0, undefined, "OFFLINE_MODE");
       return reject(new Error("OFFLINE_MODE"));
-    }
-
-    // 2. 请求拦截 - 智能拼接云平台 API 请求主地址
-    let fullUrl = options.url;
-    if (!fullUrl.startsWith("http://") && !fullUrl.startsWith("https://")) {
-      // 规整斜杠连接符
-      const separator = fullUrl.startsWith("/") ? "" : "/";
-      fullUrl = `${APP_CONFIG.BASE_URL}${separator}${fullUrl}`;
     }
 
     // 3. 请求拦截 - 组装 Header 请求头并自动注入 Token 鉴权字段
@@ -51,6 +56,8 @@ export const request = <T = any>(options: RequestOptions): Promise<T> => {
 
         // 4. 响应拦截 - 解析处理服务端响应结果
         if (statusCode >= 200 && statusCode < 300) {
+          // 记录正常成功响应日志
+          logStore.addApiLog(fullUrl, options.method || "GET", options.data, statusCode, res.data);
           // 响应成功，解析返回核心数据
           resolve(res.data as T);
         } else if (statusCode === 401) {
@@ -62,6 +69,9 @@ export const request = <T = any>(options: RequestOptions): Promise<T> => {
             title: t("bms.request.loginExpired"),
             icon: "none",
           });
+
+          // 记录 Token 过期接口日志
+          logStore.addApiLog(fullUrl, options.method || "GET", options.data, statusCode, res.data, "UNAUTHORIZED");
 
           // 延时 1.5s 重定向，保证用户能完整看清 Toast 过期提示
           setTimeout(() => {
@@ -78,16 +88,20 @@ export const request = <T = any>(options: RequestOptions): Promise<T> => {
             title: errorMsg,
             icon: "none",
           });
+          // 记录 HTTP 异常状态码日志
+          logStore.addApiLog(fullUrl, options.method || "GET", options.data, statusCode, res.data, errorMsg);
           reject(new Error(errorMsg));
         }
       },
       fail: (err) => {
-        // 因网络中断、服务器宕机或请求超时而触发的系统底层 fail 回调
+        // 因网络中断、服务器宕机或请求超时而触发 of 系统底层 fail 回调
         console.error("[BMS 请求失败] 连接云服务发生严重错误:", err);
         uni.showToast({
           title: t("bms.request.networkFailed"),
           icon: "none",
         });
+        // 记录底层请求失败日志
+        logStore.addApiLog(fullUrl, options.method || "GET", options.data, 0, undefined, err.errMsg || String(err));
         reject(err);
       },
     });

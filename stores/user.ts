@@ -1,18 +1,44 @@
-import { defineStore } from 'pinia'
-import { ref } from 'vue'
-import { APP_CONFIG } from '@/config'
-import { loginApi } from '@/api/user'
+import { defineStore } from "pinia";
+import { ref, computed } from "vue";
+import { APP_CONFIG } from "@/config";
+import { loginApi } from "@/api/user";
 
-export const useUserStore = defineStore('user', () => {
+export const useUserStore = defineStore("user", () => {
   // 用户授权身份令牌凭证 Token（初始化时优先从本地持久化缓存读取）
-  const token = ref<string>(uni.getStorageSync('app_token') || '')
+  const token = ref<string>(uni.getStorageSync("app_token") || "");
   
   // 用户账户的个人详细资料信息（初始化时从缓存读取并做反序列化解析）
   const userInfo = ref<Record<string, any>>(
-    uni.getStorageSync('app_user_info') 
-      ? JSON.parse(uni.getStorageSync('app_user_info')) 
-      : {}
-  )
+    uni.getStorageSync("app_user_info") 
+      ? JSON.parse(uni.getStorageSync("app_user_info")) 
+      : {},
+  );
+
+  // 全局设备授权激活期限截止时间戳
+  const authEndTime = ref<number>(
+    uni.getStorageSync("code_endTime")
+      ? Number(JSON.parse(uni.getStorageSync("code_endTime")))
+      : 0,
+  );
+
+  // 全局设备激活周期时长
+  const authTime = ref<number>(
+    uni.getStorageSync("code_time")
+      ? Number(JSON.parse(uni.getStorageSync("code_time")))
+      : 0,
+  );
+
+  // 全局设备激活身份级别类型
+  const authType = ref<number>(
+    uni.getStorageSync("code_type")
+      ? Number(JSON.parse(uni.getStorageSync("code_type")))
+      : 0,
+  );
+
+  // 计算属性：当前设备是否已经成功获得授权并且处于有效期之内
+  const isAuthorized = computed(() => {
+    return authEndTime.value > Date.now();
+  });
 
   // 判定当前用户是否处于有效登录状态
   const isLoggedIn = () => {
@@ -30,7 +56,7 @@ export const useUserStore = defineStore('user', () => {
       const mockUser = {
         userId: 'BMS-8888',
         username: username || 'Offline_Guest',
-        nickname: '离线测试账户',
+        nickname: 'Offline Guest',
         role: 'Administrator'
       }
 
@@ -68,17 +94,45 @@ export const useUserStore = defineStore('user', () => {
 
   // 清除用户的登录会话状态，安全退出登录
   const logout = () => {
-    token.value = ''
-    userInfo.value = {}
-    uni.removeStorageSync('app_token')
-    uni.removeStorageSync('app_user_info')
-  }
+    token.value = "";
+    userInfo.value = {};
+    uni.removeStorageSync("app_token");
+    uni.removeStorageSync("app_user_info");
+  };
+
+  // 保存全局设备授权激活信息并持久化写入缓存
+  const saveAuthInfo = (endTime: number, time: number, type: number) => {
+    authEndTime.value = endTime;
+    authTime.value = time;
+    authType.value = type;
+
+    uni.setStorageSync("code_endTime", JSON.stringify(endTime));
+    uni.setStorageSync("code_time", JSON.stringify(time));
+    uni.setStorageSync("code_type", JSON.stringify(type));
+  };
+
+  // 重置并安全擦除全部设备授权激活状态
+  const resetAuthInfo = () => {
+    authEndTime.value = 0;
+    authTime.value = 0;
+    authType.value = 0;
+
+    uni.removeStorageSync("code_endTime");
+    uni.removeStorageSync("code_time");
+    uni.removeStorageSync("code_type");
+  };
 
   return {
     token,
     userInfo,
     isLoggedIn,
     login,
-    logout
-  }
-})
+    logout,
+    authEndTime,
+    authTime,
+    authType,
+    isAuthorized,
+    saveAuthInfo,
+    resetAuthInfo,
+  };
+});

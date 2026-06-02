@@ -3,7 +3,7 @@
     <!-- 自定义顶部导航栏 -->
     <wd-navbar :title="$t('bms.tab.control')" fixed safe-area-inset-top placeholder />
 
-    <view class="wot-p-main wot-pb-10">
+    <view class="wot-px-3 wot-py-4 wot-pb-10">
       <!-- 场景1：设备未连接的优雅引导面板 -->
       <view
         v-if="!isConnected"
@@ -170,13 +170,16 @@ import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
 import { useToast, useDialog } from "@/uni_modules/wot-ui";
 import { useBleStore } from "@/stores/ble-store";
+import { useUserStore } from "@/stores/user";
 
 // 初始化 UI 交互及多语言翻译
 const toast = useToast();
 const dialog = useDialog();
 const { t } = useI18n();
 
-// 获取全局蓝牙状态
+// 获取全局用户授权状态仓及全局蓝牙状态
+const userStore = useUserStore();
+const { isAuthorized } = storeToRefs(userStore);
 const bleStore = useBleStore();
 const {
   isBleConnected: isConnected,
@@ -188,7 +191,7 @@ const {
 
 // 读取协议基本描述
 const protocolType = computed(() => bleStore.activeProtocolParser?.protocolType || "");
-const protocolName = computed(() => bleStore.activeProtocolParser?.protocolName || "未知协议");
+const protocolName = computed(() => bleStore.activeProtocolParser?.protocolName || t("bms.ble.unknownProtocol"));
 
 // 判断低温加热管是否开启（JLW 独有，状态码 Bit 15 为加热状态）
 const isHeating = computed(() => {
@@ -203,16 +206,40 @@ const goConnect = () => {
   });
 };
 
+// 弹出授权激活引导对话框，引导未授权或授权到期用户跳转至授权码激活页面
+const showAuthRequiredDialog = () => {
+  dialog
+    .confirm({
+      title: t("bms.auth.expireTitle"),
+      msg: t("bms.auth.expireMsg"),
+    })
+    .then(() => {
+      uni.navigateTo({
+        url: "/pages/mine/auth",
+      });
+    })
+    .catch(() => {
+      // 用户取消
+    });
+};
+
 // 充电控制
 const toggleCharge = async (e: any) => {
   const nextVal = e.detail.value;
+  // 前置设备授权激活状态校验熔断保护
+  if (!isAuthorized.value) {
+    // 瞬间还原开关为点击前的物理状态，防空关错觉
+    isCharging.value = !nextVal;
+    showAuthRequiredDialog();
+    return;
+  }
   try {
-    toast.loading({ message: "发送充电控制指令...", mask: true });
+    toast.loading({ msg: t("bms.control.chargeSending"), cover: true });
     await bleStore.sendControlCommand("charge", nextVal);
-    toast.success("指令下发成功");
+    toast.success(t("bms.control.sendSuccess"));
   } catch (err: any) {
     console.error("充电开关下发异常:", err);
-    toast.error(err.message || "下发失败");
+    toast.error(err.message || t("bms.control.sendFailed"));
     isCharging.value = !nextVal;
   } finally {
     toast.close();
@@ -222,13 +249,20 @@ const toggleCharge = async (e: any) => {
 // 放电控制
 const toggleDischarge = async (e: any) => {
   const nextVal = e.detail.value;
+  // 前置设备授权激活状态校验熔断保护
+  if (!isAuthorized.value) {
+    // 瞬间还原开关为点击前的物理状态，防空关错觉
+    isDischarging.value = !nextVal;
+    showAuthRequiredDialog();
+    return;
+  }
   try {
-    toast.loading({ message: "发送放电控制指令...", mask: true });
+    toast.loading({ msg: t("bms.control.dischargeSending"), cover: true });
     await bleStore.sendControlCommand("discharge", nextVal);
-    toast.success("指令下发成功");
+    toast.success(t("bms.control.sendSuccess"));
   } catch (err: any) {
     console.error("放电开关下发异常:", err);
-    toast.error(err.message || "下发失败");
+    toast.error(err.message || t("bms.control.sendFailed"));
     isDischarging.value = !nextVal;
   } finally {
     toast.close();
@@ -238,13 +272,18 @@ const toggleDischarge = async (e: any) => {
 // 低温自加热控制（仅 JLW 协议可用）
 const toggleHeating = async (e: any) => {
   const nextVal = e.detail.value;
+  // 前置设备授权激活状态校验熔断保护
+  if (!isAuthorized.value) {
+    showAuthRequiredDialog();
+    return;
+  }
   try {
-    toast.loading({ message: "下发加热控制...", mask: true });
+    toast.loading({ msg: t("bms.control.heatSending"), cover: true });
     await bleStore.sendControlCommand("heat", nextVal);
-    toast.success("指令下发成功");
+    toast.success(t("bms.control.sendSuccess"));
   } catch (err: any) {
     console.error("自加热下发异常:", err);
-    toast.error(err.message || "下发失败");
+    toast.error(err.message || t("bms.control.sendFailed"));
   } finally {
     toast.close();
   }
@@ -252,18 +291,23 @@ const toggleHeating = async (e: any) => {
 
 // 针对紧急、危险指令加装弹窗二次校验确认
 const confirmAction = (action: "clear" | "sleep" | "start") => {
+  // 前置设备授权激活状态校验熔断保护
+  if (!isAuthorized.value) {
+    showAuthRequiredDialog();
+    return;
+  }
   let title = "";
   let msg = "";
 
   if (action === "clear") {
-    title = t("bms.control.clearStatus") || "清除异常";
-    msg = "您确定要强制重置并清除保护板当前的全部异常状态标识吗？这可能会掩盖硬件真实故障，请谨慎操作。";
+    title = t("bms.control.clearStatus");
+    msg = t("bms.control.clearStatusConfirm");
   } else if (action === "sleep") {
-    title = t("bms.control.forceSleep") || "强制休眠";
-    msg = "【警告】强制休眠将彻底切断电池组向外输出与充电电流！可能会导致设备掉电关机，确定执行吗？";
+    title = t("bms.control.forceSleep");
+    msg = t("bms.control.forceSleepConfirm");
   } else {
-    title = t("bms.control.forceStart") || "强制启动";
-    msg = "确定要强制唤醒并重新拉起启动电池保护板系统吗？";
+    title = t("bms.control.forceStart");
+    msg = t("bms.control.forceStartConfirm");
   }
 
   dialog
@@ -273,12 +317,12 @@ const confirmAction = (action: "clear" | "sleep" | "start") => {
     })
     .then(async () => {
       try {
-        toast.loading({ message: "执行指令中...", mask: true });
+        toast.loading({ msg: t("bms.control.executing"), cover: true });
         await bleStore.sendControlCommand(action, true);
-        toast.success("操作执行成功");
+        toast.success(t("bms.common.opSuccess"));
       } catch (err: any) {
         console.error(`紧急指令下发失败: ${action}`, err);
-        toast.error(err.message || "操作失败");
+        toast.error(err.message || t("bms.common.opFailed"));
       } finally {
         toast.close();
       }

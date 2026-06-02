@@ -1,0 +1,447 @@
+<template>
+  <!-- nvue 专属全屏扫码页：基于 barcode 原生控件，仿微信沉浸式全屏相机预览 -->
+  <view class="container">
+
+    <!-- 1. 全屏摄像头预览原生组件：内置绿色扫描框与原生运动扫描条，杜绝双边框问题 -->
+    <barcode
+      id="barcodeScanner"
+      ref="barcodeRef"
+      class="barcode-view"
+      :autostart="true"
+      :filters="scanFilters"
+      background="#000000"
+      frameColor="#07c160"
+      scanbarColor="#07c160"
+      sound="default"
+      @marked="onMarked"
+      @error="onScanError"
+    />
+
+    <!-- 2. 全屏轻量沉浸浮层 -->
+    <view class="overlay-container">
+      <view class="full-screen-tint">
+        <!-- 扫码引导提示词（置于中央绿色扫码框正下方） -->
+        <view class="tip-area">
+          <text class="tip-text">{{ scanTip }}</text>
+        </view>
+
+        <!-- 左下角悬浮手电筒按钮（仅图标，极致简约） -->
+        <view class="torch-btn-float" @click="toggleFlash">
+          <text class="control-icon">{{ flashIcon }}</text>
+        </view>
+
+        <!-- 右下角悬浮相册选择按钮（仅图标，极致简约） -->
+        <view class="album-btn-float" @click="onSelectFromAlbum">
+          <text class="control-icon">🖼️</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 3. 浮动式顶部导航栏：全透明悬浮，圆形关闭按钮 -->
+    <view class="nav-area" :style="navAreaStyle">
+      <view class="nav-bar">
+        <!-- 左侧悬浮关闭按钮（圆形半透明磨砂质感） -->
+        <view class="nav-close-btn" @click="onCancel">
+          <text class="nav-close-icon">✕</text>
+        </view>
+
+        <!-- 中间浮动标题 -->
+        <text class="nav-title">{{ pageTitle }}</text>
+
+        <!-- 右侧对称占位 -->
+        <view class="nav-close-btn nav-placeholder" />
+      </view>
+    </view>
+
+    <!-- 4. 底部微信式切换模式栏：纯黑高级背景，带绿色微指示条 -->
+    <view class="bottom-tab-bar">
+      <view class="tab-item">
+        <text class="tab-text">{{ scanTabLabel }}</text>
+        <view class="tab-indicator" />
+      </view>
+    </view>
+
+  </view>
+</template>
+
+<script setup lang="ts">
+import { ref, computed } from "vue";
+import { onLoad, onUnload } from "@dcloudio/uni-app";
+import { translate as t } from "@/locale/i18n";
+
+// 当前闪光灯开关状态
+const flashOn = ref(false);
+
+// barcode 组件引用，用于调用 cancel/setFlash 等原生方法
+const barcodeRef = ref<any>(null);
+
+// 状态栏高度（px），在 onLoad 中从系统信息获取后动态注入顶部留白
+const statusBarHeight = ref(0);
+
+// 扫码识别码型过滤器：支持全码型识别（二维码及各种条形码），保障高密度与多协议硬件热兼容性
+const scanFilters = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13];
+
+// 国际化文本计算属性
+const pageTitle = computed(() => t("bms.scan.scanPageTitle"));
+const scanTip = computed(() => t("bms.scan.scanTip"));
+const flashIcon = computed(() => (flashOn.value ? "💡" : "🔦"));
+const scanTabLabel = computed(() => t("bms.scan.scanTab") || "扫一扫");
+
+// 顶部区域动态内边距样式（全面屏状态栏适配）
+const navAreaStyle = computed(() => ({
+  paddingTop: statusBarHeight.value + "px",
+}));
+
+/**
+ * 获取当前页面与调用方之间的事件通道实例
+ * 用于将扫码结果安全回传给 navigateTo 的 events 回调
+ */
+const getEventChannel = (): any | null => {
+  try {
+    const pages = getCurrentPages();
+    const currentPage = pages[pages.length - 1] as any;
+    return currentPage.getOpenerEventChannel?.() ?? null;
+  } catch (err) {
+    console.error("[扫码页] 获取事件通道时发生异常:", err);
+    return null;
+  }
+};
+
+/**
+ * barcode @marked 事件回调：识别成功时触发
+ * 提取结果字符串，通过 EventChannel 回传至调用方，然后自动返回上一页
+ */
+const onMarked = (e: any) => {
+  const result: string = (e.detail?.message || "").trim();
+  console.log("[扫码页] 识别到内容:", result);
+
+  if (!result) {
+    console.warn("[扫码页] 识别内容为空，忽略本次结果");
+    return;
+  }
+
+  // 立即停止摄像头扫描，防止重复触发后续处理逻辑
+  try {
+    barcodeRef.value?.cancel();
+  } catch (err) {
+    console.error("[扫码页] 停止摄像头时发生异常:", err);
+  }
+
+  // 将识别结果通过 EventChannel 回传至上级调用页面
+  const channel = getEventChannel();
+  if (channel) {
+    channel.emit("onScanResult", { result });
+  } else {
+    console.warn("[扫码页] 事件通道不可用，扫码结果无法回传");
+  }
+
+  // 返回调用页面
+  uni.navigateBack({ delta: 1 });
+};
+
+/**
+ * barcode @error 事件回调：识别错误时触发
+ * 记录错误日志，延时后重新尝试开启扫描，提升用户体验
+ */
+const onScanError = (e: any) => {
+  console.error("[扫码页] 扫码识别发生错误:", JSON.stringify(e.detail));
+  // 短暂延时后自动重启扫描，避免因偶发硬件抖动导致扫码中断
+  setTimeout(() => {
+    try {
+      barcodeRef.value?.start({ vibrate: false, sound: "none" });
+    } catch (err) {
+      console.error("[扫码页] 重启扫码失败:", err);
+    }
+  }, 500);
+};
+
+/**
+ * 从手机相册中选择二维码图片并进行离线解析
+ */
+const onSelectFromAlbum = () => {
+  uni.chooseImage({
+    count: 1,
+    sourceType: ["album"],
+    success: (chooseRes) => {
+      const path = chooseRes.tempFilePaths[0];
+      if (!path) return;
+
+      // 开启防连点 Loading 遮罩，防止高分辨率大图解析卡顿期间重复点击
+      uni.showLoading({
+        title: t("bms.scan.parsing"),
+        mask: true,
+      });
+
+      // 调用 HTML5+ App 原生后台扫码接口进行静默识别，彻底避免调起系统UI及转圈死锁问题
+      // #ifdef APP-PLUS
+      // @ts-ignore
+      plus.barcode.scan(
+        path,
+        (type: number, code: string) => {
+          console.log("[扫码页] HTML5+ 相册解码成功:", code);
+          uni.hideLoading();
+          const result: string = (code || "").trim();
+          if (result) {
+            // 通过 EventChannel 将扫描结果安全回传
+            const channel = getEventChannel();
+            if (channel) {
+              channel.emit("onScanResult", { result });
+            } else {
+              console.warn("[扫码页] 事件通道失效，解析结果未能成功回传");
+            }
+            // 立即返回前页
+            uni.navigateBack({ delta: 1 });
+          } else {
+            uni.showToast({
+              title: t("bms.scan.scanFailed"),
+              icon: "none",
+            });
+          }
+        },
+        (err: any) => {
+          console.error("[扫码页] HTML5+ 相册解码失败:", err);
+          uni.hideLoading();
+          uni.showToast({
+            title: t("bms.scan.noQrCodeFound"),
+            icon: "none",
+          });
+        },
+        scanFilters
+      );
+      // #endif
+    },
+    fail: (err) => {
+      console.warn("[扫码页] 用户取消了相册选图或操作失败:", err);
+    },
+  });
+};
+
+/**
+ * 切换手电筒（闪光灯）开关状态
+ */
+const toggleFlash = () => {
+  flashOn.value = !flashOn.value;
+  try {
+    barcodeRef.value?.setFlash(flashOn.value);
+  } catch (err) {
+    console.error("[扫码页] 切换闪光灯失败:", err);
+  }
+};
+
+/**
+ * 用户主动点击取消按钮，关闭摄像头并返回上一页
+ */
+const onCancel = () => {
+  try {
+    barcodeRef.value?.cancel();
+  } catch (err) {
+    console.error("[扫码页] 取消扫码时关闭摄像头发生异常:", err);
+  }
+  uni.navigateBack({ delta: 1 });
+};
+
+// 页面载入：获取系统状态栏高度，用于顶部安全留白动态适配
+onLoad(() => {
+  try {
+    const info = uni.getSystemInfoSync();
+    statusBarHeight.value = info.statusBarHeight || 0;
+  } catch (err) {
+    console.error("[扫码页] 获取系统状态栏高度失败，使用默认值 20px:", err);
+    statusBarHeight.value = 20;
+  }
+});
+
+// 页面卸载：主动释放摄像头资源，防止内存与硬件占用泄漏
+onUnload(() => {
+  try {
+    barcodeRef.value?.cancel();
+  } catch (err) {
+    console.error("[扫码页] 页面卸载时关闭摄像头发生异常:", err);
+  }
+});
+</script>
+
+<style>
+/*
+  nvue 页面样式说明：
+  - nvue 不支持 scoped，所有类名已添加足够的语义化以避免冲突
+  - nvue 默认 flex-direction 为 column，水平布局需显式声明 flex-direction: row
+  - 单位使用 rpx 适配多分辨率屏幕
+*/
+
+/* 页面根容器：极简沉浸式背景 */
+.container {
+  flex: 1;
+  flex-direction: column;
+  background-color: #000000;
+  position: relative;
+}
+
+/* 核心扫码原生控件：绝对定位，充盈整个背景，实现全屏摄像头预览 */
+.barcode-view {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+}
+
+/* 覆盖层包装：充盈全屏 */
+.overlay-container {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+}
+
+/* 全屏轻遮罩层：提供 20% 的轻微全屏暗色调，以增强文字和图标对比度 */
+.full-screen-tint {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.2);
+}
+
+/* 提示词区域：置于屏幕中下部（对应中央原生扫码框下方） */
+.tip-area {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 67%;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 扫码引导提示文字 */
+.tip-text {
+  font-size: 26rpx;
+  color: rgba(255, 255, 255, 0.85);
+  text-align: center;
+}
+
+/* 左下角悬浮手电筒按钮（仅图标） */
+.torch-btn-float {
+  position: absolute;
+  left: 80rpx;
+  bottom: 240rpx;
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 48rpx;
+  background-color: rgba(0, 0, 0, 0.55);
+  justify-content: center;
+  align-items: center;
+  border-width: 1px;
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+/* 右下角悬浮相册选择按钮（仅图标） */
+.album-btn-float {
+  position: absolute;
+  right: 80rpx;
+  bottom: 240rpx;
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 48rpx;
+  background-color: rgba(0, 0, 0, 0.55);
+  justify-content: center;
+  align-items: center;
+  border-width: 1px;
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+/* 悬浮图标字号 */
+.control-icon {
+  font-size: 38rpx;
+}
+
+/* 浮动顶部导航栏：透明磨砂质感 */
+.nav-area {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+}
+
+/* 导航控制栏 */
+.nav-bar {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  height: 88rpx;
+  padding-left: 32rpx;
+  padding-right: 32rpx;
+}
+
+/* 悬浮圆形关闭按钮 */
+.nav-close-btn {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 36rpx;
+  background-color: rgba(0, 0, 0, 0.5);
+  justify-content: center;
+  align-items: center;
+  border-width: 1px;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* 右侧占位按钮 */
+.nav-placeholder {
+  background-color: transparent;
+  border-color: transparent;
+}
+
+/* 关闭图标 */
+.nav-close-icon {
+  font-size: 34rpx;
+  color: #ffffff;
+  font-weight: 300;
+}
+
+/* 导航中间标题（带投影防眩光） */
+.nav-title {
+  flex: 1;
+  text-align: center;
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #ffffff;
+}
+
+/* 底部微信式切换模式栏 */
+.bottom-tab-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 180rpx;
+  background-color: #000000;
+  justify-content: center;
+  align-items: center;
+  padding-bottom: 40rpx;
+}
+
+/* tab 项目 */
+.tab-item {
+  align-items: center;
+  justify-content: center;
+  height: 100rpx;
+}
+
+/* tab 文字 */
+.tab-text {
+  font-size: 30rpx;
+  color: #07c160;
+  font-weight: bold;
+}
+
+/* 微信绿指示点 */
+.tab-indicator {
+  width: 16rpx;
+  height: 6rpx;
+  background-color: #07c160;
+  border-radius: 3rpx;
+  margin-top: 10rpx;
+}
+</style>

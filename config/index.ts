@@ -28,7 +28,7 @@ export interface BleServiceConfig {
 
 export const APP_CONFIG = {
   /** 当前运行模式："cloud" 表示接入云平台（需登录和网络通信）；"offline" 表示纯单机模式 */
-  APP_MODE: "cloud" as AppMode,
+  APP_MODE: "offline" as AppMode,
 
   /** 云端 API 服务器接口请求基准地址（生产环境部署时替换为实际域名） */
   BASE_URL: "https://api.bms-battery.com",
@@ -44,6 +44,36 @@ export const APP_CONFIG = {
     DEFAULT_MTU: 20,
     /** 多包写入时每包间的最短物理延时（毫秒），防止 BLE 控制器缓冲区堵塞丢包 */
     CHUNK_DELAY_MS: 50,
+    /** 扫码/自动连接配对最大超时时间（毫秒） */
+    PAIRING_TIMEOUT_MS: 10000,
+    /** 物理连接蓝牙超时时间（毫秒） */
+    CONNECT_TIMEOUT_MS: 10000,
+    /** 蓝牙建立物理连接失败时的重试次数上限（0 代表不重试，1 代表失败后重试 1 次） */
+    RECONNECT_LIMIT: 0,
+  },
+
+  /** 扫码一键连接蓝牙相关配置 */
+  SCAN_CONNECT: {
+    /**
+     * 二维码内容解析模式：
+     *   - "mac": 代表二维码内容是真实物理介质控制访问地址（如网卡物理地址，大写且带冒号或不带冒号）
+     *   - "name": 代表二维码内容是设备蓝牙广播名称或其前缀（如名称字串）
+     */
+    PARSE_MODE: "mac" as "mac" | "name",
+  },
+
+  /** 授权激活配置 */
+  AUTH_CONFIG: {
+    /** 算法密钥 */
+    KEY: "26582651",
+    /** 偏移向量 */
+    IV: "12345678",
+  },
+
+  /** 系统调试日志配置 */
+  DEBUG_CONFIG: {
+    /** 进入调试模式的6位校验密码 */
+    PASSWORD: "114514",
   },
 
   /**
@@ -74,30 +104,33 @@ export const APP_CONFIG = {
   BLE_SERVICES: {
     /**
      * 协议 A 蓝牙硬件模块 UUID 配置
-     * 主服务 UUID：00010203-0405-0607-0809-0a0b0c0d1912
-     * 读写特征值共用同一 UUID：00010203-0405-0607-0809-0a0b0c0d2b12
      */
-    PROTOCOL_A_SERVICE: {
-      serviceId: "00010203-0405-0607-0809-0a0b0c0d1912",
-      writeCharacteristicId: "00010203-0405-0607-0809-0a0b0c0d2b12",
-      notifyCharacteristicId: "00010203-0405-0607-0809-0a0b0c0d2b12",
-    } as BleServiceConfig,
+    PROTOCOL_A_SERVICES: [
+      {
+        serviceId: "00000001-0000-1000-8000-00805F9B34FB",
+        writeCharacteristicId: "00000002-0000-1000-8000-00805F9B34FB",
+        notifyCharacteristicId: "00000003-0000-1000-8000-00805F9B34FB",
+      },
+    ] as BleServiceConfig[],
 
     /**
-     * 协议 B 蓝牙硬件模块 UUID 配置（待实现，占位预留）
-     * ⚠️ 此配置项对应的协议解析器尚未实现，UUID 为占位值，请在获取协议文档后更新
+     * 协议 B 蓝牙硬件模块 UUID 配置
      */
-    PROTOCOL_B_SERVICE: {
-      serviceId: "0000FF00-0000-1000-8000-00805F9B34FB",
-      writeCharacteristicId: "0000FF01-0000-1000-8000-00805F9B34FB",
-      notifyCharacteristicId: "0000FF02-0000-1000-8000-00805F9B34FB",
-    } as BleServiceConfig,
+    PROTOCOL_B_SERVICES: [
+      {
+        serviceId: "00010203-0405-0607-0809-0A0B0C0D1912",
+        writeCharacteristicId: "00010203-0405-0607-0809-0A0B0C0D2B12",
+        notifyCharacteristicId: "00010203-0405-0607-0809-0A0B0C0D2B12",
+      },
+    ] as BleServiceConfig[],
 
-    // TODO: 接入协议 C 时，在此处新增 PROTOCOL_C_SERVICE 配置项
-    // PROTOCOL_C_SERVICE: {
-    //   serviceId: "YOUR-PROTOCOL-C-SERVICE-UUID",
-    //   writeCharacteristicId: "YOUR-PROTOCOL-C-WRITE-CHAR-UUID",
-    //   notifyCharacteristicId: "YOUR-PROTOCOL-C-NOTIFY-CHAR-UUID",
-    // } as BleServiceConfig,
+    // TODO: 接入协议 C 时，在此处新增 PROTOCOL_C_SERVICES 配置项
+    // PROTOCOL_C_SERVICES: [
+    //   {
+    //     serviceId: "YOUR-PROTOCOL-C-SERVICE-UUID",
+    //     writeCharacteristicId: "YOUR-PROTOCOL-C-WRITE-CHAR-UUID",
+    //     notifyCharacteristicId: "YOUR-PROTOCOL-C-NOTIFY-CHAR-UUID",
+    //   }
+    // ] as BleServiceConfig[],
   },
 };

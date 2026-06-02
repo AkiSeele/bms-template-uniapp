@@ -7,9 +7,10 @@
 import { APP_CONFIG } from "@/config";
 import { hexStringToUint8Array } from "@/utils/bms-helper";
 import { translate } from "@/locale/i18n";
+import { useLogStore } from "@/stores/log-store";
 
-// 全局低功耗蓝牙当前协商成功的最大单包数据发送载荷限额（默认为 20 字节，协商成功后自动拓宽，iOS 自动，Android 手动）
-let currentMtu = 20;
+// 全局低功耗蓝牙当前协商成功的最大单包数据发送载荷限额（初始化时读取配置的默认 MTU 缓存，协商成功后自动拓宽，iOS 自动，Android 手动）
+let currentMtu = APP_CONFIG.BLE_SCAN.DEFAULT_MTU;
 
 export const bleManager = {
   /**
@@ -19,17 +20,25 @@ export const bleManager = {
     return new Promise((resolve, reject) => {
       // 在 H5 平台下进行防护拦截，防止直接抛出 TypeError 异常导致页面挂起
       if (typeof uni.openBluetoothAdapter !== "function") {
-        return reject(new Error("H5 平台不支持低功耗蓝牙 (BLE) 物理模块，请在真机小程序或 App 容器中测试。"));
+        return reject(new Error("H5 platform does not support BLE module, please test in WeChat mini program or App containers on real devices."));
       }
 
       uni.openBluetoothAdapter({
-        success: (res) => resolve(res),
+        success: (res) => {
+          try {
+            useLogStore().addConnectionLog("uni.openBluetoothAdapter", undefined, res, "success");
+          } catch (e) {}
+          resolve(res);
+        },
         fail: (err: any) => {
           console.error("[BLE 错误] 手机蓝牙未开启或未授权适配器:", err);
           // 拦截错误码 10001（系统蓝牙关闭）或包含特定关键字的系统报错，标准化转换为友好中文字符串抛出
           const isPowerOff =
             err.errCode === 10001 ||
             (err.errMsg && (err.errMsg.indexOf("not available") !== -1 || err.errMsg.indexOf("power off") !== -1));
+          try {
+            useLogStore().addConnectionLog("uni.openBluetoothAdapter", undefined, err, "fail");
+          } catch (e) {}
           if (isPowerOff) {
             reject(new Error(translate("bms.ble.env.bluetoothDisabled")));
           } else {
@@ -48,7 +57,12 @@ export const bleManager = {
     return new Promise((resolve, reject) => {
       // H5 平台防护拦截
       if (typeof uni.startBluetoothDevicesDiscovery !== "function") {
-        return reject(new Error("H5 平台不支持启动蓝牙设备扫描发现，请在真机环境中测试。"));
+        return reject(new Error("H5 platform does not support starting Bluetooth device discovery, please test in a real device environment."));
+      }
+
+      // 先注销旧的设备发现监听回调，防止频繁进出页面导致回调叠加累积，造成同一设备被多次上报
+      if (typeof uni.offBluetoothDeviceFound === "function") {
+        uni.offBluetoothDeviceFound();
       }
 
       // 开启监听新外设发现的 API
@@ -91,19 +105,40 @@ export const bleManager = {
    * @param deviceId 蓝牙设备的 MAC 地址或 UUID
    */
   connect(deviceId: string): Promise<UniApp.GeneralCallbackResult> {
-    return new Promise((resolve, reject) => {
-      // H5 平台防护拦截
-      if (typeof uni.createBLEConnection !== "function") {
-        return reject(new Error("H5 平台不支持建立低功耗蓝牙物理连接，请在真机环境中测试。"));
-      }
+    const timeout = APP_CONFIG.BLE_SCAN.CONNECT_TIMEOUT_MS;
+    const limit = APP_CONFIG.BLE_SCAN.RECONNECT_LIMIT;
 
-      uni.createBLEConnection({
-        deviceId,
-        timeout: 10000, // 10秒连接超时判定
-        success: (res) => resolve(res),
-        fail: (err) => reject(err),
+    const attemptConnect = (remainingRetries: number): Promise<UniApp.GeneralCallbackResult> => {
+      return new Promise((resolve, reject) => {
+        // H5 平台防护拦截
+        if (typeof uni.createBLEConnection !== "function") {
+          return reject(new Error("H5 platform does not support creating BLE connection, please test in a real device environment."));
+        }
+
+        console.log(`[蓝牙连接] 尝试连接设备: ${deviceId}, 超时配置: ${timeout}ms, 剩余重试次数: ${remainingRetries}`);
+        uni.createBLEConnection({
+          deviceId,
+          timeout,
+          success: (res) => {
+            console.log(`[蓝牙连接] 成功建立蓝牙物理连接!`);
+            resolve(res);
+          },
+          fail: (err) => {
+            console.warn(`[蓝牙连接] 蓝牙连接失败:`, err);
+            if (remainingRetries > 0) {
+              console.warn(`[蓝牙连接] 还有重试机会，正在进行连接重试...`);
+              setTimeout(() => {
+                attemptConnect(remainingRetries - 1).then(resolve).catch(reject);
+              }, 100);
+            } else {
+              reject(err);
+            }
+          },
+        });
       });
-    });
+    };
+
+    return attemptConnect(limit);
   },
 
   /**
@@ -140,7 +175,7 @@ export const bleManager = {
     return new Promise((resolve, reject) => {
       // H5 平台防护拦截
       if (typeof uni.notifyBLECharacteristicValueChange !== "function") {
-        return reject(new Error("H5 平台不支持订阅蓝牙特征值变化通知。"));
+        return reject(new Error("H5 platform does not support subscribing to characteristic value change notifications."));
       }
 
       // 开启通知监听开关
@@ -182,7 +217,7 @@ export const bleManager = {
   discoverServices(deviceId: string): Promise<UniApp.GetBLEDeviceServicesSuccess> {
     return new Promise((resolve, reject) => {
       if (typeof uni.getBLEDeviceServices !== "function") {
-        return reject(new Error("H5 平台不支持发现蓝牙设备服务。"));
+        return reject(new Error("H5 platform does not support discovering BLE services."));
       }
 
       uni.getBLEDeviceServices({
@@ -201,7 +236,7 @@ export const bleManager = {
   discoverCharacteristics(deviceId: string, serviceId: string): Promise<UniApp.GetBLEDeviceCharacteristicsSuccess> {
     return new Promise((resolve, reject) => {
       if (typeof uni.getBLEDeviceCharacteristics !== "function") {
-        return reject(new Error("H5 平台不支持发现蓝牙设备特征值。"));
+        return reject(new Error("H5 platform does not support discovering BLE characteristics."));
       }
 
       uni.getBLEDeviceCharacteristics({
@@ -227,8 +262,9 @@ export const bleManager = {
           deviceId,
           mtu,
           success: (res) => {
-            // 扣除 3 字节的 L2CAP 协议头部开销，得到实际的最大数据发送载荷
-            currentMtu = Math.max(20, res.mtu - 3);
+            // 严格遵循 uni-app 规范：success 回调参数为 UniApp.GeneralCallbackResult（不包含 mtu 字段）
+            // 当 MTU 协商请求成功时，将当前最大物理载荷更新为所请求的 mtu 大小（扣除 3 字节开销，且不小于默认 20 字节）
+            currentMtu = Math.max(20, mtu - 3);
             console.log(`[BLE Manager] MTU 协商成功，设定实际发送载荷: ${currentMtu} 字节`);
             resolve(res);
           },
@@ -260,18 +296,32 @@ export const bleManager = {
     return new Promise(async (resolve, reject) => {
       // H5 平台防护拦截
       if (typeof uni.writeBLECharacteristicValue !== "function") {
-        return reject(new Error("H5 平台不支持下发蓝牙特征值指令。"));
+        return reject(new Error("H5 platform does not support writing characteristic value command."));
       }
 
       try {
         const rawBytes = hexStringToUint8Array(commandHex);
         const buffer = rawBytes.buffer;
         // 动态使用已协商成功或默认的物理载荷限额（默认为 20 字节，协商成功后自动拓宽）
-        const mtu = currentMtu; 
+        const mtu = currentMtu;
+
+        console.log(`[BLE 发送] 下发物理指令 (HEX): ${commandHex}, 分包载荷 MTU: ${mtu} 字节`);
+
+        // 记录指令发送日志
+        try {
+          useLogStore().addCommandLog("TX", commandHex);
+        } catch (e) {}
 
         // 对大包数据执行动态切片分包下发
         for (let i = 0; i < buffer.byteLength; i += mtu) {
           const chunk = buffer.slice(i, i + mtu);
+          const chunkHex = Array.from(new Uint8Array(chunk))
+            .map((b) => b.toString(16).padStart(2, "0").toUpperCase())
+            .join("");
+
+          if (buffer.byteLength > mtu) {
+            console.log(`  └─ [分包发送] 偏移: ${i}/${buffer.byteLength}, 长度: ${chunk.byteLength}, 字节: ${chunkHex}`);
+          }
 
           await new Promise<void>((resolveChunk, rejectChunk) => {
             uni.writeBLECharacteristicValue({

@@ -12,7 +12,7 @@ export const hexStringToUint8Array = (hexString: string): Uint8Array => {
   // 去除所有空格
   const cleanHex = hexString.replace(/\s+/g, "");
   if (cleanHex.length % 2 !== 0) {
-    throw new Error("十六进制字符串长度必须为偶数");
+    throw new Error("Hex string length must be even");
   }
   const length = cleanHex.length / 2;
   const result = new Uint8Array(length);

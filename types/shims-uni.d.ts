@@ -33,25 +33,51 @@ declare module "@dcloudio/uni-app" {
   export function onUnload(callback: () => void): void;
 }
 
-// 声明 wot-ui 本地 uni_modules 组件库导出的反馈类 Hooks 模块
+// 声明 wot-ui 本地 uni_modules 组件库导出的反馈类与核心配置 Hooks 模块
 declare module "@/uni_modules/wot-ui" {
+  export type Toast = import("./../uni_modules/wot-ui/components/wd-toast/types").Toast;
+  export type Dialog = import("./../uni_modules/wot-ui/components/wd-dialog/types").Dialog;
+  export type NotifyProps = import("./../uni_modules/wot-ui/components/wd-notify/types").NotifyProps;
+  export type ImagePreview = import("./../uni_modules/wot-ui/components/wd-image-preview/types").ImagePreview;
+  export type ConfigProviderThemeVars = import("./../uni_modules/wot-ui/components/wd-config-provider/types").ConfigProviderThemeVars;
+
   /**
    * 获取全局 Toast 交互提示实例的 Hook 函数
    */
-  export function useToast(): {
-    show: (options: any) => void;
-    success: (msg: string | any) => void;
-    error: (msg: string | any) => void;
-    info: (msg: string | any) => void;
-    loading: (options: any) => void;
-    close: () => void;
-  };
+  export function useToast(selector?: string): Toast;
 
   /**
    * 获取全局 Dialog 对话框交互实例的 Hook 函数
    */
-  export function useDialog(): {
-    alert: (options: any) => Promise<void>;
-    confirm: (options: any) => Promise<void>;
+  export function useDialog(selector?: string): Dialog;
+
+  /**
+   * 获取全局 Notify 消息通知实例的 Hook 函数
+   */
+  export function useNotify(selector?: string): {
+    showNotify: (option: NotifyProps | string) => void;
+    closeNotify: () => void;
+  };
+
+  /**
+   * 设置全局 Notify 默认配置
+   */
+  export function setNotifyDefaultOptions(options: NotifyProps): void;
+  
+  /**
+   * 重置全局 Notify 默认配置
+   */
+  export function resetNotifyDefaultOptions(): void;
+
+  /**
+   * 获取全局 ImagePreview 图片预览实例的 Hook 函数
+   */
+  export function useImagePreview(selector?: string): ImagePreview;
+
+  /**
+   * 获取全局 ConfigProvider 主题变量配置的 Hook 函数
+   */
+  export function useConfigProvider(): {
+    themeVars: import("vue").Ref<ConfigProviderThemeVars>;
   };
 }
