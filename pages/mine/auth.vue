@@ -1,111 +1,115 @@
 <template>
-  <view class="wot-min-h-screen wot-bg-[#f6f8fc]">
-    <layout-provider>
-      <!-- 自定义顶部导航栏 -->
-      <!-- Source: uni_modules/wot-ui/components/wd-navbar/wd-navbar.vue -->
-      <wd-navbar :title="$t('bms.auth.title')" fixed placeholder left-arrow safe-area-inset-top @click-left="goBack" />
+  <layout-provider>
+    <!-- 自定义顶部导航栏 -->
+    <!-- Source: uni_modules/wot-ui/components/wd-navbar/wd-navbar.vue -->
+    <wd-navbar :title="$t('bms.auth.title')" fixed placeholder left-arrow safe-area-inset-top @click-left="goBack" />
 
-      <view class="wot-px-3 wot-py-4">
-        <!-- 核心授权状态指示卡片（扁平三态版） -->
-        <!-- Source: uni_modules/wot-ui/components/wd-card/wd-card.vue -->
-        <wd-card class="wot-mb-4">
-          <view class="wot-flex wot-items-center wot-py-4 wot-px-2">
-            <!-- 状态圆环与图标（三色动态联动） -->
-            <view
-              :class="[isAuthorized ? 'wot-bg-green-50' : authEndTime === 0 ? 'wot-bg-slate-100' : 'wot-bg-orange-50']"
-              class="status-circle-small wot-flex wot-items-center wot-justify-center wot-rounded-full wot-mr-4"
-            >
-              <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-              <wd-icon
-                :css-icon="
+    <view class="wot-px-3 wot-py-4 page-body-animate">
+      <!-- 核心授权状态指示卡片（扁平三态版） -->
+      <!-- Source: uni_modules/wot-ui/components/wd-card/wd-card.vue -->
+      <wd-card class="wot-mb-4">
+        <view class="wot-flex wot-items-center wot-py-4 wot-px-2">
+          <!-- 状态圆环与图标（三色动态联动） -->
+          <view
+            :class="[
+              isAuthorized
+                ? 'wot-bg-green-50 dark:wot-bg-green-950/30'
+                : authEndTime === 0
+                  ? 'wot-bg-slate-100 dark:wot-bg-zinc-800'
+                  : 'wot-bg-orange-50 dark:wot-bg-orange-950/30',
+            ]"
+            class="status-circle-small wot-flex wot-items-center wot-justify-center wot-rounded-full wot-mr-4"
+          >
+            <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
+            <wd-icon
+              :css-icon="
+                isAuthorized
+                  ? 'i-ri-shield-check-fill'
+                  : authEndTime === 0
+                    ? 'i-ri-shield-user-line'
+                    : 'i-ri-shield-flash-line'
+              "
+              :color="isAuthorized ? '#07c160' : authEndTime === 0 ? '#80868b' : '#ff9900'"
+              size="26px"
+            />
+          </view>
+
+          <!-- 状态与期限右侧排版 -->
+          <view class="wot-flex wot-flex-col wot-justify-center">
+            <!-- 状态主文案（自适应细分状态） -->
+            <text class="wot-text-title-medium wot-font-bold wot-text-text-main wot-mb-1">
+              {{ statusText }}
+            </text>
+
+            <!-- 时限说明气泡标签贴纸（三色气泡） -->
+            <view class="wot-flex">
+              <view
+                :class="[
                   isAuthorized
-                    ? 'i-ri-shield-check-fill'
+                    ? 'wot-bg-green-100 wot-text-green-700 dark:wot-bg-green-950/50 dark:wot-text-green-400'
                     : authEndTime === 0
-                      ? 'i-ri-shield-user-line'
-                      : 'i-ri-shield-flash-line'
-                "
-                :color="isAuthorized ? '#07c160' : authEndTime === 0 ? '#80868b' : '#ff9900'"
-                size="26px"
-              />
-            </view>
-
-            <!-- 状态与期限右侧排版 -->
-            <view class="wot-flex wot-flex-col wot-justify-center">
-              <!-- 状态主文案（自适应细分状态） -->
-              <text class="wot-text-title-medium wot-font-bold wot-text-[#202124] wot-mb-1">
-                {{ statusText }}
-              </text>
-
-              <!-- 时限说明气泡标签贴纸（三色气泡） -->
-              <view class="wot-flex">
-                <view
-                  :class="[
-                    isAuthorized
-                      ? 'wot-bg-green-100 wot-text-green-700'
-                      : authEndTime === 0
-                        ? 'wot-bg-slate-200 wot-text-slate-600'
-                        : 'wot-bg-orange-100 wot-text-orange-700',
-                  ]"
-                  class="wot-px-2.5 wot-py-0.5 wot-rounded wot-text-caption wot-font-semibold"
-                >
-                  {{ expirationText }}
-                </view>
+                      ? 'wot-bg-slate-200 wot-text-slate-600 dark:wot-bg-zinc-800 dark:wot-text-zinc-400'
+                      : 'wot-bg-orange-100 wot-text-orange-700 dark:wot-bg-orange-950/50 dark:wot-text-orange-400',
+                ]"
+                class="wot-px-2.5 wot-py-0.5 wot-rounded wot-text-caption wot-font-semibold"
+              >
+                {{ expirationText }}
               </view>
             </view>
           </view>
-        </wd-card>
+        </view>
+      </wd-card>
 
-        <!-- 设备硬件码复制卡片 -->
-        <!-- Source: uni_modules/wot-ui/components/wd-card/wd-card.vue -->
-        <wd-card class="wot-mb-4" :title="$t('bms.auth.deviceCode')">
-          <view
-            class="wot-flex wot-flex-col wot-items-center wot-py-6 wot-bg-[#f8f9fa] wot-rounded-xl"
-            @click="copyDeviceCode"
-          >
-            <!-- 硬件码内容排版 -->
-            <text class="device-code-value wot-font-black wot-text-primary wot-tracking-widest wot-pointer-events-none">
-              {{ codeDev }}
-            </text>
-            <!-- 点击复制操作引导文案 -->
-            <view class="wot-flex wot-items-center wot-mt-3 wot-gap-1 wot-pointer-events-none">
-              <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-              <wd-icon css-icon="i-ri-file-copy-2-line" size="14px" color="#80868b" />
-              <text class="wot-text-caption wot-text-[#80868b]">{{ $t("bms.auth.copyHint") }}</text>
-            </view>
+      <!-- 设备硬件码复制卡片 -->
+      <!-- Source: uni_modules/wot-ui/components/wd-card/wd-card.vue -->
+      <wd-card class="wot-mb-4" :title="$t('bms.auth.deviceCode')">
+        <view
+          class="wot-flex wot-flex-col wot-items-center wot-py-6 wot-bg-filled-main wot-rounded-xl"
+          @click="copyDeviceCode"
+        >
+          <!-- 硬件码内容排版 -->
+          <text class="device-code-value wot-font-black wot-text-primary wot-tracking-widest wot-pointer-events-none">
+            {{ codeDev }}
+          </text>
+          <!-- 点击复制操作引导文案 -->
+          <view class="wot-flex wot-items-center wot-mt-3 wot-gap-1 wot-pointer-events-none">
+            <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
+            <wd-icon css-icon="i-ri-file-copy-2-line" size="14px" color="#80868b" />
+            <text class="wot-text-caption wot-text-text-secondary">{{ $t("bms.auth.copyHint") }}</text>
           </view>
-        </wd-card>
+        </view>
+      </wd-card>
 
-        <!-- 激活指令输入与确认按钮卡片 -->
-        <!-- Source: uni_modules/wot-ui/components/wd-card/wd-card.vue -->
-        <wd-card class="wot-mb-4" :title="$t('bms.auth.authCode')">
-          <view class="wot-py-2">
-            <!-- 授权激活输入框 -->
-            <!-- Source: uni_modules/wot-ui/components/wd-input/wd-input.vue -->
-            <wd-input
-              v-model="codeCheck"
-              type="text"
-              clearable
-              :placeholder="$t('bms.auth.inputPlaceholder')"
-              :maxlength="8"
-              custom-style="margin-bottom: 24px;"
-            />
+      <!-- 激活指令输入与确认按钮卡片 -->
+      <!-- Source: uni_modules/wot-ui/components/wd-card/wd-card.vue -->
+      <wd-card class="wot-mb-4" :title="$t('bms.auth.authCode')">
+        <view class="wot-py-2">
+          <!-- 授权激活输入框 -->
+          <!-- Source: uni_modules/wot-ui/components/wd-input/wd-input.vue -->
+          <wd-input
+            v-model="codeCheck"
+            type="text"
+            clearable
+            :placeholder="$t('bms.auth.inputPlaceholder')"
+            :maxlength="8"
+            custom-style="margin-bottom: 24px;"
+          />
 
-            <!-- 激活保存大按钮 -->
-            <!-- Source: uni_modules/wot-ui/components/wd-button/wd-button.vue -->
-            <wd-button block type="primary" size="large" @click="onCheckCode">
-              {{ $t("bms.auth.activateBtn") }}
-            </wd-button>
-          </view>
-        </wd-card>
-      </view>
-    </layout-provider>
+          <!-- 激活保存大按钮 -->
+          <!-- Source: uni_modules/wot-ui/components/wd-button/wd-button.vue -->
+          <wd-button block type="primary" size="large" @click="onCheckCode">
+            {{ $t("bms.auth.activateBtn") }}
+          </wd-button>
+        </view>
+      </wd-card>
+    </view>
 
     <!-- 挂载反馈实例 -->
     <!-- Source: uni_modules/wot-ui/components/wd-toast/wd-toast.vue -->
     <wd-toast />
     <!-- Source: uni_modules/wot-ui/components/wd-dialog/wd-dialog.vue -->
     <wd-dialog />
-  </view>
+  </layout-provider>
 </template>
 
 <script setup lang="ts">

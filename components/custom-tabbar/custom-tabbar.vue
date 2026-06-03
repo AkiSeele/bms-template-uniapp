@@ -1,13 +1,13 @@
 <template>
   <!-- 自定义底部导航栏组件，fixed 属性开启固定定位，placeholder 属性生成底部占位，bordered 开启上边框 -->
-  <wd-tabbar :model-value="active" @change="handleChange" fixed placeholder bordered>
+  <wd-tabbar :model-value="activeTab" @change="handleChange" fixed placeholder bordered :active-color="activeThemeColor">
     <!-- 实时数据 Tab 选项项 -->
     <wd-tabbar-item name="realtime" :title="$t('bms.tab.realtime')">
       <template #icon="{ active }">
         <wd-icon 
           css-icon="i-lucide-activity" 
           size="22px" 
-          :color="active ? '#0052d9' : '#858585'" 
+          :color="active ? activeThemeColor : '#858585'" 
         />
       </template>
     </wd-tabbar-item>
@@ -17,7 +17,7 @@
         <wd-icon 
           css-icon="i-lucide-sliders" 
           size="22px" 
-          :color="active ? '#0052d9' : '#858585'" 
+          :color="active ? activeThemeColor : '#858585'" 
         />
       </template>
     </wd-tabbar-item>
@@ -27,7 +27,7 @@
         <wd-icon 
           css-icon="i-lucide-settings" 
           size="22px" 
-          :color="active ? '#0052d9' : '#858585'" 
+          :color="active ? activeThemeColor : '#858585'" 
         />
       </template>
     </wd-tabbar-item>
@@ -38,7 +38,7 @@
         <wd-icon 
           css-icon="i-lucide-user" 
           size="22px" 
-          :color="active ? '#0052d9' : '#858585'" 
+          :color="active ? activeThemeColor : '#858585'" 
         />
       </template>
     </wd-tabbar-item>
@@ -46,12 +46,13 @@
 </template>
 
 <script setup lang="ts">
+import { storeToRefs } from "pinia";
+import { useAppStore } from "@/stores/app";
 import { useLogStore } from "@/stores/log-store";
 
-// 接收父组件传入的 active，代表当前页面高亮的 Tab 标识
-const props = defineProps<{
-  active: string
-}>()
+// 获取全局 appStore 配色与底栏选项激活状态管理器
+const appStore = useAppStore();
+const { activeThemeColor, activeTab } = storeToRefs(appStore);
 
 // 个人中心 Tab 点击回调，用于连续点击计数解锁系统调试日志
 const handleMineClick = () => {
@@ -65,31 +66,9 @@ const handleMineClick = () => {
 
 // 处理底部 Tabbar 切换的核心跳转逻辑
 const handleChange = ({ value }: { value: string }) => {
-  if (value === props.active) return
-  
-  let url = ''
-  switch (value) {
-    case 'realtime':
-      url = '/pages/index/index'
-      break
-    case 'param':
-      url = '/pages/param/index'
-      break
-    case 'control':
-      url = '/pages/control/index'
-      break
-    case 'mine':
-      url = '/pages/mine/index'
-      break
-  }
-  
-  if (url) {
-    // 采用 redirectTo 跳转以防止普通页面之间切换时历史栈无限堆叠导致返回键失效的 Bug
-    uni.redirectTo({
-      url
-    })
-  }
-}
+  if (value === activeTab.value) return;
+  appStore.setActiveTab(value);
+};
 </script>
 
 <style scoped>

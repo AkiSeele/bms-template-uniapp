@@ -1,7 +1,7 @@
 {
 	"name": "FileSelect",
 	"id": "lemonjk-FileSelect",
-	"version": "4.1.0",
+	"version": "5.2.0",
 	"description": "文件选取插件",
 	"_dp_type": "nativeplugin",
 	"_dp_nativeplugin": {
@@ -44,7 +44,7 @@
 				}
 			],
 			"integrateType": "framework",
-			"deploymentTarget": "11.0"
+			"deploymentTarget": "12.0"
 		}
 	}
 }

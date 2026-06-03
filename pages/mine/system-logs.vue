@@ -373,7 +373,7 @@ const handleCopyLogs = () => {
 
 /* 侧边高雅状态条 */
 .connection-card-success {
-  border-left: 4px solid var(--wot-color-primary, #0052d9);
+  border-left: 4px solid var(--wot-color-theme, #0052d9);
 }
 
 .connection-card-danger {
@@ -381,7 +381,7 @@ const handleCopyLogs = () => {
 }
 
 .api-card-success {
-  border-left: 4px solid var(--wot-color-primary, #0052d9);
+  border-left: 4px solid var(--wot-color-theme, #0052d9);
 }
 
 .api-card-danger {
@@ -389,7 +389,7 @@ const handleCopyLogs = () => {
 }
 
 .command-group-card {
-  border-left: 4px solid var(--wot-color-primary, #0052d9);
+  border-left: 4px solid var(--wot-color-theme, #0052d9);
 }
 
 /* 指令收发内部卡片微渐变 */
@@ -435,7 +435,7 @@ const handleCopyLogs = () => {
 }
 
 .tx-dot {
-  background-color: var(--wot-color-primary, #0052d9);
+  background-color: var(--wot-color-theme, #0052d9);
   box-shadow: 0 0 6px rgba(0, 82, 217, 0.6);
 }
 

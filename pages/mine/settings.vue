@@ -4,23 +4,23 @@
     <!-- Source: uni_modules/wot-ui/components/wd-navbar/wd-navbar.vue -->
     <wd-navbar :title="$t('bms.settings.title')" fixed placeholder left-arrow safe-area-inset-top @click-left="goBack" />
 
-    <view class="wot-px-3 wot-py-4 wot-flex wot-flex-col wot-gap-4">
+    <view class="wot-px-3 wot-py-4 wot-flex wot-flex-col wot-gap-4 page-body-animate">
       <!-- 全站视觉配色配置卡片 (主题色、警告色、成功色、危险色) -->
-      <view class="config-card wot-bg-white wot-rounded-2xl wot-p-3.5 wot-border wot-border-solid wot-border-[#e0e3eb] wot-shadow-sm">
+      <view class="config-card wot-bg-filled-oppo wot-rounded-2xl wot-p-3.5 wot-border wot-border-solid wot-border-border-main wot-shadow-sm">
         <view class="wot-flex wot-flex-col wot-mb-4">
-          <text class="wot-text-sm wot-font-bold wot-text-[#202124]">{{ $t("bms.settings.colorConfig") }}</text>
+          <text class="wot-text-sm wot-font-bold wot-text-text-main">{{ $t("bms.settings.colorConfig") }}</text>
         </view>
 
         <view class="wot-flex wot-flex-col wot-gap-4">
           <!-- 1. 主题主色配置项 -->
           <view class="color-item-wrapper wot-flex wot-flex-col wot-gap-1.5">
             <view class="wot-flex wot-items-center wot-justify-between">
-              <text class="wot-text-xs wot-font-semibold wot-text-[#202124]">{{ $t("bms.settings.themeColor") }}</text>
+              <text class="wot-text-xs wot-font-semibold wot-text-text-main">{{ $t("bms.settings.themeColor") }}</text>
               <!-- 实时色块预览 -->
-              <view class="color-preview wot-rounded-md" :style="{ backgroundColor: themeColor || '#0052d9' }"></view>
+              <view class="color-preview wot-rounded-md" :style="{ backgroundColor: themeColor || (actualTheme === 'dark' ? '#0ea5e9' : '#0052d9') }"></view>
             </view>
-            <view class="wot-flex wot-items-center wot-bg-[#f1f3f4] wot-rounded-lg wot-px-3 wot-py-1.5">
-              <input v-model="themeColor" placeholder="#0052d9" placeholder-class="settings-placeholder" class="settings-input wot-flex-1 wot-text-xs wot-text-[#202124]" />
+            <view class="wot-flex wot-items-center wot-bg-filled-main wot-rounded-lg wot-px-3 wot-py-1.5">
+              <input v-model="themeColor" :placeholder="actualTheme === 'dark' ? '#0ea5e9' : '#0052d9'" placeholder-class="settings-placeholder" class="settings-input wot-flex-1 wot-text-xs wot-text-text-main" />
               <view v-if="themeColor" class="clear-btn wot-flex wot-items-center wot-justify-center wot-p-0.5" @click="themeColor = ''">
                 <wd-icon css-icon="i-ri-close-fill" size="14px" color="#80868b" />
               </view>
@@ -43,12 +43,12 @@
           <!-- 2. 警告状态色配置项 -->
           <view class="color-item-wrapper wot-flex wot-flex-col wot-gap-1.5">
             <view class="wot-flex wot-items-center wot-justify-between">
-              <text class="wot-text-xs wot-font-semibold wot-text-[#202124]">{{ $t("bms.settings.warningColor") }}</text>
+              <text class="wot-text-xs wot-font-semibold wot-text-text-main">{{ $t("bms.settings.warningColor") }}</text>
               <!-- 实时色块预览 -->
               <view class="color-preview wot-rounded-md" :style="{ backgroundColor: warningColor || '#e37318' }"></view>
             </view>
-            <view class="wot-flex wot-items-center wot-bg-[#f1f3f4] wot-rounded-lg wot-px-3 wot-py-1.5">
-              <input v-model="warningColor" placeholder="#e37318" placeholder-class="settings-placeholder" class="settings-input wot-flex-1 wot-text-xs wot-text-[#202124]" />
+            <view class="wot-flex wot-items-center wot-bg-filled-main wot-rounded-lg wot-px-3 wot-py-1.5">
+              <input v-model="warningColor" placeholder="#e37318" placeholder-class="settings-placeholder" class="settings-input wot-flex-1 wot-text-xs wot-text-text-main" />
               <view v-if="warningColor" class="clear-btn wot-flex wot-items-center wot-justify-center wot-p-0.5" @click="warningColor = ''">
                 <wd-icon css-icon="i-ri-close-fill" size="14px" color="#80868b" />
               </view>
@@ -71,12 +71,12 @@
           <!-- 3. 成功状态色配置项 -->
           <view class="color-item-wrapper wot-flex wot-flex-col wot-gap-1.5">
             <view class="wot-flex wot-items-center wot-justify-between">
-              <text class="wot-text-xs wot-font-semibold wot-text-[#202124]">{{ $t("bms.settings.successColor") }}</text>
+              <text class="wot-text-xs wot-font-semibold wot-text-text-main">{{ $t("bms.settings.successColor") }}</text>
               <!-- 实时色块预览 -->
               <view class="color-preview wot-rounded-md" :style="{ backgroundColor: successColor || '#2ba471' }"></view>
             </view>
-            <view class="wot-flex wot-items-center wot-bg-[#f1f3f4] wot-rounded-lg wot-px-3 wot-py-1.5">
-              <input v-model="successColor" placeholder="#2ba471" placeholder-class="settings-placeholder" class="settings-input wot-flex-1 wot-text-xs wot-text-[#202124]" />
+            <view class="wot-flex wot-items-center wot-bg-filled-main wot-rounded-lg wot-px-3 wot-py-1.5">
+              <input v-model="successColor" placeholder="#2ba471" placeholder-class="settings-placeholder" class="settings-input wot-flex-1 wot-text-xs wot-text-text-main" />
               <view v-if="successColor" class="clear-btn wot-flex wot-items-center wot-justify-center wot-p-0.5" @click="successColor = ''">
                 <wd-icon css-icon="i-ri-close-fill" size="14px" color="#80868b" />
               </view>
@@ -99,12 +99,12 @@
           <!-- 4. 危险状态色配置项 -->
           <view class="color-item-wrapper wot-flex wot-flex-col wot-gap-1.5">
             <view class="wot-flex wot-items-center wot-justify-between">
-              <text class="wot-text-xs wot-font-semibold wot-text-[#202124]">{{ $t("bms.settings.dangerColor") }}</text>
+              <text class="wot-text-xs wot-font-semibold wot-text-text-main">{{ $t("bms.settings.dangerColor") }}</text>
               <!-- 实时色块预览 -->
               <view class="color-preview wot-rounded-md" :style="{ backgroundColor: dangerColor || '#d54941' }"></view>
             </view>
-            <view class="wot-flex wot-items-center wot-bg-[#f1f3f4] wot-rounded-lg wot-px-3 wot-py-1.5">
-              <input v-model="dangerColor" placeholder="#d54941" placeholder-class="settings-placeholder" class="settings-input wot-flex-1 wot-text-xs wot-text-[#202124]" />
+            <view class="wot-flex wot-items-center wot-bg-filled-main wot-rounded-lg wot-px-3 wot-py-1.5">
+              <input v-model="dangerColor" placeholder="#d54941" placeholder-class="settings-placeholder" class="settings-input wot-flex-1 wot-text-xs wot-text-text-main" />
               <view v-if="dangerColor" class="clear-btn wot-flex wot-items-center wot-justify-center wot-p-0.5" @click="dangerColor = ''">
                 <wd-icon css-icon="i-ri-close-fill" size="14px" color="#80868b" />
               </view>
@@ -125,14 +125,13 @@
           </view>
         </view>
       </view>
-
-
     </view>
   </layout-provider>
 </template>
 
 <script setup lang="ts">
 import { ref, watch } from "vue";
+import { storeToRefs } from "pinia";
 import { useToast } from "@/uni_modules/wot-ui";
 import { useI18n } from "vue-i18n";
 import { useAppStore } from "@/stores/app";
@@ -143,6 +142,7 @@ const { t } = useI18n();
 
 // 获取全局 appStore 配色管理器
 const appStore = useAppStore();
+const { actualTheme } = storeToRefs(appStore);
 
 // 配置数据双向绑定状态
 // ------------------------------------------------------------
@@ -202,7 +202,7 @@ watch(
 .color-preview {
   width: 32px;
   height: 20px;
-  border: 1px solid #e0e3eb;
+  border: 1px solid var(--wot-border-main, #e0e3eb);
   transition: background-color 0.25s ease;
 }
 

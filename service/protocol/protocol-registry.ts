@@ -76,27 +76,50 @@ export const getRegisteredUuids = (): string[] => {
 };
 
 // ============================================================
-// 协议注册区（新增协议时在此处追加 registerProtocol 调用）
+// 协议自动扫描与注册区（基于 Vite 编译期 Glob 自动加载）
 // ============================================================
-// 注意：导入语句放在文件顶部，注册调用放在此处，保持文件结构整洁
-// 每行注册对应一个协议，注释说明对应的协议文件和协议名称
 
-import { ProtocolAParser } from "./protocol-a";
+// 1. 使用 Glob Eager 静态读取所有策略解析器文件（排除注册表本身）
+// @ts-ignore
+const protocolModules = import.meta.glob("./!(protocol-registry).ts", { eager: true });
+const parserClasses = new Map<string, any>();
 
-// 动态从 config/index.ts 的 BLE_SERVICES 区域拉取协议 A 的所有服务 UUID 并注册
-// 实现单一配置源（Single Source of Truth），后续只需修改 config/index.ts 即可自动生效
-const protocolAUuids = (APP_CONFIG.BLE_SERVICES.PROTOCOL_A_SERVICES || []).map(
-  (s) => s.serviceId,
-);
-registerProtocol(() => new ProtocolAParser(), ...protocolAUuids);
+// 2. 遍历模块提取并按文件名规律自动关联装载
+for (const path in protocolModules) {
+  const match = path.match(/\.\/([a-z0-9\_]+)\.ts$/);
+  if (match) {
+    const filename = match[1]!;
+    const mod = protocolModules[path] as any;
+    for (const key in mod) {
+      const ExportedClass = mod[key];
+      if (typeof ExportedClass === "function" && ExportedClass.prototype) {
+        parserClasses.set(filename, ExportedClass);
+        break; // 每个文件导出一个主要 Parser
+      }
+    }
+  }
+}
 
-// ============================================================
-// 以下为待接入协议的预留注册位（获取协议文档后解除注释并实现）
-// ============================================================
-// import { ProtocolBParser } from "./protocol-b";
-// const protocolBUuids = (APP_CONFIG.BLE_SERVICES.PROTOCOL_B_SERVICES || []).map(s => s.serviceId);
-// registerProtocol(() => new ProtocolBParser(), ...protocolBUuids);
-//
-// import { ProtocolCParser } from "./protocol-c";
-// const protocolCUuids = ((APP_CONFIG.BLE_SERVICES as any).PROTOCOL_C_SERVICES || []).map((s: any) => s.serviceId);
-// registerProtocol(() => new ProtocolCParser(), ...protocolCUuids);
+// 3. 遍历 config/index.ts 中的多协议服务配置，自适应完成物理注册与缺失报错引导
+const bleServicesConfig = APP_CONFIG.BLE_SERVICES as Record<string, any>;
+for (const configKey in bleServicesConfig) {
+  // 直接以配置键名（如 juliwei、protocol_b）作为协议标识符，实现零转换硬对齐
+  const expectedProtocolType = configKey;
+
+  const ParserClass = parserClasses.get(expectedProtocolType);
+
+  if (ParserClass) {
+    const serviceConfigs = bleServicesConfig[configKey] || [];
+    const uuids = serviceConfigs.map((s: any) => s.serviceId);
+    if (uuids.length > 0) {
+      // 实例化时自动传入协议标识符作为构造函数参数，对齐协议标识
+      registerProtocol(() => new ParserClass(expectedProtocolType), ...uuids);
+    }
+  } else {
+    // 自动抛出报错日志以引导开发者创建对应协议文件
+    console.error(
+      `[协议注册表] ⚠️ 检测到 config/index.ts 中配置了协议 "${configKey}"，但未找到对应的物理策略文件 "service/protocol/${expectedProtocolType}.ts"。` +
+        `请创建该文件并导出解析器类。`
+    );
+  }
+}

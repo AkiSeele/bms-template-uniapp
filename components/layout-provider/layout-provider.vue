@@ -8,7 +8,10 @@
     />
     
     <!-- 内容容器，剥离 transition，恢复 fixed 组件的自然视口参照 -->
-    <view class="layout-provider-content wot-min-h-screen">
+    <view 
+      :class="[actualTheme === 'dark' ? 'wot-theme-dark' : 'wot-theme-light']"
+      class="layout-provider-content wot-min-h-screen"
+    >
       <!-- 插槽投影承载具体的页面正文内容 -->
       <slot />
 
@@ -25,7 +28,7 @@
         :z-index="2000"
         custom-style="background: transparent; box-shadow: none; z-index: 2000;"
       >
-        <view class="connecting-popup wot-flex wot-flex-col wot-items-center wot-py-8 wot-px-6 wot-relative">
+        <view class="connecting-popup wot-bg-filled-oppo wot-flex wot-flex-col wot-items-center wot-py-8 wot-px-6 wot-relative">
           <!-- 取消自动连接按钮 (仅在自动连接搜索阶段展示) -->
           <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
           <view
@@ -36,9 +39,12 @@
             <wd-icon css-icon="i-ri-close-line" size="20px" color="#858585" />
           </view>
           <!-- 环形旋转加载组件 -->
-          <view class="connect-spinner wot-mb-4" />
+          <view 
+            class="connect-spinner wot-mb-4" 
+            :style="{ borderColor: activeThemeColor + '1a', borderTopColor: activeThemeColor }"
+          />
           <!-- 加载状态提示词 -->
-          <text class="wot-text-base wot-font-medium wot-text-[#202124]">
+          <text class="wot-text-base wot-font-medium wot-text-text-main">
             {{ connectingText }}
           </text>
         </view>
@@ -59,10 +65,10 @@
           <view class="error-icon-ring wot-flex wot-items-center wot-justify-center wot-rounded-full wot-mb-3">
             <wd-icon css-icon="i-ri-close-circle-fill" size="36px" color="#ea4335" />
           </view>
-          <text class="wot-text-base wot-font-bold wot-text-[#202124] wot-mb-2">
+          <text class="wot-text-base wot-font-bold wot-text-text-main wot-mb-2">
             {{ $t("bms.ble.connectFailed") }}
           </text>
-          <text class="wot-text-sm wot-text-[#5f6368] wot-text-center">{{ connectionError }}</text>
+          <text class="wot-text-sm wot-text-text-secondary wot-text-center">{{ connectionError }}</text>
           <view class="wot-mt-6 wot-w-full">
             <wd-button block type="primary" @click="isConnectionErrorVisible = false">
               {{ $t("bms.common.confirm") }}
@@ -84,7 +90,7 @@ import { LIGHT_THEME_VARS, DARK_THEME_VARS } from "@/config/theme";
 
 // 获取全局应用层状态 store
 const appStore = useAppStore();
-const { actualTheme } = storeToRefs(appStore);
+const { actualTheme, activeThemeColor } = storeToRefs(appStore);
 
 // 获取全局低功耗蓝牙通信状态 store，共享连接中与失败提示状态
 const bleStore = useBleStore();
@@ -114,31 +120,94 @@ const connectingText = computed(() => {
 
 // 根据当前明暗主题，动态切换并覆盖自定义主题配色
 // 因三方组件库的 ConfigProviderThemeVars 类型声明限制，在此强制使用 as any 类型断言进行兜底，以顺利通过 IDE 静态校验
-const themeVars = computed(() => {
-  const baseVars = actualTheme.value === "dark" ? DARK_THEME_VARS : LIGHT_THEME_VARS;
+// 动态计算并生成 wot-ui 10级主色调阶梯变量，以确保按钮/开关在 hover、active、clicked、disabled 各状态下的配色完全同步
+const generatePrimaryPalette = (color: string, isDark: boolean) => {
+  const vars: Record<string, string> = {
+    colorTheme: color,
+    primaryColor: color,
+    primary6: color,
+  };
   
-  // 智能混入用户在“项目设置”中自定义的色彩参数，若为空则沿用默认主题配置
-  const customVars: Record<string, string> = {};
-  if (appStore.customThemeColor) {
-    customVars["colorTheme"] = appStore.customThemeColor;
-    customVars["primaryColor"] = appStore.customThemeColor;
-    customVars["primary6"] = appStore.customThemeColor;
+  // 校验是否为标准的 7 位十六进制颜色格式
+  const isHex7 = /^#[0-9a-fA-F]{6}$/.test(color);
+  if (!isHex7) {
+    // 降级防御：对非标准色值进行全阶梯覆盖以防显示错误或崩溃
+    for (let i = 1; i <= 10; i++) {
+      if (i !== 6) {
+        vars[`primary${i}`] = color;
+      }
+    }
+    return vars;
   }
+  
+  if (isDark) {
+    // 暗色模式：主色阶梯混入黑色度（以透明度模拟实现）
+    vars["primary1"] = color + "1a"; // 10% opacity
+    vars["primary2"] = color + "33"; // 20% opacity
+    vars["primary3"] = color + "4d"; // 30% opacity (disabled)
+    vars["primary4"] = color + "66"; // 40% opacity
+    vars["primary5"] = color + "b3"; // 70% opacity (hover)
+    vars["primary7"] = color + "cc"; // 80% opacity (clicked / active)
+    vars["primary8"] = color + "99"; // 60% opacity
+    vars["primary9"] = color + "66"; // 40% opacity
+    vars["primary10"] = color + "33"; // 20% opacity
+  } else {
+    // 亮色模式：主色阶梯混入白色度（以透明度模拟实现）
+    vars["primary1"] = color + "0d"; // 5% opacity
+    vars["primary2"] = color + "1a"; // 10% opacity
+    vars["primary3"] = color + "33"; // 20% opacity (disabled)
+    vars["primary4"] = color + "59"; // 35% opacity
+    vars["primary5"] = color + "b3"; // 70% opacity (hover)
+    vars["primary7"] = color + "e6"; // 90% opacity (clicked / active)
+    vars["primary8"] = color + "cc"; // 80% opacity
+    vars["primary9"] = color + "b3"; // 70% opacity
+    vars["primary10"] = color + "99"; // 60% opacity
+  }
+  return vars;
+};
+
+// 根据当前明暗主题，动态切换并覆盖自定义主题配色
+// 因三方组件库的 ConfigProviderThemeVars 类型声明限制，在此强制使用 as any 类型断言进行兜底，以顺利通过 IDE 静态校验
+const themeVars = computed(() => {
+  const isDark = actualTheme.value === "dark";
+  const baseVars = isDark ? DARK_THEME_VARS : LIGHT_THEME_VARS;
+  
+  // 提取激活的基准品牌主色调（优先取自定义主色，无自定义时根据模式自适应返回默认色值）
+  const activeColor = appStore.customThemeColor || (isDark ? "#0ea5e9" : "#0052d9");
+  
+  // 动态演算生成 10 个梯度的主色调 CSS 变量
+  const primaryPaletteVars = generatePrimaryPalette(activeColor, isDark);
+  
+  // 智能混入用户在“项目设置”中自定义的辅助状态色参数，并同步补全其相应的状态变化色阶
+  const customVars: Record<string, string> = {};
   if (appStore.customWarningColor) {
-    customVars["warningColor"] = appStore.customWarningColor;
-    customVars["colorWarning"] = appStore.customWarningColor;
+    const color = appStore.customWarningColor;
+    customVars["warningMain"] = color;
+    customVars["warningHover"] = color + "b3";
+    customVars["warningClicked"] = color + "e6";
+    customVars["warningDisabled"] = color + "33";
+    customVars["warningSurface"] = color + "1a";
   }
   if (appStore.customDangerColor) {
-    customVars["dangerColor"] = appStore.customDangerColor;
-    customVars["colorDanger"] = appStore.customDangerColor;
+    const color = appStore.customDangerColor;
+    customVars["dangerMain"] = color;
+    customVars["dangerHover"] = color + "b3";
+    customVars["dangerClicked"] = color + "e6";
+    customVars["dangerDisabled"] = color + "33";
+    customVars["dangerSurface"] = color + "1a";
   }
   if (appStore.customSuccessColor) {
-    customVars["successColor"] = appStore.customSuccessColor;
-    customVars["colorSuccess"] = appStore.customSuccessColor;
+    const color = appStore.customSuccessColor;
+    customVars["successMain"] = color;
+    customVars["successHover"] = color + "b3";
+    customVars["successClicked"] = color + "e6";
+    customVars["successDisabled"] = color + "33";
+    customVars["successSurface"] = color + "1a";
   }
   
   return {
     ...baseVars,
+    ...primaryPaletteVars,
     ...customVars,
   } as any;
 });
@@ -159,6 +228,21 @@ const themeVars = computed(() => {
 /* 内容层容器，确保正常呈现页面元素及拥有正常的 min-height */
 .layout-provider-content {
   box-sizing: border-box;
+}
+
+/* 仅对页面正文部分应用淡入动画 */
+.page-body-animate {
+  animation: pageFadeIn 0.22s ease-out forwards;
+  will-change: opacity;
+}
+
+@keyframes pageFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 /* 亮色模式的高端微渐变灰白色大背景 */
@@ -183,9 +267,15 @@ const themeVars = computed(() => {
 
 /* 全局「连接中」Popup 背景样式 */
 .connecting-popup {
-  background: #ffffff;
   border-radius: 20px;
   margin: 0 12px 12px;
+  border: 1px solid var(--wot-border-main, #e5e6eb);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+  transition: background-color 0.35s ease-in-out, border-color 0.35s ease-in-out, box-shadow 0.35s ease-in-out !important;
+}
+
+.wot-theme-dark .connecting-popup {
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.55);
 }
 
 /* 全局连接中高帧率旋转环形 */
@@ -210,5 +300,8 @@ const themeVars = computed(() => {
   height: 64px;
   background-color: #fce8e6;
   border-radius: 50%;
+}
+.wot-theme-dark .error-icon-ring {
+  background-color: #2b1b1b;
 }
 </style>

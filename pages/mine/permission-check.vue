@@ -18,7 +18,7 @@
           class="wot-p-4 wot-border-b wot-border-gray-100 dark:wot-border-neutral-800 wot-flex wot-justify-between wot-items-center"
         >
           <view class="wot-flex wot-items-center">
-            <wd-icon css-icon="i-lucide-shield-check" size="20px" class="wot-mr-2" color="#0052d9" />
+            <wd-icon css-icon="i-lucide-shield-check" size="20px" class="wot-mr-2" :color="activeThemeColor" />
             <text class="wot-text-base wot-font-bold wot-text-text-main">{{ $t("bms.mine.permissionsTitle") }}</text>
           </view>
           <wd-button size="small" plain @click="checkAllPermissions(true)">
@@ -136,7 +136,7 @@
           class="wot-p-4 wot-border-b wot-border-gray-100 dark:wot-border-neutral-800 wot-flex wot-items-center"
         >
           <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-          <wd-icon css-icon="i-lucide-smartphone" size="20px" class="wot-mr-2" color="#0052d9" />
+          <wd-icon css-icon="i-lucide-smartphone" size="20px" class="wot-mr-2" :color="activeThemeColor" />
           <text class="wot-text-base wot-font-bold wot-text-text-main">{{ $t("bms.mine.deviceInfo") }}</text>
         </view>
         <wd-cell-group border>
@@ -174,7 +174,7 @@ const toast = useToast();
 
 // 初始化并引入全局设备与环境存储仓
 const appStore = useAppStore();
-const { deviceInfo } = storeToRefs(appStore);
+const { deviceInfo, activeThemeColor } = storeToRefs(appStore);
 
 
 // 诊断当前运行宿主平台所在的端并转换为对应的翻译字词，使用运行时 uniPlatform 避免条件编译失效问题

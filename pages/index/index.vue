@@ -1,576 +1,97 @@
 <template>
-  <view class="wot-min-h-screen">
-    <layout-provider>
-      <!-- 自定义顶部导航栏组件，固定在顶部，防内容遮挡，并在右侧绑定扫码动作 -->
-    <!-- Source: uni_modules/wot-ui/components/wd-navbar/wd-navbar.vue -->
-    <wd-navbar
-      :title="$t('bms.title')"
-      fixed
-      safe-area-inset-top
-      placeholder
-      @click-right="handleScanConnect"
-    >
-      <template #left v-if="!isOfflineMode">
-        <!-- 自适应展示云联机胶囊式微型提示 -->
-        <view class="wot-flex wot-items-center wot-gap-1">
-          <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-          <wd-icon
-            css-icon="i-lucide-cloud"
-            size="16px"
-            color="#0052d9"
-          />
-          <text
-            class="wot-text-primary wot-text-caption wot-font-bold wot-scale-90"
-          >
-            {{ $t("bms.mine.cloudOnline") }}
-          </text>
-        </view>
-      </template>
-      <template #right>
-        <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-        <wd-icon css-icon="i-lucide-scan" size="20px" />
-      </template>
-    </wd-navbar>
-
-    <view class="wot-px-3 wot-py-4 wot-pb-10">
-      <!-- 头部区域：蓝牙连接状态栏 -->
-      <view
-        class="header-card wot-bg-filled-oppo wot-rounded-2xl wot-p-main wot-shadow-sm wot-mb-4 wot-flex wot-items-center wot-justify-between"
-      >
-        <view class="wot-flex wot-items-center wot-gap-3">
-          <!-- 蓝牙状态图标：使用 wd-icon 结合 UnoCSS 动态图标类名承载，并在连接状态下添加呼吸灯动画效果 -->
-          <wd-icon
-            :css-icon="isConnected ? 'i-ri-bluetooth-fill animate-pulse' : 'i-ri-bluetooth-line'"
-            size="28px"
-            :color="isConnected ? '#0052d9' : '#858585'"
-          />
-          <view class="wot-flex wot-flex-col">
-            <text class="wot-text-title-large wot-text-text-main wot-font-bold">
-              {{ isConnected ? connectedName : $t("bms.ble.disconnected") }}
-            </text>
-            <text class="wot-text-caption wot-text-text-secondary wot-mt-0.5">
-              {{ isConnected ? $t("bms.ble.deviceMac") + connectedMac : $t("bms.ble.promptConnect") }}
-            </text>
-          </view>
-        </view>
-
-        <!-- 连接/断开蓝牙设备的控制按钮 -->
-        <button
-          @click="toggleConnection"
-          :class="isConnected ? 'wot-border-border-main wot-text-text-main' : 'wot-bg-primary wot-text-text-white'"
-          class="connect-btn wot-rounded-full wot-px-main wot-py-extra-tight wot-text-label-large wot-font-semibold wot-shadow-sm"
-        >
-          {{ isConnected ? $t("bms.ble.disconnect") : $t("bms.ble.connect") }}
-        </button>
+  <layout-provider>
+    <view class="wot-pb-20">
+      <!-- 依据 activeTab 局部切换并缓存四大面板，消除路由跳转白屏 -->
+      <view v-show="activeTab === 'realtime'">
+        <component :is="homePanelComponent" v-if="homePanelComponent" />
       </view>
-
-      <!-- 核心状态区域：电池电量卡片 -->
-      <view
-        class="battery-card wot-bg-filled-oppo wot-rounded-2xl wot-p-super-loose wot-shadow-sm wot-mb-4 wot-flex wot-flex-col wot-items-center"
-      >
-        <!-- 电池状态图标：在断开连接、充电、普通放电状态下切换展示不同的 Lucide 图标 -->
-        <view class="wot-relative wot-flex wot-items-center wot-justify-center wot-mb-3">
-          <wd-icon
-            :css-icon="batteryStatusIcon"
-            size="96px"
-            :color="batteryStatusColor"
-          />
-        </view>
-
-        <!-- 剩余电量百分比展示 -->
-        <text class="wot-text-title-large wot-font-bold wot-text-text-main wot-text-5xl wot-my-2">
-          {{ isConnected ? batteryPercent + "%" : "-- %" }}
-        </text>
-
-        <!-- 充电/放电的详细容量信息状态栏 -->
-        <view class="wot-flex wot-items-center wot-gap-2 wot-mb-4">
-          <text
-            class="wot-text-body-main wot-font-medium"
-            :class="isCharging ? 'wot-text-success-main' : 'wot-text-text-secondary'"
-          >
-            {{ batteryStatusText }}
-          </text>
-          <text class="wot-text-caption wot-text-text-secondary">|</text>
-          <text class="wot-text-caption wot-text-text-secondary">
-            {{ $t("bms.battery.remainingCapacity") }}:
-            {{ remainCap }}
-          </text>
-        </view>
+      <view v-show="activeTab === 'param'">
+        <component :is="paramPanelComponent" v-if="paramPanelComponent" />
       </view>
-
-      <!-- 核心参数展示网格 -->
-      <view class="wot-grid wot-grid-cols-2 wot-gap-3 wot-mb-4">
-        <!-- 总电压展示项 -->
-        <view
-          class="param-card wot-bg-filled-oppo wot-rounded-xl wot-p-main wot-shadow-sm wot-flex wot-items-center wot-gap-3"
-        >
-          <wd-icon css-icon="i-lucide-zap" size="28px" color="#e37318" />
-          <view class="wot-flex wot-flex-col">
-            <text class="wot-text-caption wot-text-text-secondary">{{ $t("bms.params.totalVoltage") }}</text>
-            <text class="wot-text-body-main wot-font-bold wot-text-text-main wot-mt-0.5">
-              {{ isConnected ? totalVoltage + " V" : "-- V" }}
-            </text>
-          </view>
-        </view>
-
-        <!-- 实时电流展示项 -->
-        <view
-          class="param-card wot-bg-filled-oppo wot-rounded-xl wot-p-main wot-shadow-sm wot-flex wot-items-center wot-gap-3"
-        >
-          <wd-icon
-            css-icon="i-lucide-activity"
-            size="28px"
-            :color="isConnected ? (isCharging ? '#2ba471' : '#d54941') : '#858585'"
-          />
-          <view class="wot-flex wot-flex-col">
-            <text class="wot-text-caption wot-text-text-secondary">{{ $t("bms.params.realtimeCurrent") }}</text>
-            <text
-              class="wot-text-body-main wot-font-bold wot-mt-0.5"
-              :class="
-                isConnected ? (isCharging ? 'wot-text-success-main' : 'wot-text-danger-main') : 'wot-text-text-main'
-              "
-            >
-              {{ isConnected ? (realtimeCurrent >= 0 ? "+" : "") + realtimeCurrent + " A" : "-- A" }}
-            </text>
-          </view>
-        </view>
-
-        <!-- 电池最高温度展示项 -->
-        <view
-          class="param-card wot-bg-filled-oppo wot-rounded-xl wot-p-main wot-shadow-sm wot-flex wot-items-center wot-gap-3"
-        >
-          <wd-icon css-icon="i-lucide-thermometer" size="28px" :color="isConnected ? '#d54941' : '#858585'" />
-          <view class="wot-flex wot-flex-col">
-            <text class="wot-text-caption wot-text-text-secondary">{{ $t("bms.params.maxTemp") }}</text>
-            <text class="wot-text-body-main wot-font-bold wot-text-text-main wot-mt-0.5">
-              {{ isConnected ? temperature + " °C" : "-- °C" }}
-            </text>
-          </view>
-        </view>
-
-        <!-- 健康度 SOH 展示项 -->
-        <view
-          class="param-card wot-bg-filled-oppo wot-rounded-xl wot-p-main wot-shadow-sm wot-flex wot-items-center wot-gap-3"
-        >
-          <wd-icon css-icon="i-lucide-heart" size="28px" :color="isConnected ? '#2ba471' : '#858585'" />
-          <view class="wot-flex wot-flex-col">
-            <text class="wot-text-caption wot-text-text-secondary">{{ $t("bms.params.soh") }}</text>
-            <text class="wot-text-body-main wot-font-bold wot-text-text-main wot-mt-0.5">
-              {{ sohDisplay }}
-            </text>
-          </view>
-        </view>
-
-        <!-- 聚力威独有参数：循环充电次数 -->
-        <view
-          v-if="isConnected && protocolType === 'jlw'"
-          class="param-card wot-bg-filled-oppo wot-rounded-xl wot-p-main wot-shadow-sm wot-flex wot-items-center wot-gap-3"
-        >
-          <wd-icon css-icon="i-lucide-rotate-cw" size="28px" color="#0052d9" />
-          <view class="wot-flex wot-flex-col">
-            <text class="wot-text-caption wot-text-text-secondary">{{ $t("bms.params.cycleCount") }}</text>
-            <text class="wot-text-body-main wot-font-bold wot-text-text-main wot-mt-0.5">
-              {{ extendedProtocolData?.cycleCount ?? 0 }} {{ $t("bms.common.cyclesUnit") }}
-            </text>
-          </view>
-        </view>
-
-        <!-- 聚力威独有参数：运行总时长 -->
-        <view
-          v-if="isConnected && protocolType === 'jlw'"
-          class="param-card wot-bg-filled-oppo wot-rounded-xl wot-p-main wot-shadow-sm wot-flex wot-items-center wot-gap-3"
-        >
-          <wd-icon css-icon="i-lucide-clock" size="28px" color="#10b981" />
-          <view class="wot-flex wot-flex-col">
-            <text class="wot-text-caption wot-text-text-secondary">{{ $t("bms.params.runTime") }}</text>
-            <text class="wot-text-body-main wot-font-bold wot-text-text-main wot-mt-0.5 wot-text-xs">
-              {{ runTimeStr }}
-            </text>
-          </view>
-        </view>
+      <view v-show="activeTab === 'control'">
+        <component :is="controlPanelComponent" v-if="controlPanelComponent" />
       </view>
-
-      <!-- 聚力威高阶 6 路温度自适应渲染网格面板 -->
-      <view
-        v-if="isConnected && temperatureList.length > 0"
-        class="wot-bg-filled-oppo wot-rounded-2xl wot-p-main wot-shadow-sm wot-mb-4"
-      >
-        <view class="wot-flex wot-items-center wot-gap-2 wot-mb-3 wot-border-b wot-border-border-main wot-pb-2">
-          <wd-icon css-icon="i-lucide-thermometer-sun" size="24px" color="#d54941" />
-          <text class="wot-text-body-main wot-font-bold wot-text-text-main">
-            {{ protocolType === "jlw" ? $t("bms.params.multiTempMonitor") : $t("bms.params.tempSensorStatus") }}
-          </text>
-        </view>
-        <view class="wot-grid wot-grid-cols-3 wot-gap-2">
-          <view
-            v-for="(tItem, index) in temperatureList"
-            :key="index"
-            class="wot-bg-filled-main wot-rounded-lg wot-p-2 wot-flex wot-flex-col wot-items-center wot-justify-center"
-          >
-            <text class="wot-text-caption wot-text-text-secondary wot-scale-90">{{ tItem.name }}</text>
-            <text class="wot-text-body-main wot-font-bold wot-text-text-main wot-mt-0.5">
-              {{ tItem.value }} °C
-            </text>
-          </view>
-        </view>
-      </view>
-
-      <!-- BMS 安全保护状态列表 -->
-      <view class="wot-bg-filled-oppo wot-rounded-2xl wot-p-main wot-shadow-sm wot-mb-4">
-        <view class="wot-flex wot-items-center wot-gap-2 wot-mb-3 wot-border-b wot-border-border-main wot-pb-2">
-          <wd-icon css-icon="i-lucide-shield-check" size="24px" :color="isConnected ? '#2ba471' : '#858585'" />
-          <text class="wot-text-body-main wot-font-bold wot-text-text-main">{{ $t("bms.protect.title") }}</text>
-        </view>
-
-        <view class="wot-flex wot-flex-col wot-gap-2">
-          <!-- 单体过温保护状态 -->
-          <view class="wot-flex wot-items-center wot-justify-between">
-            <text class="wot-text-caption wot-text-text-secondary">{{ $t("bms.protect.overTemp") }}</text>
-            <view class="wot-flex wot-items-center wot-gap-1">
-              <view
-                :class="
-                  isConnected
-                    ? 'wot-bg-success-surface wot-text-success-main'
-                    : 'wot-bg-neutral-200 wot-text-text-secondary'
-                "
-                class="wot-rounded-full wot-px-tight wot-py-extra-tight wot-text-caption wot-font-semibold"
-              >
-                {{ isConnected ? $t("bms.protect.normal") : $t("bms.protect.unmonitored") }}
-              </view>
-            </view>
-          </view>
-
-          <!-- 单体过压保护状态 -->
-          <view class="wot-flex wot-items-center wot-justify-between">
-            <text class="wot-text-caption wot-text-text-secondary">{{ $t("bms.protect.overVolt") }}</text>
-            <view class="wot-flex wot-items-center wot-gap-1">
-              <view
-                :class="
-                  isConnected
-                    ? 'wot-bg-success-surface wot-text-success-main'
-                    : 'wot-bg-neutral-200 wot-text-text-secondary'
-                "
-                class="wot-rounded-full wot-px-tight wot-py-extra-tight wot-text-caption wot-font-semibold"
-              >
-                {{ isConnected ? $t("bms.protect.normal") : $t("bms.protect.unmonitored") }}
-              </view>
-            </view>
-          </view>
-
-          <!-- 放电短路保护状态 -->
-          <view class="wot-flex wot-items-center wot-justify-between">
-            <text class="wot-text-caption wot-text-text-secondary">{{ $t("bms.protect.shortCircuit") }}</text>
-            <view class="wot-flex wot-items-center wot-gap-1">
-              <view
-                :class="
-                  isConnected
-                    ? 'wot-bg-success-surface wot-text-success-main'
-                    : 'wot-bg-neutral-200 wot-text-text-secondary'
-                "
-                class="wot-rounded-full wot-px-tight wot-py-extra-tight wot-text-caption wot-font-semibold"
-              >
-                {{ isConnected ? $t("bms.protect.normal") : $t("bms.protect.unmonitored") }}
-              </view>
-            </view>
-          </view>
-        </view>
-      </view>
-
-      <!-- MOS 管控制开关面板 -->
-      <view class="wot-bg-filled-oppo wot-rounded-2xl wot-p-main wot-shadow-sm">
-        <view class="wot-flex wot-items-center wot-gap-2 wot-mb-3 wot-border-b wot-border-border-main wot-pb-2">
-          <wd-icon css-icon="i-lucide-settings" size="24px" color="#858585" />
-          <text class="wot-text-body-main wot-font-bold wot-text-text-main">{{ $t("bms.control.title") }}</text>
-        </view>
-
-        <view class="wot-flex wot-flex-col wot-gap-3">
-          <!-- 充电 MOS 开关 -->
-          <view class="wot-flex wot-items-center wot-justify-between">
-            <view class="wot-flex wot-flex-col">
-              <text class="wot-text-body-main wot-font-medium wot-text-text-main">
-                {{ $t("bms.control.chargeMos") }}
-              </text>
-              <text class="wot-text-caption wot-text-text-secondary">{{ $t("bms.control.chargeMosDesc") }}</text>
-            </view>
-            <switch :checked="isCharging" :disabled="!isConnected" @change="toggleCharge" color="#0052d9" />
-          </view>
-
-          <!-- 放电 MOS 开关 -->
-          <view class="wot-flex wot-items-center wot-justify-between">
-            <view class="wot-flex wot-flex-col">
-              <text class="wot-text-body-main wot-font-medium wot-text-text-main">
-                {{ $t("bms.control.dischargeMos") }}
-              </text>
-              <text class="wot-text-caption wot-text-text-secondary">{{ $t("bms.control.dischargeMosDesc") }}</text>
-            </view>
-            <switch :checked="isDischarging" :disabled="!isConnected" @change="toggleDischarge" color="#0052d9" />
-          </view>
-        </view>
+      <view v-show="activeTab === 'mine'">
+        <mine-panel />
       </view>
     </view>
 
-
-    <!-- 自定义底部 Tabbar 组件 -->
-    <custom-tabbar active="realtime" />
-    </layout-provider>
-
-    <!-- Source: uni_modules/wot-ui/components/wd-toast/wd-toast.vue -->
-    <wd-toast />
-    <!-- Source: uni_modules/wot-ui/components/wd-dialog/wd-dialog.vue -->
-    <wd-dialog />
-  </view>
+    <!-- 统一的全局自定义底部导航栏 -->
+    <custom-tabbar />
+  </layout-provider>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, watch } from "vue";
+import { computed, watch } from "vue";
 import { storeToRefs } from "pinia";
-import { useI18n } from "vue-i18n";
-import { useToast, useDialog } from "@/uni_modules/wot-ui";
+import { onLoad, onShow, onHide, onUnload } from "@dcloudio/uni-app";
 import { useBleStore } from "@/stores/ble-store";
 import { useAppStore } from "@/stores/app";
-import { useScanConnect } from "@/composables/use-scan-connect";
-import { useAutoConnect } from "@/composables/use-auto-connect";
-import { APP_CONFIG } from "@/config";
+import { resolveHomePanel, resolveParamPanel, resolveControlPanel } from "@/components/panel-registry";
+import MinePanel from "@/pages/mine/index.vue";
+import CustomTabbar from "@/components/custom-tabbar/custom-tabbar.vue";
 
-// 挂载扫码一键连接的业务交互组合式函数
-const { handleScanConnect } = useScanConnect();
-
-// 挂载自动连接业务交互组合式函数
-const { triggerAutoConnect } = useAutoConnect();
-
-// 初始化交互弹出组件与国际化翻译实例
-const toast = useToast();
-const dialog = useDialog();
-const { t } = useI18n();
-
-// 获取全局蓝牙 Store 管理器
-const bleStore = useBleStore();
-
-// 获取全局应用配置 Store
+// 获取全局 App 状态仓
 const appStore = useAppStore();
+const { activeTab } = storeToRefs(appStore);
 
-// 联动全局蓝牙连接状态、已连接设备信息及电池物理遥测响应式状态
-const {
-  isBleConnected: isConnected,
-  connectedDeviceName: connectedName,
-  connectedDeviceMac: connectedMac,
-  isCharging,
-  isDischarging,
-  batteryPercent,
-  totalVoltage,
-  realtimeCurrent,
-  temperature,
-  extendedProtocolData,
-} = storeToRefs(bleStore);
-
-// 提取当前挂载的协议类型
-const protocolType = computed(() => bleStore.activeProtocolParser?.protocolType || "");
-
-// 判定当前运行模式是否为单机离线模式
-const isOfflineMode = computed(() => APP_CONFIG.APP_MODE === "offline");
-
-// 动态计算当前电池状态的图标
-const batteryStatusIcon = computed(() => {
-  if (!isConnected.value) {
-    return "i-lucide-battery";
-  }
-  return isCharging.value
-    ? "i-lucide-battery-charging animate-pulse"
-    : "i-lucide-battery-medium";
-});
-
-// 动态计算当前电池状态的颜色
-const batteryStatusColor = computed(() => {
-  if (!isConnected.value) {
-    return "#858585";
-  }
-  return isCharging.value ? "#2ba471" : "#0052d9";
-});
-
-// 动态计算当前电池状态的文本描述（充电中 / 放电中 / 未连接等）
-const batteryStatusText = computed(() => {
-  if (!isConnected.value) {
-    return t("bms.battery.noData");
-  }
-  return isCharging.value
-    ? t("bms.battery.charging")
-    : t("bms.battery.discharging");
-});
-
-// 动态处理容量显示
-const remainCap = computed(() => {
-  if (!isConnected.value) return "-- Ah";
-  if (
-    extendedProtocolData.value?.remainingCapacity !== undefined &&
-    extendedProtocolData.value?.fullCapacity !== undefined
-  ) {
-    return `${extendedProtocolData.value.remainingCapacity.toFixed(1)} Ah / ${extendedProtocolData.value.fullCapacity.toFixed(1)} Ah`;
-  }
-  return `${(batteryPercent.value * 1.0).toFixed(1)} Ah / 100.0 Ah`;
-});
-
-// 动态处理 SOH 显示
-const sohDisplay = computed(() => {
-  if (!isConnected.value) return "-- %";
-  if (extendedProtocolData.value?.soh !== undefined) {
-    return `${extendedProtocolData.value.soh} %`;
-  }
-  return "98.5 %";
-});
-
-// 动态拼接聚力威专属运行时间格式
-const runTimeStr = computed(() => {
-  if (!isConnected.value) return "--";
-  const d = extendedProtocolData.value?.runTimeDays ?? 0;
-  const h = extendedProtocolData.value?.runTimeHours ?? 0;
-  const m = extendedProtocolData.value?.runTimeMinutes ?? 0;
-  return `${d}天 ${h}时 ${m}分`;
-});
-
-// 动态组织多路温度传感器监测列表
-interface TempDisplayItem {
-  name: string;
-  value: number;
-}
-const temperatureList = computed<TempDisplayItem[]>(() => {
-  if (!isConnected.value) return [];
-  const list: TempDisplayItem[] = [];
-
-  // 如果聚力威协议推入了多传感器数组
-  if (extendedProtocolData.value?.temperatures) {
-    extendedProtocolData.value.temperatures.forEach((val, idx) => {
-      // 过滤未接传感器的默认无效值 (0 和 0xff/255)
-      if (val !== 0 && val !== 0xff && val !== 255) {
-        list.push({
-          name: t("bms.params.temperatures") + (idx + 1),
-          value: val,
-        });
-      }
-    });
-  }
-
-  // 挂载 MOS 温度
-  if (extendedProtocolData.value?.mosTemperature !== undefined && extendedProtocolData.value.mosTemperature !== 0) {
-    list.push({
-      name: "MOS",
-      value: extendedProtocolData.value.mosTemperature,
-    });
-  }
-
-  // 挂载环境温度
-  if (extendedProtocolData.value?.envTemperature !== undefined && extendedProtocolData.value.envTemperature !== 0) {
-    list.push({
-      name: t("bms.params.envTemperature"),
-      value: extendedProtocolData.value.envTemperature,
-    });
-  }
-
-  return list;
-});
-
-// 处理连接/断开蓝牙按钮点击事件
-const toggleConnection = () => {
-  if (!isConnected.value) {
-    // 若蓝牙处于未连接状态，则跳转至蓝牙设备搜索列表页面
-    uni.navigateTo({
-      url: "/pages/ble-search/index",
-    });
-  } else {
-    // 若蓝牙已成功建立连接，点击则弹出二次确认框引导用户断开连接
-    dialog
-      .confirm({
-        title: t("bms.common.prompt"),
-        msg: t("bms.ble.disconnectConfirmPrefix") + connectedName.value + t("bms.ble.disconnectConfirmSuffix"),
-      })
-      .then(async () => {
-        try {
-          await bleStore.disconnectDevice();
-          toast.show({ msg: t("bms.ble.disconnected") });
-        } catch (e) {
-          console.error("断开蓝牙连接出现异常:", e);
-        }
-      })
-      .catch(() => {
-        // 用户取消或关闭弹窗
-      });
-  }
-};
-
-// 切换充电 MOS 开关状态并附防连点 Loading 遮罩
-const toggleCharge = async (e: any) => {
-  const nextVal = e.detail.value;
-  try {
-    toast.loading({ msg: t("bms.control.sending"), cover: true });
-    await bleStore.sendControlCommand("charge", nextVal);
-    toast.success(t("bms.control.chargeSuccess"));
-  } catch (err: any) {
-    console.error("充电开关指令下发物理失败:", err);
-    toast.error(err.message || t("bms.control.sendFailed"));
-    // 恢复原界面状态
-    isCharging.value = !nextVal;
-  } finally {
-    toast.close();
-  }
-};
-
-// 切换放电 MOS 开关状态并附防连点 Loading 遮罩
-const toggleDischarge = async (e: any) => {
-  const nextVal = e.detail.value;
-  try {
-    toast.loading({ msg: t("bms.control.sending"), cover: true });
-    await bleStore.sendControlCommand("discharge", nextVal);
-    toast.success(t("bms.control.dischargeSuccess"));
-  } catch (err: any) {
-    console.error("放电开关指令下发物理失败:", err);
-    toast.error(err.message || t("bms.control.sendFailed"));
-    isDischarging.value = !nextVal;
-  } finally {
-    toast.close();
-  }
-};
-
-// 监听全局蓝牙连接成功状态，触发高保真视觉成功回执
-watch(isConnected, (newVal) => {
-  if (newVal) {
-    toast.success(t("bms.ble.connectSuccess"));
+// 接收外部传参（如重载/重定向），实现精确激活 Tab 分发
+onLoad((options) => {
+  if (options && options.tab) {
+    appStore.setActiveTab(options.tab as any);
   }
 });
 
-// 页面挂载时自动触发一次重连检测时序
-onMounted(() => {
-  triggerAutoConnect();
+// 获取蓝牙通信状态仓
+const bleStore = useBleStore();
+const { activeProtocolParser, isBleConnected } = storeToRefs(bleStore);
+
+// 自适应解析当前设备协议专属的首页、参数页、控制页面板组件引用
+const homePanelComponent = computed(() => {
+  return resolveHomePanel(activeProtocolParser.value?.protocolType);
+});
+
+const paramPanelComponent = computed(() => {
+  return resolveParamPanel(activeProtocolParser.value?.protocolType);
+});
+
+const controlPanelComponent = computed(() => {
+  return resolveControlPanel(activeProtocolParser.value?.protocolType);
+});
+
+// 核心能耗优化：监听当前激活 Tab 变化，切离实时数据页面时自动挂起蓝牙遥测轮询
+watch(
+  [activeTab, isBleConnected],
+  ([newTab, connected]) => {
+    if (newTab === "realtime" && connected) {
+      console.log("[Shell] 切换到实时数据页，激活蓝牙数据轮询");
+      bleStore.setPollingActive(true);
+    } else {
+      console.log("[Shell] 离开实时数据页或断开连接，暂停蓝牙数据轮询");
+      bleStore.setPollingActive(false);
+    }
+  },
+  { immediate: true }
+);
+
+// 页面切入显示生命周期回调
+onShow(() => {
+  if (activeTab.value === "realtime" && isBleConnected.value) {
+    bleStore.setPollingActive(true);
+  }
+});
+
+// 页面切出隐藏生命周期回调
+onHide(() => {
+  bleStore.setPollingActive(false);
+});
+
+// 页面销毁生命周期回调
+onUnload(() => {
+  bleStore.setPollingActive(false);
 });
 </script>
 
 <style scoped>
-.page-container {
-  box-sizing: border-box;
-}
-
-.connect-btn {
-  font-size: 26rpx;
-  margin: 0;
-  line-height: 2.2;
-  border: 1px solid transparent;
-  transition: all 0.2s ease-in-out;
-}
-
-.connect-btn:active {
-  opacity: 0.8;
-}
-
-/* 呼吸灯效果动画 */
-@keyframes pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
-}
-.animate-pulse {
-  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-
+/* 壳页面容器样式 */
 </style>

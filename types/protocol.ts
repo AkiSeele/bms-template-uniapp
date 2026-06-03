@@ -13,8 +13,8 @@
  *   原因：service/ 层不应依赖 components/ 层（违反分层原则），
  *         且 UniApp 小程序平台不支持动态 import() 懒加载组件。
  *   正确路径：
- *     1. 面板组件存放在 components/protocol-panels/ 目录下
- *     2. 在 components/protocol-panels/panel-registry.ts 中静态导入并注册
+ *     1. 面板组件存放在对应业务页面的 components/ 目录下（例如 pages/index/components/juliwei.vue）
+ *     2. 在 components/panel-registry.ts 中静态扫描并注册
  *     3. 页面通过 resolveHomePanel(protocolType) 获取组件对象引用
  *     4. 使用 <component :is="panelComponent" /> 渲染（传入对象引用，兼容小程序）
  */
@@ -62,6 +62,9 @@ export interface ProtocolSpec {
    * 此字典作为协议说明文档，也用于构造轮询指令时的集中管理
    */
   commandSet: Record<string, string>;
+
+  /** 轮询指令的语义名称序列（声明哪些指令需要按顺序进入轮询心跳中） */
+  pollingSequence?: string[];
 
   /** 协议通信波特率（仅作文档记录，蓝牙 BLE 协议此字段可选填） */
   baudRate?: number;
@@ -124,6 +127,13 @@ export interface BmsTelemetryUpdate {
   temperature?: number;
   /** 扩展高阶遥测参数增量更新包 */
   extendedData?: BmsExtendedData;
+  /** 控制指令的响应状态 */
+  controlResponse?: {
+    /** 响应的命令 ID */
+    cmdId: number;
+    /** 操作是否成功 */
+    success: boolean;
+  };
 }
 
 /**
@@ -134,8 +144,8 @@ export interface BmsTelemetryUpdate {
  *   1. 在 service/protocol/ 下新建协议策略文件（如 protocol-c.ts）
  *   2. 实现此接口的全部属性和方法
  *   3. 在 service/protocol/protocol-registry.ts 中注册对应的蓝牙服务 UUID
- *   4. （可选）在 components/protocol-panels/ 下新建专属 UI 面板组件
- *   5. （可选）在 components/protocol-panels/panel-registry.ts 中注册面板组件
+ *   4. （可选）在 pages/index/components/ 下新建专属首页面板，在 pages/control/components/ 下新建专属控制面板
+ *   5. 系统编译时会在 components/panel-registry.ts 中自动扫描并与数据层解析器建立关联
  *
  * 注意：协议解析器属于 service 层，严禁在此文件或任何协议实现文件中导入 Vue 组件。
  * 协议与 UI 的映射关系由独立的"面板注册表"（panel-registry.ts）管理。
@@ -158,6 +168,9 @@ export interface BmsProtocolParser {
    * 这是协议的"说明书"，客户调整协议参数时只需修改 PROTOCOL_SPEC 常量
    */
   readonly spec: ProtocolSpec;
+
+  /** 轮询指令的循环步数周期长度（即有多少步不同的查询帧） */
+  readonly pollingCycleLength: number;
 
   /**
    * 根据当前轮询计数器，获取本次需要向 BMS 下发的十六进制查询指令字符串数组

@@ -55,6 +55,12 @@
       }
     },
     {
+      "path": "pages/mine/firmware-update",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
       "path": "pages/scan/scan",
       "style": {
         "navigationStyle": "custom",

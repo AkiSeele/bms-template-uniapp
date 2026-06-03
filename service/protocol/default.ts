@@ -5,10 +5,9 @@ import { verifyChecksum, uint8ArrayToHexString } from "@/utils/bms-helper";
 // 协议规格声明区（Protocol Specification）
 //
 // 本区域是协议的"说明书"，集中描述该协议的全部物理帧格式规范。
-// 客户或开发者需要调整协议参数时，只需修改此处，无需改动下方的解析逻辑。
+// 开发者需要调整协议参数时，只需修改此处，无需改动下方的解析逻辑。
 //
-// 协议来源文档：（接入时请在此注明协议文档的版本和来源，例如：
-//   "某厂商蓝牙 BMS 通讯协议 V2.1 - 2026-04-01"）
+// 协议来源文档：通用默认 BMS 蓝牙通信协议 V1.0
 // ============================================================
 const PROTOCOL_SPEC: ProtocolSpec = {
   /**
@@ -64,29 +63,28 @@ const PROTOCOL_SPEC: ProtocolSpec = {
    *   - 0x55: 强制启动
    */
   commandSet: {
-    READ_STATUS: "AA 20 00 20 00", // 查询系统状态（0x20 帧）
-    READ_INFO: "AA 21 00 21 00", // 查询核心遥测（0x21 帧）
-    READ_CELLS: "AA 22 00 22 00", // 查询电芯单体电压（0x22 帧）
-    CTRL_CHARGE_ON: "AA 50 01 01 52 00", // 充电 MOS 开启
-    CTRL_CHARGE_OFF: "AA 50 01 00 51 00", // 充电 MOS 关闭
-    CTRL_DISCHARGE_ON: "AA 51 01 01 53 00", // 放电 MOS 开启
-    CTRL_DISCHARGE_OFF: "AA 51 01 00 52 00", // 放电 MOS 关闭
-    CTRL_HEAT_ON: "AA 52 01 01 54 00", // 低温加热开启
-    CTRL_HEAT_OFF: "AA 52 01 00 53 00", // 低温加热关闭
-    CTRL_CLEAR: "AA 53 00 53 00", // 清除故障标志
-    CTRL_SLEEP: "AA 54 00 54 00", // 强制休眠
-    CTRL_START: "AA 55 00 55 00", // 强制启动
+    READ_STATUS: "20", // 查询系统状态
+    READ_INFO: "21", // 查询核心遥测
+    READ_CELLS: "22", // 查询电芯单体电压
+    CTRL_CHARGE: "50", // 充电控制
+    CTRL_DISCHARGE: "51", // 放电控制
+    CTRL_HEAT: "52", // 加热控制
+    CTRL_CLEAR: "53", // 清除故障
+    CTRL_SLEEP: "54", // 强制休眠
+    CTRL_START: "55", // 强制启动
   },
 
-  /** 协议版本（对应协议文档版本，便于日后追溯） */
-  version: "TODO: Please fill in protocol document version number",
+  pollingSequence: ["READ_STATUS", "READ_INFO", "READ_CELLS"], // 需要按顺序轮询的指令键名序列
+
+  /** 协议版本 */
+  version: "1.0.0",
 };
 // ============================================================
 // 协议规格声明区 结束
 // ============================================================
 
 /**
- * 协议 A —— BMS 蓝牙通信协议策略解析器
+ * 默认协议 —— BMS 蓝牙通信协议策略解析器
  *
  * 协议核心特征（详见上方 PROTOCOL_SPEC）：
  *   - 帧头：0xAA（单字节）
@@ -96,26 +94,65 @@ const PROTOCOL_SPEC: ProtocolSpec = {
  *
  * 该类为无状态纯解析策略，所有解析方法均为纯函数，可多实例共用。
  */
-export class ProtocolAParser implements BmsProtocolParser {
+export class DefaultParser implements BmsProtocolParser {
   /** 协议类型标识符，视图层据此挂载对应的控制面板组件 */
-  readonly protocolType = "protocol-a";
+  readonly protocolType: string;
 
   /** 协议显示名称（用于日志和界面展示） */
-  readonly protocolName = "Protocol A (BMS BLE)";
+  readonly protocolName: string;
 
   /** 暴露协议规格声明对象，供 Store 层和调试工具读取 */
   readonly spec: ProtocolSpec = PROTOCOL_SPEC;
 
-  /**
-   * 获取本次轮询需下发的查询指令数组
-   * 采用三帧循环轮转策略：0x20 → 0x21 → 0x22 → 0x20 → ...
-   * 每 2 秒（Store 定时器周期）轮换下发一帧，3 轮覆盖全部遥测数据
-   */
+  /** 轮询指令的循环步数周期长度（从规格中的轮询序列自适应获取） */
+  readonly pollingCycleLength = PROTOCOL_SPEC.pollingSequence?.length ?? 0;
+
+  constructor(protocolType: string) {
+    this.protocolType = protocolType;
+    this.protocolName = protocolType === "default"
+      ? "Default (BMS BLE)"
+      : protocolType.charAt(0).toUpperCase() + protocolType.slice(1) + " (BMS BLE)";
+  }
+
+  // 动态组装下行命令帧
+  private buildFrame(cmdHex: string, dataBytes: number[] = []): string {
+    const cmd = parseInt(cmdHex, 16);
+    const dataLen = dataBytes.length;
+
+    const packet = new Uint8Array(5 + dataLen);
+
+    packet[0] = PROTOCOL_SPEC.frameHeader[0] ?? 0xaa;
+    packet[1] = cmd;
+    packet[2] = dataLen;
+
+    for (let i = 0; i < dataLen; i++) {
+      packet[3 + i] = dataBytes[i]!;
+    }
+
+    let sum = cmd + dataLen;
+    for (let i = 0; i < dataLen; i++) {
+      sum += dataBytes[i]!;
+    }
+
+    packet[3 + dataLen] = sum & 0xff;
+    packet[4 + dataLen] = (sum >> 8) & 0xff;
+
+    return Array.from(packet)
+      .map((b) => b.toString(16).padStart(2, "0").toUpperCase())
+      .join("");
+  }
+
+  // 获取本次轮询需下发的查询指令数组
+  // 根据配置的轮询序列自动进行循环分发
   getPollCommands(step: number): string[] {
-    const index = step % 3;
-    if (index === 0) return [PROTOCOL_SPEC.commandSet["READ_STATUS"]!];
-    if (index === 1) return [PROTOCOL_SPEC.commandSet["READ_INFO"]!];
-    return [PROTOCOL_SPEC.commandSet["READ_CELLS"]!];
+    const sequence = PROTOCOL_SPEC.pollingSequence || [];
+    if (sequence.length === 0) {
+      return [];
+    }
+    const index = step % sequence.length;
+    const key = sequence[index]!;
+    const cmdHex = PROTOCOL_SPEC.commandSet[key]!;
+    return [this.buildFrame(cmdHex)];
   }
 
   /**
@@ -139,7 +176,7 @@ export class ProtocolAParser implements BmsProtocolParser {
     // 3. 调用通用校验分发器验证帧完整性（委托给 bms-helper.ts，无需手写校验逻辑）
     const isValid = verifyChecksum(bytes, PROTOCOL_SPEC.checksumAlgorithm, PROTOCOL_SPEC.checksumRange);
     if (!isValid) {
-      console.warn(`[协议 A] 校验失败，丢弃帧 (CMD=0x${cmdId.toString(16).toUpperCase()}):`, uint8ArrayToHexString(bytes));
+      console.warn(`[默认协议] 校验失败，丢弃帧 (CMD=0x${cmdId.toString(16).toUpperCase()}):`, uint8ArrayToHexString(bytes));
       return null;
     }
 
@@ -255,6 +292,17 @@ export class ProtocolAParser implements BmsProtocolParser {
       }
       ext.cellVoltages = cellVoltages;
       update.extendedData = ext;
+    } else if (cmdId >= 0x50 && cmdId <= 0x55) {
+      // ====================================================
+      // 0x50 - 0x55 帧：控制指令响应帧（如充电或放电控制回复）
+      // 数据段包含操作结果，通常为单字节，数值 1 表示成功，数值 0 表示失败
+      // 若协议无特定数据段，则默认只要收到合法响应帧即表示成功
+      // ====================================================
+      const isSuccess = data.length > 0 ? data[0] === 0x01 : true;
+      update.controlResponse = {
+        cmdId,
+        success: isSuccess,
+      };
     }
 
     return update;
@@ -271,60 +319,38 @@ export class ProtocolAParser implements BmsProtocolParser {
     type: "charge" | "discharge" | "heat" | "clear" | "sleep" | "start",
     open: boolean,
   ): string {
-    // 根据控制类型确定命令字节和数据字节
-    let cmd = 0x00;
-    let dataByte: number | null = null;
+    let cmdHex = "";
+    let dataBytes: number[] = [];
 
     switch (type) {
       case "charge":
-        cmd = 0x50;
-        dataByte = open ? 0x01 : 0x00;
+        cmdHex = PROTOCOL_SPEC.commandSet["CTRL_CHARGE"]!;
+        dataBytes = [open ? 0x01 : 0x00];
         break;
       case "discharge":
-        cmd = 0x51;
-        dataByte = open ? 0x01 : 0x00;
+        cmdHex = PROTOCOL_SPEC.commandSet["CTRL_DISCHARGE"]!;
+        dataBytes = [open ? 0x01 : 0x00];
         break;
       case "heat":
-        cmd = 0x52;
-        dataByte = open ? 0x01 : 0x00;
+        cmdHex = PROTOCOL_SPEC.commandSet["CTRL_HEAT"]!;
+        dataBytes = [open ? 0x01 : 0x00];
         break;
       case "clear":
-        cmd = 0x53;
+        cmdHex = PROTOCOL_SPEC.commandSet["CTRL_CLEAR"]!;
         break;
       case "sleep":
-        cmd = 0x54;
+        cmdHex = PROTOCOL_SPEC.commandSet["CTRL_SLEEP"]!;
         break;
       case "start":
-        cmd = 0x55;
+        cmdHex = PROTOCOL_SPEC.commandSet["CTRL_START"]!;
         break;
       default:
-        // 不支持的控制类型，返回空字符串，Store 层将跳过下发
         return "";
     }
 
-    const hasData = dataByte !== null;
-    const dataLen = hasData ? 1 : 0;
-
-    // 组装帧字节数组：帧头(1) + 命令字(1) + 数据长度(1) + [数据(0~1)] + 校验低(1) + 校验高(1)
-    const packet = new Uint8Array(5 + dataLen);
-    packet[0] = 0xaa; // 帧头
-    packet[1] = cmd; // 命令字
-    packet[2] = dataLen; // 数据长度
-    if (hasData && dataByte !== null) {
-      packet[3] = dataByte; // 数据字节
+    if (!cmdHex) {
+      return "";
     }
-
-    // 计算双字节小端累加和校验（覆盖范围：命令字 + 数据长度 + 数据，不含帧头）
-    let sum = cmd + dataLen;
-    if (hasData && dataByte !== null) {
-      sum += dataByte;
-    }
-    packet[3 + dataLen] = sum & 0xff; // 校验低字节
-    packet[4 + dataLen] = (sum >> 8) & 0xff; // 校验高字节
-
-    // 转换为十六进制字符串（去除空格，供 bleManager.writeCommand 直接使用）
-    return Array.from(packet)
-      .map((b) => b.toString(16).padStart(2, "0").toUpperCase())
-      .join("");
+    return this.buildFrame(cmdHex, dataBytes);
   }
 }

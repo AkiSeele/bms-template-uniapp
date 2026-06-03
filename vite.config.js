@@ -1,19 +1,19 @@
-import { defineConfig } from 'vite'
-import uni from '@dcloudio/vite-plugin-uni'
-import path from 'path'
-import { fileURLToPath } from 'url'
+import { defineConfig } from "vite";
+import uni from "@dcloudio/vite-plugin-uni";
+import path from "path";
+import { fileURLToPath } from "url";
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-// https://vitejs.dev/config/
+// 挂载全局编译配置，自动注入编译期逻辑
 export default defineConfig(async () => {
-  const UnoCSS = (await import('unocss/vite')).default
+  const UnoCSS = (await import("unocss/vite")).default;
   return {
     plugins: [
       uni(),
       UnoCSS({
-        configFile: path.resolve(__dirname, 'uno.config.js')
+        configFile: path.resolve(__dirname, "uno.config.js"),
       }),
     ],
     define: {
@@ -25,5 +25,5 @@ export default defineConfig(async () => {
       __VUE_I18N_LEGACY_API__: false,
       __INTLIFY_PROD_DEVTOOLS__: false,
     },
-  }
-})
+  };
+});

@@ -1,5 +1,6 @@
 import { defineStore } from "pinia";
-import { ref } from "vue";
+import { ref, computed } from "vue";
+import { i18n } from "@/locale/i18n";
 
 // 全局设备基础信息实体类型定义
 export interface AppDeviceInfo {
@@ -15,8 +16,12 @@ export interface AppDeviceInfo {
 }
 
 export const useAppStore = defineStore("app", () => {
-  // 应用级别的全局语言配置状态，初始化时优先从本地缓存读取，无缓存则默认英文
-  const locale = ref<"zh-Hans" | "zh-Hant" | "en">(uni.getStorageSync("app_locale") || "en");
+  // 应用级别的全局语言配置状态，初始化时优先从本地缓存读取，无缓存则自适应系统语言（从 i18n 实例获取）
+  const locale = ref<"zh-Hans" | "zh-Hant" | "en">(
+    (uni.getStorageSync("app_locale") as any) ||
+      (i18n.global.locale as any).value ||
+      "zh-Hans",
+  );
 
   // 全局主题模式配置状态，支持亮色 (light)、暗色 (dark) 和跟随系统 (system)，默认 system
   const theme = ref<"light" | "dark" | "system">(uni.getStorageSync("app_theme") || "system");
@@ -70,6 +75,8 @@ export const useAppStore = defineStore("app", () => {
     locale.value = newLocale;
     uni.setStorageSync("app_locale", newLocale);
     try {
+      // @ts-ignore
+      i18n.global.locale.value = newLocale;
       uni.setLocale(newLocale);
     } catch (e) {
       console.error("设置框架底层内置语言失败:", e);
@@ -110,6 +117,36 @@ export const useAppStore = defineStore("app", () => {
     uni.setStorageSync("project_success_color", colors.successColor);
   };
 
+  // ------------------------------------------------------------
+  // 全局品牌色彩动态获取（优先采用自定义色彩，无自定义时根据模式自适应返回默认色值）
+  // ------------------------------------------------------------
+  const activeThemeColor = computed(() => {
+    if (customThemeColor.value) return customThemeColor.value;
+    return actualTheme.value === "dark" ? "#0ea5e9" : "#0052d9";
+  });
+
+  const activeWarningColor = computed(() => {
+    if (customWarningColor.value) return customWarningColor.value;
+    return "#e37318";
+  });
+
+  const activeSuccessColor = computed(() => {
+    if (customSuccessColor.value) return customSuccessColor.value;
+    return "#2ba471";
+  });
+
+  const activeDangerColor = computed(() => {
+    if (customDangerColor.value) return customDangerColor.value;
+    return "#d54941";
+  });
+
+  // 底部自定义 Tabbar 激活项状态，支持 "realtime", "param", "control", "mine"，默认为 "realtime"
+  const activeTab = ref<string>("realtime");
+
+  const setActiveTab = (tab: string) => {
+    activeTab.value = tab;
+  };
+
   return {
     locale,
     theme,
@@ -119,9 +156,15 @@ export const useAppStore = defineStore("app", () => {
     customWarningColor,
     customDangerColor,
     customSuccessColor,
+    activeThemeColor,
+    activeWarningColor,
+    activeSuccessColor,
+    activeDangerColor,
+    activeTab,
     setLocale,
     setTheme,
     setDeviceInfo,
     setProjectColors,
+    setActiveTab,
   };
 });

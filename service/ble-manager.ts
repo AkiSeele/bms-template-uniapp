@@ -129,7 +129,7 @@ export const bleManager = {
               console.warn(`[蓝牙连接] 还有重试机会，正在进行连接重试...`);
               setTimeout(() => {
                 attemptConnect(remainingRetries - 1).then(resolve).catch(reject);
-              }, 100);
+              }, APP_CONFIG.BLE_SCAN.RECONNECT_DELAY_MS);
             } else {
               reject(err);
             }
@@ -334,8 +334,8 @@ export const bleManager = {
             });
           });
 
-          // 每次分包发送之间给与 50 毫秒的小延时，以防包拥塞导致底层丢包
-          await new Promise((resolveDelay) => setTimeout(resolveDelay, 50));
+          // 每次分包发送之间给与小延时，以防包拥塞导致底层丢包
+          await new Promise((resolveDelay) => setTimeout(resolveDelay, APP_CONFIG.BLE_SCAN.CHUNK_DELAY_MS));
         }
         resolve();
       } catch (err) {

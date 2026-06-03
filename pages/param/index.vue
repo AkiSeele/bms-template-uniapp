@@ -1,27 +1,27 @@
 <template>
   <layout-provider>
-    <!-- 自定义顶部导航栏，固定在顶部并生成占位元素 -->
-    <wd-navbar :title="$t('bms.tab.params')" fixed safe-area-inset-top placeholder />
-    
-    <!-- 暂无数据的空白页面卡片占位 -->
-    <view class="wot-p-main wot-flex wot-flex-col wot-items-center wot-justify-center wot-min-h-[50vh]">
-      <wd-icon css-icon="i-lucide-sliders" size="64px" color="#bfbfbf" />
-      <text class="wot-text-body-main wot-text-text-secondary wot-mt-4">
-        {{ $t('bms.tab.params') }}
-      </text>
+    <view>
+      <!-- 依据已连接设备协议自适应装载专属参数面板或默认通用参数面板 -->
+      <component :is="paramPanelComponent" v-if="paramPanelComponent" />
     </view>
-    
-    <!-- 自定义底部导航栏 -->
-    <custom-tabbar active="param" />
   </layout-provider>
 </template>
 
 <script setup lang="ts">
-// 页面内部的业务逻辑定义区
+import { computed } from "vue";
+import { storeToRefs } from "pinia";
+import { useBleStore } from "@/stores/ble-store";
+import { resolveParamPanel } from "@/components/panel-registry";
+
+const bleStore = useBleStore();
+const { activeProtocolParser } = storeToRefs(bleStore);
+
+// 自适应解析参数页协议面板组件引用，若不存在则自动降级
+const paramPanelComponent = computed(() => {
+  return resolveParamPanel(activeProtocolParser.value?.protocolType);
+});
 </script>
 
 <style scoped>
-.page-container {
-  box-sizing: border-box;
-}
+/* 本页作为容器仅承载子面板，无特殊定制样式 */
 </style>

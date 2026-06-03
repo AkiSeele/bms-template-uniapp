@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { ref } from "vue";
+import { ref, watch } from "vue";
 import { bleManager } from "@/service/ble-manager";
 import { APP_CONFIG, BleServiceConfig } from "@/config";
 import { uint8ArrayToHexString } from "@/utils/bms-helper";
@@ -47,19 +47,19 @@ export const useBleStore = defineStore("ble", () => {
   const connectedDeviceName = ref("");
 
   // 当前匹配成功并处于活跃状态的蓝牙服务特征值配置对象
-  const activeServiceConfig = ref<BleServiceConfig>(APP_CONFIG.BLE_SERVICES.PROTOCOL_A_SERVICES[0]);
+  const activeServiceConfig = ref<BleServiceConfig>(APP_CONFIG.BLE_SERVICES.default[0]);
 
   /**
    * 当前激活装载的协议策略解析器实例
-   * 由 connectDevice 在完成服务发现后，通过 protocol-registry 动态注入
+   * 由连接设备在完成服务发现后，通过协议注册表动态注入
    * 值为 null 时表示当前连接的设备协议未知，系统将跳过数据解析
    */
   const activeProtocolParser = ref<BmsProtocolParser | null>(null);
 
-  // 扩展的高阶电池遥测属性（各协议通过 BmsExtendedData 的可选字段上报各自特有数据）
+  // 扩展的高阶电池遥测属性（各协议通过增量更新包上报各自特有数据）
   const extendedProtocolData = ref<BmsExtendedData>({});
 
-  // BMS 电池核心电量及物理遥测响应式状态（初始化为示例模拟值，防止首屏空状态黑屏）
+  // 电池核心电量及物理遥测响应式状态（初始化为模拟值，防止首屏空状态黑屏）
   const batteryPercent = ref(85);
   const totalVoltage = ref(53.28);
   const realtimeCurrent = ref(12.5);
@@ -69,6 +69,276 @@ export const useBleStore = defineStore("ble", () => {
 
   // 轮询下发查询指令的定时器句柄（非响应式，内部管理）
   let queryInterval: ReturnType<typeof setInterval> | null = null;
+
+  // 指令队列任务类型声明
+  interface BleCommandTask {
+    /** 物理发送的十六进制指令字串 */
+    commandHex: string;
+    /** 对应的指令命令字标识 */
+    commandId: number;
+    /** 任务类型：轮询或手动控制 */
+    type: "poll" | "control";
+    /** 响应超时限制时间（毫秒） */
+    timeout: number;
+    /** 最大重试发送次数 */
+    maxRetries: number;
+    /** 当前已进行的重试发送次数 */
+    retryCount: number;
+    /** 成功回调触发器 */
+    resolve: (value: any) => void;
+    /** 失败或超时回调触发器 */
+    reject: (reason: any) => void;
+  }
+
+  // 全局指令调度队列与状态管理
+  const commandQueue = ref<BleCommandTask[]>([]);
+  const currentExecutingTask = ref<BleCommandTask | null>(null);
+  let taskTimeoutTimer: ReturnType<typeof setTimeout> | null = null;
+  let nextTaskDeferTimer: ReturnType<typeof setTimeout> | null = null;
+
+  /** 是否正处于固件升级锁定中 */
+  const isOtaUpdating = ref(false);
+
+  // 是否有活跃页面需要轮询遥测数据
+  const isPollingActive = ref(false);
+
+  // 设置页面活跃状态以启动或停止轮询
+  const setPollingActive = (active: boolean) => {
+    isPollingActive.value = active;
+    if (active) {
+      if (isBleConnected.value && connectedDeviceId.value) {
+        startQueryTimer(connectedDeviceId.value);
+      }
+    } else {
+      stopQueryTimer();
+    }
+  };
+
+  /**
+   * 从十六进制指令字串中提取命令字标示符
+   * 格式约定：去除空格后，第二字节（即第三及第四字符）为命令字
+   * @param hex 十六进制指令字串
+   */
+  const getCommandIdFromHex = (hex: string): number => {
+    const cleanHex = hex.replace(/\s+/g, "");
+    if (cleanHex.length >= 4) {
+      return parseInt(cleanHex.substring(2, 4), 16);
+    }
+    return 0;
+  };
+
+  /**
+   * 将待发送指令推入调度队列中排队执行
+   * @param commandHex 十六进制指令字节字串
+   * @param type 任务类型，支持遥测轮询和手动控制
+   * @param timeout 响应超时限制时间（毫秒）
+   * @param maxRetries 最大重试发送次数
+   */
+  const pushCommand = (
+    commandHex: string,
+    type: "poll" | "control",
+    timeout = APP_CONFIG.BLE_SCAN.POLL_TIMEOUT_MS,
+    maxRetries = 0,
+  ): Promise<any> => {
+    return new Promise((resolve, reject) => {
+      // 检查是否正处于固件升级锁定中，如果是，则拒绝普通指令入队
+      if (isOtaUpdating.value) {
+        return reject(new Error("Firmware update in progress, queue locked"));
+      }
+
+      // 检查蓝牙连接是否已断开，若未连接则直接拒绝
+      if (!isBleConnected.value || !connectedDeviceId.value) {
+        return reject(new Error("Bluetooth device not connected"));
+      }
+
+      const commandId = getCommandIdFromHex(commandHex);
+      const task: BleCommandTask = {
+        commandHex: commandHex.replace(/\s+/g, ""),
+        commandId,
+        type,
+        timeout,
+        maxRetries,
+        retryCount: 0,
+        resolve,
+        reject,
+      };
+
+      if (type === "control") {
+        // 控制指令享有绝对的高优先级，执行插队
+        // 1. 清空队列中所有尚未执行的普通轮询遥测任务，为控制通道腾出带宽
+        commandQueue.value = commandQueue.value.filter((t) => t.type !== "poll");
+        // 2. 将控制指令直接插入队列最前端，以便优先执行
+        commandQueue.value.unshift(task);
+      } else {
+        // 遥测轮询指令防堆积处理：若队列中已有相同命令字的任务，或者已有控制任务，则直接略过
+        const hasDuplicate = commandQueue.value.some((t) => t.commandId === commandId && t.type === "poll");
+        const hasControl =
+          commandQueue.value.some((t) => t.type === "control") ||
+          (currentExecutingTask.value && currentExecutingTask.value.type === "control");
+
+        if (hasDuplicate || hasControl) {
+          return resolve(null);
+        }
+        commandQueue.value.push(task);
+      }
+
+      // 触发队列调度器开始工作
+      processNextTask();
+    });
+  };
+
+  /**
+   * 驱动调度器执行队列中的下一个待执行任务
+   */
+  const processNextTask = async () => {
+    // 若当前蓝牙已断开，直接清空队列释放所有阻塞的 Promise
+    if (!isBleConnected.value) {
+      clearQueue();
+      return;
+    }
+
+    // 若当前有任务正在等待设备响应，则挂起，等待其响应或超时后再继续
+    if (currentExecutingTask.value !== null) {
+      return;
+    }
+
+    // 若正处于上一条指令完成后的发送间隔冷却期中，则暂缓执行，由延迟定时器触发
+    if (nextTaskDeferTimer !== null) {
+      return;
+    }
+
+    // 队列已空，执行完毕
+    if (commandQueue.value.length === 0) {
+      return;
+    }
+
+    // 取出队列头部的首个任务执行
+    const task = commandQueue.value.shift()!;
+    currentExecutingTask.value = task;
+
+    executeTask(task);
+  };
+
+  /**
+   * 调度并驱动下一指令的执行（支持队列指令发送间隔延时）
+   */
+  const dispatchNextTask = () => {
+    currentExecutingTask.value = null;
+    if (APP_CONFIG.BLE_SCAN.QUEUE_SEND_INTERVAL_MS > 0) {
+      if (nextTaskDeferTimer) {
+        clearTimeout(nextTaskDeferTimer);
+      }
+      nextTaskDeferTimer = setTimeout(() => {
+        nextTaskDeferTimer = null;
+        processNextTask();
+      }, APP_CONFIG.BLE_SCAN.QUEUE_SEND_INTERVAL_MS);
+    } else {
+      processNextTask();
+    }
+  };
+
+  /**
+   * 物理下发任务指令并启动超时定时器
+   * @param task 待下发的任务节点
+   */
+  const executeTask = async (task: BleCommandTask) => {
+    try {
+      const serviceId = activeServiceConfig.value.serviceId;
+      const writeCharId = activeServiceConfig.value.writeCharacteristicId;
+      const deviceId = connectedDeviceId.value;
+
+      // 调用底层服务向特征值写入指令数据
+      await bleManager.writeCommand(deviceId, task.commandHex, serviceId, writeCharId);
+
+      // 启动响应接收倒计时超时器
+      taskTimeoutTimer = setTimeout(() => {
+        handleTaskTimeout();
+      }, task.timeout);
+    } catch (err) {
+      console.error("[指令队列] 物理发送指令异常失败:", err);
+      handleTaskFailure(err);
+    }
+  };
+
+  /**
+   * 处理当前任务的响应超时事件
+   */
+  const handleTaskTimeout = () => {
+    if (!currentExecutingTask.value) return;
+    const task = currentExecutingTask.value;
+
+    if (task.retryCount < task.maxRetries) {
+      // 仍在重试次数限额内，递增重试计数并重新执行发送
+      task.retryCount++;
+      console.warn(
+        `[指令队列] 任务等待响应超时，发起第 ${task.retryCount}/${task.maxRetries} 次重试发送: CMD=0x${task.commandId.toString(16).toUpperCase()}`,
+      );
+      if (taskTimeoutTimer) {
+        clearTimeout(taskTimeoutTimer);
+        taskTimeoutTimer = null;
+      }
+      executeTask(task);
+    } else {
+      // 超时重试次数用尽，宣告失败
+      console.error(`[指令队列] 任务等待响应彻底超时，宣告失败: CMD=0x${task.commandId.toString(16).toUpperCase()}`);
+      if (taskTimeoutTimer) {
+        clearTimeout(taskTimeoutTimer);
+        taskTimeoutTimer = null;
+      }
+
+      if (task.type === "control") {
+        // 控制指令超时必须向 UI 反馈异常
+        task.reject(new Error("Timeout waiting for response"));
+      } else {
+        // 轮询指令超时，静默放行，以防阻断后续轮询
+        task.resolve(null);
+      }
+
+      dispatchNextTask();
+    }
+  };
+
+  /**
+   * 处理当前任务执行期间的写入失败等严重异常
+   * @param err 异常错误信息
+   */
+  const handleTaskFailure = (err: any) => {
+    if (taskTimeoutTimer) {
+      clearTimeout(taskTimeoutTimer);
+      taskTimeoutTimer = null;
+    }
+    const task = currentExecutingTask.value;
+    if (task) {
+      if (task.type === "control") {
+        task.reject(err);
+      } else {
+        task.resolve(null);
+      }
+    }
+    dispatchNextTask();
+  };
+
+  /**
+   * 强行清空并释放整个指令调度队列与定时器状态
+   */
+  const clearQueue = () => {
+    if (taskTimeoutTimer) {
+      clearTimeout(taskTimeoutTimer);
+      taskTimeoutTimer = null;
+    }
+    if (nextTaskDeferTimer) {
+      clearTimeout(nextTaskDeferTimer);
+      nextTaskDeferTimer = null;
+    }
+    if (currentExecutingTask.value) {
+      currentExecutingTask.value.reject(new Error("Connection lost"));
+      currentExecutingTask.value = null;
+    }
+    commandQueue.value.forEach((task) => {
+      task.reject(new Error("Connection lost"));
+    });
+    commandQueue.value = [];
+  };
 
   /**
    * 全局单例监听器初始化入口，只应在 App.vue 的 onLaunch 中被调用一次
@@ -168,7 +438,7 @@ export const useBleStore = defineStore("ble", () => {
    */
   const processFullFrame = (bytes: Uint8Array) => {
     const hex = uint8ArrayToHexString(bytes);
-    console.warn(`[BLE Store] 成功重组完整蓝牙接收帧 (HEX):`, hex);
+    console.warn(`[BLE Store] (HEX):`, hex);
 
     // 记录接收完整响应指令 (RX) 日志，方便时序对账
     try {
@@ -179,6 +449,36 @@ export const useBleStore = defineStore("ble", () => {
 
     // 完全委托给当前激活的协议策略解析器进行解析，Store 层零参与
     const update = activeProtocolParser.value.parseReceivedData(bytes);
+    const cmdId = bytes[1]; // 命令字节
+
+    // 检查是否能匹配到当前正在执行的任务响应
+    const currentTask = currentExecutingTask.value;
+    if (currentTask && currentTask.commandId === cmdId) {
+      // 匹配成功，清除超时定时器
+      if (taskTimeoutTimer) {
+        clearTimeout(taskTimeoutTimer);
+        taskTimeoutTimer = null;
+      }
+
+      if (currentTask.type === "control") {
+        // 控制指令响应处理
+        if (update && update.controlResponse && !update.controlResponse.success) {
+          // 设备明确返回了执行失败标志
+          currentTask.reject(new Error("Control command executed failed by device"));
+        } else {
+          // 成功接收到该命令字响应帧，视为控制成功
+          currentTask.resolve(true);
+        }
+      } else {
+        // 轮询指令响应处理
+        currentTask.resolve(update);
+      }
+
+      // 驱动下一指令执行（支持延迟间隔）
+      dispatchNextTask();
+    }
+
+    // 无论是否匹配到等待的任务（兼容异步主动推送和乱序容错），只要解析成功了，就同步更新界面响应式状态
     if (update) {
       // 按增量更新包中包含的字段选择性更新响应式状态
       if (update.totalVoltage !== undefined) totalVoltage.value = update.totalVoltage;
@@ -205,39 +505,82 @@ export const useBleStore = defineStore("ble", () => {
   const startQueryTimer = (deviceId: string) => {
     stopQueryTimer();
 
+    // 若当前无活跃页面需要轮询，则直接返回
+    if (!isPollingActive.value) {
+      return;
+    }
+
+    console.log(`[蓝牙轮询] 启动查询定时器，设备标识: ${deviceId}`);
+
     let queryStep = 0;
-    queryInterval = setInterval(async () => {
-      // 若蓝牙连接已断开或协议解析器被清空，终止定时器
+
+    // 执行单次轮询指令下发任务生成
+    const executeQueryStep = async () => {
+      // 若当前正处于固件升级中，则直接挂起不生成轮询任务
+      if (isOtaUpdating.value) {
+        return;
+      }
+
+      // 若蓝牙连接已断开，协议解析器被清空，或者设备 ID 丢失，终止定时器
       if (!isBleConnected.value || !connectedDeviceId.value || !activeProtocolParser.value) {
         stopQueryTimer();
         return;
       }
 
-      try {
-        const serviceId = activeServiceConfig.value.serviceId;
-        const writeCharId = activeServiceConfig.value.writeCharacteristicId;
+      // 如果当前队列里有控制任务，或者当前正在执行控制任务，则本周期挂起轮询，防止指令交错冲突
+      const hasControlTask =
+        commandQueue.value.some((t) => t.type === "control") ||
+        (currentExecutingTask.value && currentExecutingTask.value.type === "control");
+      if (hasControlTask) {
+        return;
+      }
 
-        // 向协议策略器索取本次需下发的轮询指令（协议无关的通用调用）
-        const cmds = activeProtocolParser.value.getPollCommands(queryStep);
-        for (const cmd of cmds) {
-          if (cmd) {
-            await bleManager.writeCommand(deviceId, cmd, serviceId, writeCharId);
-            // 多包顺序下发时的物理延时，防止 BLE 控制器缓冲区堵塞
-            if (cmds.length > 1) {
-              await new Promise((resolve) => setTimeout(resolve, APP_CONFIG.BLE_SCAN.CHUNK_DELAY_MS));
+      // 为了防止蓝牙慢速响应引起队列中轮询指令堆积，若队列中仍有残留轮询任务，本次也跳过生成
+      const hasPollTask = commandQueue.value.some((t) => t.type === "poll");
+      if (hasPollTask) {
+        return;
+      }
+
+      try {
+        // 一次性把这一轮的全部轮询指令都拿出来推入队列，保证首页各项数据均得到刷新
+        // 动态读取当前协议策略所声明的循环步数周期长度
+        const cycleLength = activeProtocolParser.value.pollingCycleLength || 1;
+        const cmdSet = new Set<string>();
+        for (let offset = 0; offset < cycleLength; offset++) {
+          const cmds = activeProtocolParser.value.getPollCommands(queryStep + offset);
+          for (const cmd of cmds) {
+            if (cmd) {
+              cmdSet.add(cmd);
             }
           }
         }
-        queryStep++;
+
+        // 依次将各指令任务推入队列进行排队执行
+        for (const cmd of cmdSet) {
+          // 轮询超时限制设为配置时间，重试 0 次，失败/超时后静默抛弃执行下一条
+          pushCommand(cmd, "poll", APP_CONFIG.BLE_SCAN.POLL_TIMEOUT_MS, 0).catch((err) => {
+            console.warn("[指令队列] 轮询任务执行异常:", err);
+          });
+        }
+
+        // 轮转步数增加对应的周期长度
+        queryStep += cycleLength;
       } catch (err) {
-        console.error("[BLE Store] 轮询查询指令下发失败:", err);
+        console.error("[BLE Store] 轮询查询任务生成入队失败:", err);
       }
-    }, 2000);
+    };
+
+    // 立即同步下发一次，消除首屏等待延迟
+    executeQueryStep();
+
+    // 开启心跳轮询定时器
+    queryInterval = setInterval(executeQueryStep, APP_CONFIG.BLE_SCAN.POLL_INTERVAL_MS);
   };
 
   /** 停止蓝牙数据查询定时器并释放引用 */
   const stopQueryTimer = () => {
     if (queryInterval !== null) {
+      console.log("[蓝牙轮询] 停止查询定时器");
       clearInterval(queryInterval);
       queryInterval = null;
     }
@@ -246,6 +589,7 @@ export const useBleStore = defineStore("ble", () => {
   /** 重置并清空当前蓝牙连接及所有解析数据状态，用于断连或连接失败后的状态还原 */
   const clearBleState = () => {
     stopQueryTimer();
+    clearQueue();
     isBleConnected.value = false;
     connectedDeviceId.value = "";
     connectedDeviceMac.value = "";
@@ -257,7 +601,7 @@ export const useBleStore = defineStore("ble", () => {
     isDischarging.value = false;
     temperature.value = 0;
     // 重置为第一个可用的服务配置（连接新设备时将被重新匹配覆盖）
-    activeServiceConfig.value = APP_CONFIG.BLE_SERVICES.PROTOCOL_A_SERVICES[0];
+    activeServiceConfig.value = APP_CONFIG.BLE_SERVICES.default[0];
     // 销毁协议策略器实例，释放内存
     activeProtocolParser.value = null;
     extendedProtocolData.value = {};
@@ -265,31 +609,36 @@ export const useBleStore = defineStore("ble", () => {
   };
 
   /**
-   * 统一的 BMS 物理开关控制总线（充电 MOS / 放电 MOS / 加热 / 清除 / 休眠 / 启动）
-   * 控制指令的具体字节由当前协议策略器组装，Store 层完全透传
+   * 统一的 BMS 物理开关控制总线（充电开关 / 放电开关 / 低温加热 / 清除 / 休眠 / 启动）
+   * 控制指令的具体字节由当前协议策略器组装，Store 层完全透传，并等待设备响应
    * @param type  控制类型
    * @param open  开启（true）或关闭（false）
+   * @returns 返回一个 Promise，成功收到响应 resolve(true)，超时或设备返回失败则 reject
    */
   const sendControlCommand = async (
     type: "charge" | "discharge" | "heat" | "clear" | "sleep" | "start",
     open: boolean,
-  ) => {
+  ): Promise<boolean> => {
     if (!isBleConnected.value || !connectedDeviceId.value || !activeProtocolParser.value) {
       throw new Error("Bluetooth device not connected or protocol parser not ready");
     }
-
-    const serviceId = activeServiceConfig.value.serviceId;
-    const writeCharId = activeServiceConfig.value.writeCharacteristicId;
 
     // 向协议策略器请求控制帧的十六进制字节字符串
     const cmdHex = activeProtocolParser.value.getControlCommand(type, open);
     if (!cmdHex) {
       console.warn(`[BLE Store] 协议 "${activeProtocolParser.value.protocolName}" 不支持控制类型: ${type}`);
-      return;
+      return false;
     }
 
-    console.log(`[BLE Store] 下发控制指令: type=${type}, open=${open}, HEX=${cmdHex}`);
-    await bleManager.writeCommand(connectedDeviceId.value, cmdHex, serviceId, writeCharId);
+    console.log(`[BLE Store] 开始向调度队列推入控制指令: type=${type}, open=${open}, HEX=${cmdHex}`);
+
+    // 控制任务设定超时与重试次数
+    return pushCommand(
+      cmdHex,
+      "control",
+      APP_CONFIG.BLE_SCAN.CONTROL_TIMEOUT_MS,
+      APP_CONFIG.BLE_SCAN.CONTROL_RETRY_LIMIT,
+    );
   };
 
   /**
@@ -312,9 +661,9 @@ export const useBleStore = defineStore("ble", () => {
       try {
         await disconnectDevice();
         console.log(`[BLE 连接] 老设备已断开释放 ✓`);
-        // 给与系统蓝牙栈 500 毫秒的时间完成物理通道拆除与系统清理，防止新老连接重叠冲突
-        console.log(`[BLE 连接] 正在等待物理通道彻底拆除 (500ms)...`);
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        // 给与系统蓝牙栈配置的等待时间完成物理通道拆除与系统清理，防止新老连接重叠冲突
+        console.log(`[BLE 连接] 正在等待物理通道彻底拆除 (${APP_CONFIG.BLE_SCAN.DISCONNECT_DELAY_MS}ms)...`);
+        await new Promise((resolve) => setTimeout(resolve, APP_CONFIG.BLE_SCAN.DISCONNECT_DELAY_MS));
       } catch (disErr) {
         console.warn(`[BLE 连接] 自动断开老设备失败（可忽略并强行建立新连接）:`, disErr);
       }
@@ -347,9 +696,9 @@ export const useBleStore = defineStore("ble", () => {
       }
       console.log(`[BLE 连接] 步骤 1/9 - 扫描已停止 ✓`);
 
-      // 给与系统蓝牙栈 400 毫秒的时间释放硬件天线资源，防止高频密集操作引起 OS 层的 10012 操纵超时错误
-      console.log(`[BLE 连接] 正在等待系统天线释放 (400ms)...`);
-      await new Promise((resolve) => setTimeout(resolve, 400));
+      // 给与系统蓝牙栈配置的等待时间释放硬件天线资源，防止高频密集操作引起系统层的操纵超时错误
+      console.log(`[BLE 连接] 正在等待系统天线释放 (${APP_CONFIG.BLE_SCAN.POST_STOP_SCAN_DELAY_MS}ms)...`);
+      await new Promise((resolve) => setTimeout(resolve, APP_CONFIG.BLE_SCAN.POST_STOP_SCAN_DELAY_MS));
 
       // 步骤 2：发起建立物理连接
       console.log(`[BLE 连接] 步骤 2/9 - 发起物理连接 createBLEConnection...`);
@@ -394,7 +743,7 @@ export const useBleStore = defineStore("ble", () => {
         // 将所有协议的多套 UUID 配置拉平为一维数组进行匹配，实现多套 UUID 的热兼容
         console.log(`[BLE 连接] 步骤 5/9 - 协议 UUID 匹配，已注册 UUID: [${getRegisteredUuids().join(", ")}]`);
         const allConfigs = Object.values(APP_CONFIG.BLE_SERVICES).flat();
-        let matchedConfig = allConfigs[0] || APP_CONFIG.BLE_SERVICES.PROTOCOL_A_SERVICES[0];
+        let matchedConfig = allConfigs[0] || APP_CONFIG.BLE_SERVICES.default[0];
         for (const config of allConfigs) {
           const found = discoveredServiceUuids.find(
             (uuid: string) => uuid.toUpperCase() === config.serviceId.toUpperCase(),
@@ -480,32 +829,35 @@ export const useBleStore = defineStore("ble", () => {
         throw charErr;
       }
 
-      // 步骤 8：动态 MTU 协商（非 iOS 平台主动协商，推荐值 247）
+      // 步骤 8：动态 MTU 协商（非 iOS 平台主动协商，目标值取自配置）
       //    iOS 系统会在物理连接时由底层自动完成 MTU 协商，无需手动调用
       const appStore = useAppStore();
       const os = (appStore.deviceInfo.osName || "").toLowerCase();
 
       if (os !== "ios" && typeof uni.setBLEMTU === "function") {
         try {
-          console.log(`[BLE 连接] 步骤 8/9 - 非 iOS 平台，发起 MTU 协商 (目标: 247 字节)...`);
-          const mtuRes = await bleManager.setMTU(deviceId, 247);
-          logStore.addConnectionLog("uni.setBLEMTU", { deviceId, mtu: 247 }, mtuRes, "success");
+          const targetMtu = APP_CONFIG.BLE_SCAN.TARGET_MTU;
+          console.log(`[BLE 连接] 步骤 8/9 - 非 iOS 平台，发起 MTU 协商 (目标: ${targetMtu} 字节)...`);
+          const mtuRes = await bleManager.setMTU(deviceId, targetMtu);
+          logStore.addConnectionLog("uni.setBLEMTU", { deviceId, mtu: targetMtu }, mtuRes, "success");
           console.log(`[BLE 连接] 步骤 8/9 - MTU 协商完成 ✓`);
         } catch (mtuErr: any) {
-          logStore.addConnectionLog("uni.setBLEMTU", { deviceId, mtu: 247 }, mtuErr, "fail");
-          console.warn(`[BLE 连接] 步骤 8/9 - ⚠️ MTU 协商失败，将沿用默认 20 字节限额:`, mtuErr);
+          logStore.addConnectionLog("uni.setBLEMTU", { deviceId, mtu: APP_CONFIG.BLE_SCAN.TARGET_MTU }, mtuErr, "fail");
+          console.warn(
+            `[BLE 连接] 步骤 8/9 - ⚠️ MTU 协商失败，将沿用默认 ${APP_CONFIG.BLE_SCAN.DEFAULT_MTU} 字节限额:`,
+            mtuErr,
+          );
         }
       } else {
         logStore.addConnectionLog("uni.setBLEMTU", { deviceId }, `skipped: platform=${os}`, "success");
         console.log(`[BLE 连接] 步骤 8/9 - 平台: ${os || "iOS"}，跳过手动 MTU 协商 ✓`);
       }
 
-      // 步骤 9：订阅 Notify 特征值，使能 BMS 主动上报数据通道
-      // 注意：Android BLE 底层在 getBLEDeviceCharacteristics 后需要短暂等待 GATT 缓存就绪，
-      // 否则立即调用 notifyBLECharacteristicValueChange 会触发 10008 no descriptor 错误
+      // 步骤 9：订阅通知特征值，使能电池数据通道
+      // 注意：安卓底层在发现特征值后需要短暂等待缓存就绪，否则立即调用订阅会触发异常
       const notifyCharId = activeServiceConfig.value.notifyCharacteristicId;
-      console.log(`[BLE 连接] 步骤 9/9 - 等待 GATT 缓存就绪 (300ms)...`);
-      await new Promise((resolve) => setTimeout(resolve, 300));
+      console.log(`[BLE 连接] 步骤 9/9 - 等待系统缓存就绪 (${APP_CONFIG.BLE_SCAN.PRE_SUBSCRIBE_DELAY_MS}ms)...`);
+      await new Promise((resolve) => setTimeout(resolve, APP_CONFIG.BLE_SCAN.PRE_SUBSCRIBE_DELAY_MS));
       console.log(
         `[BLE 连接] 步骤 9/9 - 订阅 Notify 特征值 notifyBLECharacteristicValueChange, notifyCharId=${notifyCharId}`,
       );
@@ -528,8 +880,16 @@ export const useBleStore = defineStore("ble", () => {
         throw notifyErr;
       }
 
-      // 启动后台心跳轮询定时器
-      startQueryTimer(deviceId);
+      // 订阅成功后，强制等待链路稳定再下发心跳指令，防 10007 冲突
+      console.log(
+        `[BLE 连接] 步骤 9/9 - 正在等待通道与天线链路稳定 (${APP_CONFIG.BLE_SCAN.POST_SUBSCRIBE_DELAY_MS}ms)...`,
+      );
+      await new Promise((resolve) => setTimeout(resolve, APP_CONFIG.BLE_SCAN.POST_SUBSCRIBE_DELAY_MS));
+
+      // 仅在有活跃页面需要轮询时才启动后台查询定时器
+      if (isPollingActive.value) {
+        startQueryTimer(deviceId);
+      }
       console.log(`[BLE 连接] ━━━━━━ 连接时序全部完成，设备已就绪 ━━━━━━`);
       logStore.addConnectionLog("uni.createBLEConnection:success", { deviceId }, "success", "success");
 
@@ -597,6 +957,15 @@ export const useBleStore = defineStore("ble", () => {
     isAutoConnectingCancelable.value = false;
   };
 
+  // 监听固件升级状态，一旦开启，立即清空普通指令队列并停止遥测轮询
+  watch(isOtaUpdating, (newVal) => {
+    if (newVal) {
+      console.log("[BLE Store] 固件升级启动，正在锁定通道并清空队列...");
+      stopQueryTimer();
+      clearQueue();
+    }
+  });
+
   return {
     isBleConnected,
     connectedDeviceId,
@@ -623,5 +992,10 @@ export const useBleStore = defineStore("ble", () => {
     isAutoConnectingCancelable,
     cancelAutoConnectCallback,
     triggerCancelAutoConnect,
+    isOtaUpdating,
+    startQueryTimer,
+    stopQueryTimer,
+    isPollingActive,
+    setPollingActive,
   };
 });

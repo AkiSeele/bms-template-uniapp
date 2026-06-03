@@ -22,9 +22,13 @@
         <!-- Source: uni_modules/wot-ui/components/wd-navbar/wd-navbar.vue -->
         <wd-navbar :title="$t('bms.ble.searchTitle')" left-arrow safe-area-inset-top @click-left="goBack" />
         
-        <!-- Google 风格的水平流光进度条：展现现代无边框加载的流场感 -->
-        <view class="progress-bar-container" :class="{ 'is-active': isScanning }">
-          <view class="progress-bar-indicator"></view>
+        <!-- Google 风格水平流光进度条：由 GSAP 补间驱动 translateX + scaleX -->
+        <view 
+          class="progress-bar-container" 
+          :class="{ 'is-active': isScanning }"
+          :style="{ backgroundColor: activeThemeColor + '1a' }"
+        >
+          <view class="progress-bar-indicator" :style="[{ backgroundColor: activeThemeColor }, progressIndicatorStyle]" />
         </view>
 
         <!-- 搜索控制台：手写极其轻量精致的 Google Material 圆角输入框，无任何多余嵌套 -->
@@ -57,9 +61,12 @@
           <!-- 左侧设备信息：min-w-0 flex-1 以保障内部 wot-truncate 省略截断正常生效，flex-shrink-0 保护左侧图标 -->
           <view class="wot-flex wot-items-center wot-gap-3 wot-min-w-0 wot-flex-1">
             <!-- 蓝牙图标圆形外包围，防止被长名称挤变形 -->
-            <view class="icon-circle wot-flex wot-items-center wot-justify-center wot-bg-[#e8f0fe] wot-rounded-full wot-flex-shrink-0">
+            <view 
+              class="icon-circle wot-flex wot-items-center wot-justify-center wot-rounded-full wot-flex-shrink-0"
+              :style="{ backgroundColor: activeThemeColor + '1a' }"
+            >
               <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-              <wd-icon css-icon="i-ri-bluetooth-fill" size="18px" color="#1a73e8" />
+              <wd-icon css-icon="i-ri-bluetooth-fill" size="18px" :color="activeThemeColor" />
             </view>
             <!-- 名称与 MAC 容器：通过 flex-1 与 min-w-0 让剩余空间自适应分配 -->
             <view class="wot-flex wot-flex-col wot-min-w-0 wot-flex-1">
@@ -95,11 +102,15 @@
         <view class="wot-flex wot-flex-col wot-items-center wot-justify-center wot-py-12 wot-px-6 wot-mt-10">
           <!-- 雷达波纹同心圆扩散动画区域 -->
           <view class="radar-container wot-mb-8" v-if="isScanning">
-            <view class="radar-ripple ripple-1"></view>
-            <view class="radar-ripple ripple-2"></view>
-            <view class="radar-ripple ripple-3"></view>
-            <view class="radar-center wot-flex wot-items-center wot-justify-center">
-              <wd-icon css-icon="i-ri-bluetooth-line" size="32px" color="#1a73e8" />
+            <!-- 雷达波纹同心圆由 GSAP 补间驱动 scale + opacity -->
+            <view class="radar-ripple" :style="[{ borderColor: activeThemeColor + '26', backgroundColor: activeThemeColor + '08' }, ripple1Style]" />
+            <view class="radar-ripple" :style="[{ borderColor: activeThemeColor + '26', backgroundColor: activeThemeColor + '08' }, ripple2Style]" />
+            <view class="radar-ripple" :style="[{ borderColor: activeThemeColor + '26', backgroundColor: activeThemeColor + '08' }, ripple3Style]" />
+            <view 
+              class="radar-center wot-flex wot-items-center wot-justify-center"
+              :style="{ backgroundColor: activeThemeColor + '1a', boxShadow: '0 4px 12px ' + activeThemeColor + '26' }"
+            >
+              <wd-icon css-icon="i-ri-bluetooth-line" size="32px" :color="activeThemeColor" />
             </view>
           </view>
           
@@ -132,12 +143,15 @@
 <script setup lang="ts">
 import { ref, watch, nextTick } from "vue";
 import { onShow, onHide, onUnload } from "@dcloudio/uni-app";
+import { storeToRefs } from "pinia";
+import { useAppStore } from "@/stores/app";
 
 import { useI18n } from "vue-i18n";
 import { useToast } from "@/uni_modules/wot-ui";
 import { bleManager } from "@/service/ble-manager";
 import { useBleStore } from "@/stores/ble-store";
 import { useBlePermission } from "@/composables/use-ble-permission";
+import { useBleSearchAnimation } from "@/composables/use-ble-search-animation";
 import { resolveDeviceMac } from "@/utils/bms-helper";
 import { getRegisteredUuids } from "@/service/protocol/protocol-registry";
 import { APP_CONFIG } from "@/config";
@@ -152,6 +166,8 @@ const toast = useToast();
 
 // 初始化 Pinia 全局蓝牙状态仓
 const bleStore = useBleStore();
+const appStore = useAppStore();
+const { activeThemeColor } = storeToRefs(appStore);
 
 // 引入统一封装的可复用蓝牙与定位权限管理 Hook
 const { checkStatus, resolveEnvAlert } = useBlePermission();
@@ -170,6 +186,20 @@ const searchQuery = ref("");
 
 // 搜索状态管理与超时定时器句柄
 const isScanning = ref(false);
+
+// ---------------------------------------------------------------------------
+// GSAP 动画 Hook（流光进度条 + 雷达同心圆扩散）
+// 动画逻辑收拢至 composables/use-ble-search-animation.ts
+// 监听 isScanning 自动启停
+// ---------------------------------------------------------------------------
+const {
+  progressIndicatorStyle,
+  ripple1Style,
+  ripple2Style,
+  ripple3Style,
+  stopAll: stopAllAnimations,
+} = useBleSearchAnimation(isScanning);
+
 let scanTimer: any = null;
 let throttleTimer: any = null; // 用于高频更新列表的节流定时器
 
@@ -384,9 +414,10 @@ const handleConnect = async (device: any) => {
   }
 };
 
-// 页面卸载时，强制清理长扫描进程，防止内存泄漏
+// 页面卸载时，强制清理长扫描进程和 GSAP 动画实例，防止内存泄漏
 onUnload(() => {
   stopScanProcess();
+  stopAllAnimations();
 });
 
 /**
@@ -438,7 +469,6 @@ onShow(async () => {
 .progress-bar-container {
   width: 100%;
   height: 0px;
-  background-color: #e8f0fe;
   overflow: hidden;
   transition: height 0.3s ease;
   position: relative;
@@ -446,30 +476,18 @@ onShow(async () => {
 .progress-bar-container.is-active {
   height: 3px;
 }
+/* 流光指示器：由 GSAP 补间驱动 translateX + scaleX，避免动画 left/width 重排属性 */
 .progress-bar-indicator {
   height: 100%;
-  background-color: #1a73e8;
-  width: 50%;
+  width: 40%;
   position: absolute;
-  left: -50%;
-  animation: google-progress 1.5s infinite linear;
+  left: 0;
   border-radius: 1.5px;
-}
-@keyframes google-progress {
-  0% {
-    left: -50%;
-    width: 30%;
-  }
-  50% {
-    width: 60%;
-  }
-  100% {
-    left: 100%;
-    width: 30%;
-  }
+  transform-origin: left center;
+  will-change: transform;
 }
 
-/* Google 雷达波纹扫描动画 */
+/* Google 雷达波纹扫描动画（GSAP 补间驱动 scale + opacity） */
 .radar-container {
   position: relative;
   width: 160px;
@@ -485,18 +503,8 @@ onShow(async () => {
   background-color: rgba(26, 115, 232, 0.03);
   width: 100%;
   height: 100%;
-  animation: radar-pulse 3s infinite linear;
-  opacity: 0;
   box-sizing: border-box;
-}
-.ripple-1 {
-  animation-delay: 0s;
-}
-.ripple-2 {
-  animation-delay: 1s;
-}
-.ripple-3 {
-  animation-delay: 2s;
+  will-change: transform, opacity;
 }
 .radar-center {
   position: relative;
@@ -507,19 +515,6 @@ onShow(async () => {
   border-radius: 50%;
   box-shadow: 0 4px 12px rgba(26, 115, 232, 0.15);
 }
-@keyframes radar-pulse {
-  0% {
-    transform: scale(0.4);
-    opacity: 0;
-  }
-  10% {
-    opacity: 1;
-  }
-  100% {
-    transform: scale(1.1);
-    opacity: 0;
-  }
-}
 
 /* 手写输入框容器与输入源 */
 .google-search-box {
@@ -528,8 +523,8 @@ onShow(async () => {
   transition: all 0.25s ease;
 }
 .google-search-box:focus-within {
-  border-color: #1a73e8 !important;
-  box-shadow: 0 1px 3px rgba(26, 115, 232, 0.12);
+  border-color: var(--wot-color-theme, #0052d9) !important;
+  box-shadow: 0 1px 3px rgba(0, 82, 217, 0.12);
 }
 .search-input {
   border: none;

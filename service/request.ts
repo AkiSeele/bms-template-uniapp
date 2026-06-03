@@ -76,7 +76,7 @@ export const request = <T = any>(options: RequestOptions): Promise<T> => {
           // 延时 1.5s 重定向，保证用户能完整看清 Toast 过期提示
           setTimeout(() => {
             uni.reLaunch({
-              url: "/pages/mine/index",
+              url: "/pages/index/index?tab=mine",
             });
           }, 1500);
 

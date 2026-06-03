@@ -1,10 +1,10 @@
 <template>
-  <layout-provider>
+  <view>
     <!-- 自定义顶部导航栏，固定在顶部并生成占位元素 -->
-    <wd-navbar :title="$t('bms.mine.title')" fixed safe-area-inset-top placeholder />
+    <wd-navbar :title="$t('bms.mine.title')" fixed safe-area-inset-top />
 
     <!-- 用户个人中心头部卡片 -->
-    <view class="wot-px-3 wot-py-4">
+    <view class="tab-content-wrap wot-px-3 wot-py-4 page-body-animate">
       <view
         class="user-card wot-bg-filled-oppo wot-rounded-2xl wot-p-3.5 wot-shadow-sm wot-mb-4 wot-flex wot-items-center wot-justify-between"
         @click="handleUserCardClick"
@@ -20,7 +20,7 @@
             <wd-icon
               :css-icon="isOfflineMode ? 'i-lucide-user' : isLoggedIn ? 'i-lucide-user-check' : 'i-lucide-user'"
               size="36px"
-              :color="isOfflineMode ? '#858585' : isLoggedIn ? '#0052d9' : '#ff9900'"
+              :color="isOfflineMode ? '#858585' : isLoggedIn ? activeThemeColor : '#ff9900'"
             />
           </view>
 
@@ -117,7 +117,7 @@
               <wd-icon css-icon="i-lucide-zap" size="20px" class="wot-mr-2" color="#858585" />
             </template>
             <!-- Source: uni_modules/wot-ui/components/wd-switch/wd-switch.vue -->
-            <wd-switch v-model="autoConnectEnabled" @change="handleAutoConnectChange" color="#0052d9" size="20px" />
+            <wd-switch v-model="autoConnectEnabled" @change="handleAutoConnectChange" size="20px" />
           </wd-cell>
 
           <!-- 项目配置入口单元格：点击跳转至独立的设置页面 -->
@@ -148,6 +148,15 @@
           <wd-cell :title="$t('bms.mine.appVersion')" :value="appVersionDisplay" is-link @click="checkUpdate">
             <template #prefix>
               <wd-icon css-icon="i-lucide-info" size="20px" class="wot-mr-2" color="#858585" />
+            </template>
+          </wd-cell>
+
+          <!-- 固件升级入口单元格：跳转至固件写入页面 -->
+          <!-- Source: uni_modules/wot-ui/components/wd-cell/wd-cell.vue -->
+          <wd-cell :title="$t('bms.firmware.title')" is-link @click="navigateToFirmwareUpdate">
+            <template #prefix>
+              <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
+              <wd-icon css-icon="i-lucide-cpu" size="20px" class="wot-mr-2" color="#858585" />
             </template>
           </wd-cell>
 
@@ -187,10 +196,7 @@
     <wd-toast />
     <!-- Source: uni_modules/wot-ui/components/wd-dialog/wd-dialog.vue -->
     <wd-dialog />
-
-    <!-- 自定义底部导航栏 -->
-    <custom-tabbar active="mine" />
-  </layout-provider>
+  </view>
 </template>
 
 <script setup lang="ts">
@@ -202,6 +208,7 @@ import { useUserStore } from "@/stores/user";
 import { useLogStore } from "@/stores/log-store";
 import { storeToRefs } from "pinia";
 import { APP_CONFIG } from "@/config";
+import { onLoad } from "@dcloudio/uni-app";
 
 // 获取国际化和消息提示 hooks、对话框 hooks 以及全局 appStore 状态实例
 const { locale, t } = useI18n();
@@ -210,6 +217,13 @@ const userStore = useUserStore();
 const logStore = useLogStore();
 const toast = useToast();
 const dialog = useDialog();
+
+// 如果直接作为独立页面加载（比如外部回跳），则自动重定向至主 Shell 页面的“我的”标签页以防布局错乱
+onLoad(() => {
+  uni.reLaunch({
+    url: "/pages/index/index?tab=mine",
+  });
+});
 
 // 解构状态仓中的身份凭证、资料和激活截止时间
 const { token, userInfo, isAuthorized } = storeToRefs(userStore);
@@ -224,7 +238,7 @@ const handleAutoConnectChange = ({ value }: { value: boolean }) => {
 };
 
 // 响应式解构 appStore 中的明暗主题状态，符合规范
-const { theme } = storeToRefs(appStore);
+const { theme, activeThemeColor } = storeToRefs(appStore);
 
 // 双向绑定分段器选中的当前主题模式值，以保障多端切换的顺畅与同步
 const themeMode = ref(theme.value);
@@ -249,7 +263,6 @@ const getThemeIcon = (val: string | number) => {
 };
 
 // 切换主题模式的回调，触发 Pinia
-// wot-ui 的 wd-segmented 的 change 事件回调参数为选中的 option 选项对象
 const handleThemeModeChange = (option: { value: "light" | "dark" | "system" }) => {
   appStore.setTheme(option.value);
 };
@@ -287,9 +300,9 @@ const handleLanguageSelect = ({ item }: { item: { name: string; value: "zh-Hans"
       msg: t("bms.mine.switchSuccess"),
       duration: 1000,
       closed: () => {
-        // 重新加载应用以确保多页面模板的自定义底部导航栏等非本页资源也全面重绘翻译
+        // 在 SPA 模式下，直接刷新当前页面即可
         uni.reLaunch({
-          url: "/pages/mine/index",
+          url: "/pages/index/index?tab=mine",
         });
       },
     });
@@ -323,14 +336,11 @@ const appVersionDisplay = computed(() => {
   let version = "v1.0.0"; // 默认的起步版本号
 
   // #ifdef MP-WEIXIN
-  // 微信小程序平台：通过获取账户账号信息同步接口获取当前小程序的版本号
   try {
     const accountInfo = uni.getAccountInfoSync();
-    // 线上版本可以直接提取发布版本号
     if (accountInfo.miniProgram && accountInfo.miniProgram.version) {
       version = "v" + accountInfo.miniProgram.version;
     } else if (accountInfo.miniProgram && accountInfo.miniProgram.envVersion) {
-      // 若处于开发版或体验版尚未发布线上版本，可智能回退显示其所处的环境名称以方便调试
       const envNames: Record<string, string> = {
         develop: t("bms.mine.envDevelop"),
         trial: t("bms.mine.envTrial"),
@@ -344,7 +354,6 @@ const appVersionDisplay = computed(() => {
   // #endif
 
   // #ifdef APP-PLUS
-  // 移动端应用平台：通过系统运行时模块获取应用在安装清单中配置的版本名称
   try {
     if (typeof plus !== "undefined" && plus.runtime && plus.runtime.version) {
       version = "v" + plus.runtime.version;
@@ -357,22 +366,19 @@ const appVersionDisplay = computed(() => {
   return version;
 });
 
-// 分平台自适应的版本检测升级函数：不同端调用不同的底层接口实现更新检测
+// 分平台自适应的版本检测升级函数
 const checkUpdate = () => {
-  // 前置拦截：单机离线模式直接不支持升级检测，拦截并告知用户
   if (APP_CONFIG.APP_MODE === "offline") {
     toast.show({ msg: t("bms.mine.updateUnsupported") });
     return;
   }
 
   // #ifdef MP-WEIXIN
-  // 微信小程序平台：利用官方提供的更新管理器，不依赖任何网络请求就可检测小程序是否有新发布版本
   try {
     toast.show({ msg: t("bms.mine.checking"), duration: 1500 });
     const updateManager = uni.getUpdateManager();
     updateManager.onCheckForUpdate((res) => {
       if (res.hasUpdate) {
-        // 小程序平台有新版本时会自动在后台下载，此处提示用户即可
         toast.show({ msg: t("bms.mine.newVersionFound"), duration: 2500 });
       } else {
         toast.show({ msg: t("bms.mine.alreadyLatest"), duration: 2000 });
@@ -385,16 +391,14 @@ const checkUpdate = () => {
   // #endif
 
   // #ifdef APP-PLUS
-  // 移动端应用平台：目前模拟检测流程（可接入云端版本接口后替换此处逻辑）
   toast.show({ msg: t("bms.mine.checking"), duration: 1500 });
   setTimeout(() => {
-    // 待接入升级服务后，需将此处流程替换为真实的接口调用比对版本号逻辑
     toast.show({ msg: t("bms.mine.alreadyLatest"), duration: 2000 });
   }, 1200);
   // #endif
 };
 
-// 计算属性：动态演算出当前已连接或缓存的设备授权指示状态标签
+// 计算属性：动态编排当前已连接设备之激活授权指示标签
 const authStateLabel = computed(() => {
   return isAuthorized.value ? t("bms.auth.statusAuthorized") : t("bms.auth.statusUnAuthorized");
 });
@@ -415,7 +419,7 @@ watch(passwordPromptTrigger, (newVal) => {
   }
 });
 
-// 显示输入 6 位密码的弹窗（密码配置在 config/index.ts 的 DEBUG_CONFIG.PASSWORD）
+// 显示输入 6 位密码的弹窗
 const showPasswordPrompt = () => {
   dialog.prompt({
     title: t("bms.logs.inputPasswordTitle"),
@@ -439,6 +443,15 @@ const showPasswordPrompt = () => {
     toast.success(t("bms.logs.unlocked"));
   }).catch(() => {
     // 用户取消
+  });
+};
+
+/**
+ * 点击固件升级，跳转至固件写入页面
+ */
+const navigateToFirmwareUpdate = () => {
+  uni.navigateTo({
+    url: "/pages/mine/firmware-update",
   });
 };
 
@@ -482,7 +495,6 @@ const handleUserCardClick = () => {
     return;
   }
 
-  // 云端模式未登录时，引导用户模拟云端登录
   if (!isLoggedIn.value) {
     dialog
       .confirm({
@@ -548,5 +560,10 @@ const handleLogout = () => {
   /* 针对分段器进行尺寸与内边距的微调以对齐 Switch 的高度 */
   --wot-segmented-padding: 2px;
   --wot-segmented-item-padding: 2px 12px;
+}
+
+/* 顶部安全区域与自定义导航栏高度自适应占位 */
+.tab-content-wrap {
+  padding-top: calc(var(--status-bar-height) + 44px + 16px) !important;
 }
 </style>
