@@ -87,6 +87,10 @@
       "heatSending": "下发加热控制...",
       "sendFailed": "下发失败",
       "sendSuccess": "指令下发成功",
+      "clearStatusDesc": "重置并清除硬件内部的临时异常报警标识",
+      "forceSleepDesc": "强行迫使保护板进入低功耗深度休眠关断模式",
+      "forceStartDesc": "强行从深度休眠中激活启动电池保护板硬件工作",
+      "hardwareEmergencyAction": "硬件级紧急维护动作",
       "sending": "发送指令中...",
       "timeout": "操作超时，设备未响应",
       "title": "MOS 管控制开关"
@@ -172,7 +176,10 @@
       "cancel": "取消",
       "confirm": "确定",
       "cyclesUnit": "次",
+      "day": "天",
       "goOpen": "去开启",
+      "hour": "时",
+      "minute": "分",
       "goSettings": "去设置",
       "gpsTitle": "定位开关未开启",
       "locationPermission": "位置信息",
@@ -286,7 +293,9 @@
       "title": "固件升级",
       "updateSuccess": "写入成功",
       "updating": "写入中...",
-      "updatingNoSelect": "固件写入中，请勿重新选择文件"
+      "updatingNoSelect": "固件写入中，请勿重新选择文件",
+      "updatingNoBack": "固件写入中，禁止返回或关闭页面",
+      "updatingNoCancel": "固件写入中，禁止取消更新"
     }
   }
 }

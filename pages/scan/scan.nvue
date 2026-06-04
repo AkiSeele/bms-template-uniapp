@@ -10,8 +10,8 @@
       :autostart="true"
       :filters="scanFilters"
       background="#000000"
-      frameColor="#07c160"
-      scanbarColor="#07c160"
+      :frameColor="activeThemeColor"
+      :scanbarColor="activeThemeColor"
       sound="default"
       @marked="onMarked"
       @error="onScanError"
@@ -27,12 +27,12 @@
 
         <!-- 左下角悬浮手电筒按钮（仅图标，极致简约） -->
         <view class="torch-btn-float" @click="toggleFlash">
-          <text class="control-icon">{{ flashIcon }}</text>
+          <image class="control-image" :src="flashIconPath" />
         </view>
 
         <!-- 右下角悬浮相册选择按钮（仅图标，极致简约） -->
         <view class="album-btn-float" @click="onSelectFromAlbum">
-          <text class="control-icon">🖼️</text>
+          <image class="control-image" src="/static/images/photo_open.png" />
         </view>
       </view>
     </view>
@@ -53,11 +53,11 @@
       </view>
     </view>
 
-    <!-- 4. 底部微信式切换模式栏：纯黑高级背景，带绿色微指示条 -->
+    <!-- 4. 底部微信式切换模式栏：纯黑高级背景，带动态主题色指示条 -->
     <view class="bottom-tab-bar">
       <view class="tab-item">
-        <text class="tab-text">{{ scanTabLabel }}</text>
-        <view class="tab-indicator" />
+        <text class="tab-text" :style="{ color: activeThemeColor }">{{ scanTabLabel }}</text>
+        <view class="tab-indicator" :style="{ backgroundColor: activeThemeColor }" />
       </view>
     </view>
 
@@ -67,7 +67,12 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
 import { onLoad, onUnload } from "@dcloudio/uni-app";
+import { storeToRefs } from "pinia";
+import { useAppStore } from "@/stores/app";
 import { translate as t } from "@/locale/i18n";
+
+const appStore = useAppStore();
+const { activeThemeColor } = storeToRefs(appStore);
 
 // 当前闪光灯开关状态
 const flashOn = ref(false);
@@ -84,7 +89,11 @@ const scanFilters = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13];
 // 国际化文本计算属性
 const pageTitle = computed(() => t("bms.scan.scanPageTitle"));
 const scanTip = computed(() => t("bms.scan.scanTip"));
-const flashIcon = computed(() => (flashOn.value ? "💡" : "🔦"));
+const flashIconPath = computed(() => 
+  flashOn.value 
+    ? "/static/images/flashlight_on.png" 
+    : "/static/images/flashlight_off.png"
+);
 const scanTabLabel = computed(() => t("bms.scan.scanTab") || "扫一扫");
 
 // 顶部区域动态内边距样式（全面屏状态栏适配）
@@ -352,9 +361,10 @@ onUnload(() => {
   border-color: rgba(255, 255, 255, 0.15);
 }
 
-/* 悬浮图标字号 */
-.control-icon {
-  font-size: 38rpx;
+/* 悬浮图标图片尺寸 */
+.control-image {
+  width: 52rpx;
+  height: 52rpx;
 }
 
 /* 浮动顶部导航栏：透明磨砂质感 */
@@ -432,7 +442,6 @@ onUnload(() => {
 /* tab 文字 */
 .tab-text {
   font-size: 30rpx;
-  color: #07c160;
   font-weight: bold;
 }
 
@@ -440,7 +449,6 @@ onUnload(() => {
 .tab-indicator {
   width: 16rpx;
   height: 6rpx;
-  background-color: #07c160;
   border-radius: 3rpx;
   margin-top: 10rpx;
 }

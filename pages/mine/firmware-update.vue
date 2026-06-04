@@ -44,11 +44,14 @@
       <!-- Source: uni_modules/wot-ui/components/wd-card/wd-card.vue -->
       <wd-card class="wot-mb-4">
         <!-- Source: uni_modules/wot-ui/components/wd-steps/wd-steps.vue -->
-        <!-- Source: uni_modules/wot-ui/components/wd-step/wd-step.vue -->
         <wd-steps :active="currentStep" align-center>
+          <!-- Source: uni_modules/wot-ui/components/wd-step/wd-step.vue -->
           <wd-step :title="$t('bms.firmware.stepSelect')" />
+          <!-- Source: uni_modules/wot-ui/components/wd-step/wd-step.vue -->
           <wd-step :title="$t('bms.firmware.stepVerify')" />
+          <!-- Source: uni_modules/wot-ui/components/wd-step/wd-step.vue -->
           <wd-step :title="$t('bms.firmware.stepFlash')" />
+          <!-- Source: uni_modules/wot-ui/components/wd-step/wd-step.vue -->
           <wd-step :title="$t('bms.firmware.stepDone')" />
         </wd-steps>
       </wd-card>
@@ -178,7 +181,8 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from "vue";
-import { onUnload } from "@dcloudio/uni-app";
+// @ts-ignore
+import { onUnload, onBackPress } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import { useFirmwareAnimation } from "@/composables/use-firmware-animation";
 import { useToast, useDialog } from "@/uni_modules/wot-ui";
@@ -236,6 +240,15 @@ onMounted(() => {
 // 页面卸载/组件销毁时彻底清理 GSAP 补间实例
 onUnmounted(() => {
   stopAnimations();
+});
+
+// 拦截物理按键及手机侧滑返回
+onBackPress(() => {
+  if (isUpdating.value) {
+    toast.show({ msg: t("bms.firmware.updatingNoBack") });
+    return true; // 返回 true 表示阻止默认的返回行为
+  }
+  return false;
 });
 
 /** 模拟写入定时器句柄（页面卸载时必须清理） */
@@ -317,7 +330,7 @@ const mainBtnText = computed(() => {
 });
 
 /** 是否显示取消/重置次要按钮 */
-const showCancelBtn = computed(() => isUpdating.value || updateSuccess.value);
+const showCancelBtn = computed(() => updateSuccess.value);
 
 /** 取消/重置按钮文案 */
 const cancelBtnText = computed(() =>
@@ -332,6 +345,9 @@ onUnload(() => {
     clearInterval(simulateTimer);
     simulateTimer = null;
   }
+  // #ifdef MP-WEIXIN
+  wx.disableAlertBeforeUnload();
+  // #endif
 });
 
 // ---------------------------------------------------------------------------
@@ -340,20 +356,11 @@ onUnload(() => {
 
 /**
  * 返回上一页
- * 如果正在写入固件中，弹出二次确认防止误操作中断
+ * 如果正在写入固件中，提示并禁止返回，否则执行 navigateBack
  */
 const handleBack = () => {
   if (isUpdating.value) {
-    dialog
-      .confirm({
-        title: t("bms.common.prompt"),
-        msg: t("bms.firmware.backConfirm"),
-      })
-      .then(() => {
-        停止模拟写入();
-        uni.navigateBack();
-      })
-      .catch(() => {});
+    toast.show({ msg: t("bms.firmware.updatingNoBack") });
     return;
   }
   uni.navigateBack();
@@ -447,6 +454,12 @@ const handleStartUpdate = () => {
   }
 
   isUpdating.value = true;
+  // #ifdef MP-WEIXIN
+  wx.enableAlertBeforeUnload({
+    message: t("bms.firmware.updatingNoBack"),
+  });
+  // #endif
+
   progressValue.value = 0;
   displayProgressValue.value = 0;
   currentStep.value = 1;
@@ -484,6 +497,9 @@ const handleStartUpdate = () => {
         progressValue.value = 100;
         currentStep.value = 3;
         isUpdating.value = false;
+        // #ifdef MP-WEIXIN
+        wx.disableAlertBeforeUnload();
+        // #endif
         updateSuccess.value = true;
         toast.success({ msg: t("bms.firmware.updateSuccess") });
       }
@@ -506,6 +522,10 @@ const 停止模拟写入 = () => {
  * 点击取消写入或重置页面状态
  */
 const handleCancelOrReset = () => {
+  if (isUpdating.value) {
+    toast.show({ msg: t("bms.firmware.updatingNoCancel") });
+    return;
+  }
   if (updateSuccess.value) {
     // 完成后重置所有状态
     updateSuccess.value = false;

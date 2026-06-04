@@ -77,6 +77,11 @@ export function useAutoConnect() {
       const checkOk = await permissionManager.checkBleEnvironment(async () => {
         await bleManager.initBluetooth();
       });
+      // 核心防御：如果在异步请求权限环境期间用户主动取消了自动连接，则立刻中断流程
+      if (!bleStore.isAutoConnecting) {
+        console.log("[自动连接] 蓝牙环境校验完成，但检测到流程已被取消，终止后续步骤");
+        return;
+      }
       if (!checkOk) {
         console.warn("[自动连接] 蓝牙底层环境校验未通过，中断自动重连");
         bleStore.isAutoConnecting = false;
@@ -114,6 +119,10 @@ export function useAutoConnect() {
       
       await bleManager.startScan(async (device) => {
         if (hasFound) return;
+        // 核心防御：在设备扫描回调中，如果用户已经主动取消了自动重连，则直接退出不执行任何匹配和物理连接
+        if (!bleStore.isAutoConnecting) {
+          return;
+        }
 
         // 提取物理地址并过滤掉非物理字符
         const deviceMac = resolveDeviceMac(device).toUpperCase().replace(/[^0-9A-F]/g, "");

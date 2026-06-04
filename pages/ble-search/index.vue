@@ -22,18 +22,19 @@
         <!-- Source: uni_modules/wot-ui/components/wd-navbar/wd-navbar.vue -->
         <wd-navbar :title="$t('bms.ble.searchTitle')" left-arrow safe-area-inset-top @click-left="goBack" />
         
-        <!-- Google 风格水平流光进度条：由 GSAP 补间驱动 translateX + scaleX -->
+        <!-- Google 风格水平流光进度条：由 GPU 驱动的 CSS 动画，完全脱离 JS 线程，保障高频扫描时绝对顺滑 -->
         <view 
           class="progress-bar-container" 
           :class="{ 'is-active': isScanning }"
           :style="{ backgroundColor: activeThemeColor + '1a' }"
         >
-          <view class="progress-bar-indicator" :style="[{ backgroundColor: activeThemeColor }, progressIndicatorStyle]" />
+          <view class="progress-bar-indicator" :style="{ backgroundColor: activeThemeColor }" />
         </view>
 
         <!-- 搜索控制台：手写极其轻量精致的 Google Material 圆角输入框，无任何多余嵌套 -->
         <view class="search-box-wrapper wot-px-4 wot-py-3 wot-bg-[#f6f8fc]">
           <view class="google-search-box wot-flex wot-items-center wot-bg-white wot-rounded-full wot-px-4 wot-border wot-border-solid wot-border-[#e0e3eb]">
+            <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
             <wd-icon css-icon="i-ri-search-line" size="18px" color="#5f6368" class="wot-mr-2" />
             <input
               v-model="searchQuery"
@@ -44,6 +45,7 @@
             />
             <!-- 文本清空按钮 -->
             <view v-if="searchQuery" class="clear-btn wot-flex wot-items-center wot-justify-center wot-p-1" @click="clearSearch">
+              <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
               <wd-icon css-icon="i-ri-close-circle-fill" size="16px" color="#80868b" />
             </view>
           </view>
@@ -110,6 +112,7 @@
               class="radar-center wot-flex wot-items-center wot-justify-center"
               :style="{ backgroundColor: activeThemeColor + '1a', boxShadow: '0 4px 12px ' + activeThemeColor + '26' }"
             >
+              <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
               <wd-icon css-icon="i-ri-bluetooth-line" size="32px" :color="activeThemeColor" />
             </view>
           </view>
@@ -193,7 +196,6 @@ const isScanning = ref(false);
 // 监听 isScanning 自动启停
 // ---------------------------------------------------------------------------
 const {
-  progressIndicatorStyle,
   ripple1Style,
   ripple2Style,
   ripple3Style,
@@ -436,6 +438,11 @@ let isFirstShow = true;
  * 使用 nextTick 确保 z-paging 组件 ref 已完成挂载，再安全调用 reload
  */
 onShow(async () => {
+  // 每次进入设备搜索页面，均强制终止任何活跃的后台自动连接重连流程，防止多开扫描冲突
+  if (bleStore.isAutoConnecting) {
+    bleStore.cancelAutoConnectCallback?.();
+  }
+
   await nextTick();
 
   // 仅在首次进入页面，或明确从系统设置等页面返回时才触发扫描刷新
@@ -476,7 +483,7 @@ onShow(async () => {
 .progress-bar-container.is-active {
   height: 3px;
 }
-/* 流光指示器：由 GSAP 补间驱动 translateX + scaleX，避免动画 left/width 重排属性 */
+/* 流光指示器：由 GPU 驱动的 CSS 动画，完全脱离 JS 线程，保障高频扫描时绝对顺滑 */
 .progress-bar-indicator {
   height: 100%;
   width: 40%;
@@ -485,6 +492,21 @@ onShow(async () => {
   border-radius: 1.5px;
   transform-origin: left center;
   will-change: transform;
+}
+.progress-bar-container.is-active .progress-bar-indicator {
+  animation: google-progress-flow 1.5s infinite ease-in-out;
+}
+
+@keyframes google-progress-flow {
+  0% {
+    transform: translateX(-100%) scaleX(0.75);
+  }
+  50% {
+    transform: translateX(80%) scaleX(1.5);
+  }
+  100% {
+    transform: translateX(250%) scaleX(0.75);
+  }
 }
 
 /* Google 雷达波纹扫描动画（GSAP 补间驱动 scale + opacity） */

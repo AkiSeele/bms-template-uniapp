@@ -84,7 +84,7 @@
           <view class="wot-flex wot-items-center wot-gap-2 wot-mb-3 wot-border-b wot-border-border-main wot-pb-2">
             <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
             <wd-icon css-icon="i-lucide-shield-alert" size="24px" color="#e37318" />
-            <text class="wot-text-body-main wot-font-bold wot-text-text-main">硬件级紧急维护动作</text>
+            <text class="wot-text-body-main wot-font-bold wot-text-text-main">{{ $t("bms.control.hardwareEmergencyAction") }}</text>
           </view>
 
           <view class="wot-flex wot-flex-col wot-gap-3 wot-mt-2">
@@ -94,7 +94,7 @@
                 <text class="wot-text-body-main wot-font-medium wot-text-text-main">
                   {{ $t("bms.control.clearStatus") }}
                 </text>
-                <text class="wot-text-caption wot-text-text-secondary">重置并清除硬件内部的临时异常报警标识</text>
+                <text class="wot-text-caption wot-text-text-secondary">{{ $t("bms.control.clearStatusDesc") }}</text>
               </view>
               <button
                 @click="confirmAction('clear')"
@@ -110,7 +110,7 @@
                 <text class="wot-text-body-main wot-font-medium wot-text-text-main">
                   {{ $t("bms.control.forceSleep") }}
                 </text>
-                <text class="wot-text-caption wot-text-text-secondary">强行迫使保护板进入低功耗深度休眠关断模式</text>
+                <text class="wot-text-caption wot-text-text-secondary">{{ $t("bms.control.forceSleepDesc") }}</text>
               </view>
               <button
                 @click="confirmAction('sleep')"
@@ -126,7 +126,7 @@
                 <text class="wot-text-body-main wot-font-medium wot-text-text-main">
                   {{ $t("bms.control.forceStart") }}
                 </text>
-                <text class="wot-text-caption wot-text-text-secondary">强行从深度休眠中激活启动电池保护板硬件工作</text>
+                <text class="wot-text-caption wot-text-text-secondary">{{ $t("bms.control.forceStartDesc") }}</text>
               </view>
               <button
                 @click="confirmAction('start')"

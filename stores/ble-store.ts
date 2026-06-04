@@ -678,15 +678,14 @@ export const useBleStore = defineStore("ble", () => {
     logStore.addConnectionLog("uni.createBLEConnection:start", { deviceId, name, macAddress });
 
     try {
-      console.log(`[BLE 连接] 目标设备: name=${name}, deviceId=${deviceId}, mac=${macAddress || "未知"}`);
+      console.log(`[BLE 连接] 开始连接目标设备: name=${name}, id=${deviceId}, mac=${macAddress || "未知"}`);
 
       // 步骤 1：连接前必须停止扫描，释放蓝牙天线，防止 Android 抛出 10003 错误
-      console.log(`[BLE 连接] 步骤 1/9 - 停止蓝牙扫描，释放天线资源`);
       try {
         await bleManager.stopScan();
         logStore.addConnectionLog("uni.stopBluetoothDevicesDiscovery", undefined, "success", "success");
       } catch (scanErr: any) {
-        console.warn(`[BLE 连接] 步骤 1/9 - 停止扫描失败（可安全忽略）:`, scanErr);
+        console.warn(`[BLE 连接] 停止扫描失败（可忽略）:`, scanErr);
         logStore.addConnectionLog(
           "uni.stopBluetoothDevicesDiscovery",
           undefined,
@@ -694,23 +693,20 @@ export const useBleStore = defineStore("ble", () => {
           "fail",
         );
       }
-      console.log(`[BLE 连接] 步骤 1/9 - 扫描已停止 ✓`);
 
       // 给与系统蓝牙栈配置的等待时间释放硬件天线资源，防止高频密集操作引起系统层的操纵超时错误
-      console.log(`[BLE 连接] 正在等待系统天线释放 (${APP_CONFIG.BLE_SCAN.POST_STOP_SCAN_DELAY_MS}ms)...`);
       await new Promise((resolve) => setTimeout(resolve, APP_CONFIG.BLE_SCAN.POST_STOP_SCAN_DELAY_MS));
 
       // 步骤 2：发起建立物理连接
-      console.log(`[BLE 连接] 步骤 2/9 - 发起物理连接 createBLEConnection...`);
       try {
         await bleManager.connect(deviceId);
         logStore.addConnectionLog("uni.createBLEConnection", { deviceId }, "success", "success");
-        console.log(`[BLE 连接] 步骤 2/9 - 物理连接建立成功 ✓`);
+        console.log(`[BLE 连接] 物理连接建立成功 ✓`);
       } catch (connectErr: any) {
         const errMsg = (connectErr.errMsg || String(connectErr)).toLowerCase();
         if (errMsg.includes("already connect")) {
           logStore.addConnectionLog("uni.createBLEConnection", { deviceId }, "already connected", "success");
-          console.warn(`[BLE 连接] 步骤 2/9 - 设备已处于连接状态，直接跳过并保持连接 ✓`);
+          console.warn(`[BLE 连接] 设备已处于连接状态，跳过并保持连接 ✓`);
         } else {
           logStore.addConnectionLog("uni.createBLEConnection", { deviceId }, connectErr, "fail");
           throw connectErr;
@@ -722,10 +718,8 @@ export const useBleStore = defineStore("ble", () => {
       connectedDeviceId.value = deviceId;
       connectedDeviceMac.value = macAddress || deviceId;
       connectedDeviceName.value = name || "Unknown Device";
-      console.log(`[BLE 连接] 步骤 3/9 - 基础状态已更新 ✓ isBleConnected=true`);
 
       // 步骤 4：服务发现（iOS / 鸿蒙必须显式调用，否则后续操作抛 10004）
-      console.log(`[BLE 连接] 步骤 4/9 - 执行服务发现 getBLEDeviceServices...`);
       try {
         const servicesRes = await bleManager.discoverServices(deviceId);
         const discoveredServiceUuids = (servicesRes.services || []).map((s: { uuid: string }) => s.uuid);
@@ -735,13 +729,8 @@ export const useBleStore = defineStore("ble", () => {
           { count: discoveredServiceUuids.length, uuids: discoveredServiceUuids },
           "success",
         );
-        console.log(
-          `[BLE 连接] 步骤 4/9 - 发现服务数量: ${discoveredServiceUuids.length}，UUIDs: [${discoveredServiceUuids.join(", ")}] ✓`,
-        );
 
         // 步骤 5：遍历已发现的服务 UUID，与 config/index.ts 中所有配置项做大小写不敏感匹配
-        // 将所有协议的多套 UUID 配置拉平为一维数组进行匹配，实现多套 UUID 的热兼容
-        console.log(`[BLE 连接] 步骤 5/9 - 协议 UUID 匹配，已注册 UUID: [${getRegisteredUuids().join(", ")}]`);
         const allConfigs = Object.values(APP_CONFIG.BLE_SERVICES).flat();
         let matchedConfig = allConfigs[0] || APP_CONFIG.BLE_SERVICES.default[0];
         for (const config of allConfigs) {
@@ -749,12 +738,10 @@ export const useBleStore = defineStore("ble", () => {
             (uuid: string) => uuid.toUpperCase() === config.serviceId.toUpperCase(),
           );
           if (found) {
-            // 浅克隆配置，并使用发现的物理真实 UUID（保留微信系统大小写格式）
             matchedConfig = {
               ...config,
               serviceId: found,
             };
-            console.log(`[BLE 连接] 步骤 5/9 - 匹配到服务 UUID: ${matchedConfig.serviceId} ✓`);
             break;
           }
         }
@@ -766,7 +753,6 @@ export const useBleStore = defineStore("ble", () => {
       }
 
       // 步骤 6：通过协议注册表动态解析并实例化对应的协议策略解析器（零 if-else）
-      console.log(`[BLE 连接] 步骤 6/9 - 通过注册表解析协议策略器，serviceId=${activeServiceConfig.value.serviceId}`);
       const parser = resolveProtocol(activeServiceConfig.value.serviceId);
       if (parser) {
         activeProtocolParser.value = parser;
@@ -776,7 +762,7 @@ export const useBleStore = defineStore("ble", () => {
           { protocolName: parser.protocolName, protocolType: parser.protocolType },
           "success",
         );
-        console.log(`[BLE 连接] 步骤 6/9 - 协议解析器装载成功: ${parser.protocolName} (type=${parser.protocolType}) ✓`);
+        console.log(`[BLE 连接] 协议解析器已绑定: ${parser.protocolName} (type=${parser.protocolType}) ✓`);
       } else {
         activeProtocolParser.value = null;
         const registered = getRegisteredUuids().join(", ");
@@ -787,14 +773,12 @@ export const useBleStore = defineStore("ble", () => {
           "fail",
         );
         console.warn(
-          `[BLE 连接] 步骤 6/9 - ⚠️ 协议注册表中未找到匹配项，UUID=${activeServiceConfig.value.serviceId}，` +
-            `已注册: [${registered}]。请在 protocol-registry.ts 中注册此协议。`,
+          `[BLE 连接] 协议注册表中未找到匹配项，UUID=${activeServiceConfig.value.serviceId}`,
         );
       }
 
       // 步骤 7：特征值发现（iOS / 鸿蒙防 10004 的关键步骤）
       const serviceId = activeServiceConfig.value.serviceId;
-      console.log(`[BLE 连接] 步骤 7/9 - 执行特征值发现 getBLEDeviceCharacteristics, serviceId=${serviceId}`);
       try {
         const charRes = await bleManager.discoverCharacteristics(deviceId, serviceId);
         const discoveredCharUuids = (charRes.characteristics || []).map((c: { uuid: string }) => c.uuid);
@@ -803,9 +787,6 @@ export const useBleStore = defineStore("ble", () => {
           { deviceId, serviceId },
           { count: discoveredCharUuids.length, uuids: discoveredCharUuids },
           "success",
-        );
-        console.log(
-          `[BLE 连接] 步骤 7/9 - 发现特征值数量: ${discoveredCharUuids.length}，UUIDs: [${discoveredCharUuids.join(", ")}] ✓`,
         );
 
         // 将特征值 UUID 也自动对齐为系统物理发现的原始 UUID 大小写，彻底消除 Android/iOS 特征值大小写不匹配导致的 10008 异常
@@ -821,9 +802,6 @@ export const useBleStore = defineStore("ble", () => {
         if (realNotifyChar) {
           activeServiceConfig.value.notifyCharacteristicId = realNotifyChar;
         }
-        console.log(
-          `[BLE 连接] 步骤 7/9 - 特征值对齐完成: write=${activeServiceConfig.value.writeCharacteristicId}, notify=${activeServiceConfig.value.notifyCharacteristicId} ✓`,
-        );
       } catch (charErr: any) {
         logStore.addConnectionLog("uni.getBLEDeviceCharacteristics", { deviceId, serviceId }, charErr, "fail");
         throw charErr;
@@ -837,30 +815,23 @@ export const useBleStore = defineStore("ble", () => {
       if (os !== "ios" && typeof uni.setBLEMTU === "function") {
         try {
           const targetMtu = APP_CONFIG.BLE_SCAN.TARGET_MTU;
-          console.log(`[BLE 连接] 步骤 8/9 - 非 iOS 平台，发起 MTU 协商 (目标: ${targetMtu} 字节)...`);
           const mtuRes = await bleManager.setMTU(deviceId, targetMtu);
           logStore.addConnectionLog("uni.setBLEMTU", { deviceId, mtu: targetMtu }, mtuRes, "success");
-          console.log(`[BLE 连接] 步骤 8/9 - MTU 协商完成 ✓`);
         } catch (mtuErr: any) {
           logStore.addConnectionLog("uni.setBLEMTU", { deviceId, mtu: APP_CONFIG.BLE_SCAN.TARGET_MTU }, mtuErr, "fail");
           console.warn(
-            `[BLE 连接] 步骤 8/9 - ⚠️ MTU 协商失败，将沿用默认 ${APP_CONFIG.BLE_SCAN.DEFAULT_MTU} 字节限额:`,
+            `[BLE 连接] MTU 协商失败，将沿用默认 ${APP_CONFIG.BLE_SCAN.DEFAULT_MTU} 字节限额:`,
             mtuErr,
           );
         }
       } else {
         logStore.addConnectionLog("uni.setBLEMTU", { deviceId }, `skipped: platform=${os}`, "success");
-        console.log(`[BLE 连接] 步骤 8/9 - 平台: ${os || "iOS"}，跳过手动 MTU 协商 ✓`);
       }
 
       // 步骤 9：订阅通知特征值，使能电池数据通道
       // 注意：安卓底层在发现特征值后需要短暂等待缓存就绪，否则立即调用订阅会触发异常
       const notifyCharId = activeServiceConfig.value.notifyCharacteristicId;
-      console.log(`[BLE 连接] 步骤 9/9 - 等待系统缓存就绪 (${APP_CONFIG.BLE_SCAN.PRE_SUBSCRIBE_DELAY_MS}ms)...`);
       await new Promise((resolve) => setTimeout(resolve, APP_CONFIG.BLE_SCAN.PRE_SUBSCRIBE_DELAY_MS));
-      console.log(
-        `[BLE 连接] 步骤 9/9 - 订阅 Notify 特征值 notifyBLECharacteristicValueChange, notifyCharId=${notifyCharId}`,
-      );
       try {
         const notifyRes = await bleManager.subscribeNotify(deviceId, serviceId, notifyCharId);
         logStore.addConnectionLog(
@@ -869,7 +840,7 @@ export const useBleStore = defineStore("ble", () => {
           notifyRes,
           "success",
         );
-        console.log(`[BLE 连接] 步骤 9/9 - Notify 订阅成功 ✓`);
+        console.log("[BLE 连接] Notify 数据通道订阅就绪 ✓");
       } catch (notifyErr: any) {
         logStore.addConnectionLog(
           "uni.notifyBLECharacteristicValueChange",
@@ -881,16 +852,13 @@ export const useBleStore = defineStore("ble", () => {
       }
 
       // 订阅成功后，强制等待链路稳定再下发心跳指令，防 10007 冲突
-      console.log(
-        `[BLE 连接] 步骤 9/9 - 正在等待通道与天线链路稳定 (${APP_CONFIG.BLE_SCAN.POST_SUBSCRIBE_DELAY_MS}ms)...`,
-      );
       await new Promise((resolve) => setTimeout(resolve, APP_CONFIG.BLE_SCAN.POST_SUBSCRIBE_DELAY_MS));
 
       // 仅在有活跃页面需要轮询时才启动后台查询定时器
       if (isPollingActive.value) {
         startQueryTimer(deviceId);
       }
-      console.log(`[BLE 连接] ━━━━━━ 连接时序全部完成，设备已就绪 ━━━━━━`);
+      console.log(`[BLE 连接] ━━━━━━ 设备连接并就绪 ━━━━━━`);
       logStore.addConnectionLog("uni.createBLEConnection:success", { deviceId }, "success", "success");
 
       // 持久化记录上次连接的物理地址与设备名称

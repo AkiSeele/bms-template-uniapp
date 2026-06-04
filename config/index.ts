@@ -58,13 +58,13 @@ export const APP_CONFIG = {
     /** 物理连接建立时的超时时间（毫秒） */
     CONNECT_TIMEOUT_MS: 10000,
     /** 蓝牙物理连接建立失败时的重试次数上限（0 代表不重试，1 代表失败后重试 1 次） */
-    RECONNECT_LIMIT: 0,
+    RECONNECT_LIMIT: 1,
 
     // ------------------------------------------
     // 3. 最大传输单元协商参数
     // ------------------------------------------
     /** 协商前的默认单包最大传输单元大小（字节），低功耗蓝牙标准下限值 */
-    DEFAULT_MTU: 20,
+    DEFAULT_MTU: 40,
     /** 期望协商的目标单包最大传输单元大小（字节），通常推荐最大为 247 字节 */
     TARGET_MTU: 247,
 
@@ -77,11 +77,11 @@ export const APP_CONFIG = {
      * 如果需要让数据刷新得更快，可调小此值（推荐不小于 500 毫秒以保证通信流畅）；
      * 如果要减少通信开销，可调大此值（如 3000 或 5000 毫秒）
      */
-    POLL_INTERVAL_MS: 2500,
+    POLL_INTERVAL_MS: 2000,
     /** 轮询指令等待响应的超时时间（毫秒），超时后队列放行以发送下一条指令，防止轮询卡死 */
-    POLL_TIMEOUT_MS: 1500,
+    POLL_TIMEOUT_MS: 1000,
     /** 手动控制指令发送后等待确认响应的超时时间（毫秒） */
-    CONTROL_TIMEOUT_MS: 2500,
+    CONTROL_TIMEOUT_MS: 1000,
     /** 手动控制指令超时未响应时的自动重发次数上限 */
     CONTROL_RETRY_LIMIT: 0,
     /**
@@ -170,15 +170,6 @@ export const APP_CONFIG = {
       },
     ] as BleServiceConfig[],
 
-    /**
-     * 协议 B (protocol_b) 蓝牙硬件模块 UUID 配置
-     */
-    protocol_b: [
-      {
-        serviceId: "0000EE11-0000-1000-8000-00805F9B34FB",
-        writeCharacteristicId: "0000EE12-0000-1000-8000-00805F9B34FB",
-        notifyCharacteristicId: "0000EE13-0000-1000-8000-00805F9B34FB",
-      },
-    ] as BleServiceConfig[],
+
   },
 };

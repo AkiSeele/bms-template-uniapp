@@ -429,7 +429,7 @@ const runTimeStr = computed(() => {
   const d = extendedProtocolData.value?.runTimeDays ?? 0;
   const h = extendedProtocolData.value?.runTimeHours ?? 0;
   const m = extendedProtocolData.value?.runTimeMinutes ?? 0;
-  return `${d}天 ${h}时 ${m}分`;
+  return `${d}${t("bms.common.day")} ${h}${t("bms.common.hour")} ${m}${t("bms.common.minute")}`;
 });
 
 // 动态组织多路温度传感器监测列表

@@ -75,6 +75,7 @@ export const bleManager = {
       });
 
       // 启动蓝牙搜索
+      console.warn("[BLE Manager] 启动低功耗蓝牙适配器设备发现扫描 (startBluetoothDevicesDiscovery)...");
       uni.startBluetoothDevicesDiscovery({
         allowDuplicatesKey: false,
         success: (res) => resolve(res),
@@ -93,6 +94,7 @@ export const bleManager = {
         return resolve({ errMsg: "stopBluetoothDevicesDiscovery:ok" });
       }
 
+      console.warn("[BLE Manager] 停止低功耗蓝牙设备扫描 (stopBluetoothDevicesDiscovery)...");
       uni.stopBluetoothDevicesDiscovery({
         success: (res) => resolve(res),
         fail: (err) => reject(err),

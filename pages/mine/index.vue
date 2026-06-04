@@ -1,6 +1,7 @@
 <template>
   <view>
     <!-- 自定义顶部导航栏，固定在顶部并生成占位元素 -->
+    <!-- Source: uni_modules/wot-ui/components/wd-navbar/wd-navbar.vue -->
     <wd-navbar :title="$t('bms.mine.title')" fixed safe-area-inset-top />
 
     <!-- 用户个人中心头部卡片 -->
@@ -38,31 +39,31 @@
         <!-- 模式徽章胶囊（云端已联 / 单机离线 / 去登录） -->
         <view>
           <!-- 单机离线标签 -->
-          <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
           <view
             v-if="isOfflineMode"
             class="wot-bg-slate-100 wot-text-slate-600 wot-border wot-border-slate-200/50 wot-rounded-full wot-px-2.5 wot-py-0.5 wot-text-caption wot-flex wot-items-center wot-gap-1 wot-font-semibold"
           >
+            <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
             <wd-icon css-icon="i-lucide-cloud-off" size="12px" />
             <text>{{ $t("bms.mine.offlineMode") }}</text>
           </view>
 
           <!-- 云端已联标签 -->
-          <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
           <view
             v-else-if="isLoggedIn"
             class="wot-bg-green-50 wot-text-green-700 wot-border wot-border-green-200/50 wot-rounded-full wot-px-2.5 wot-py-0.5 wot-text-caption wot-flex wot-items-center wot-gap-1 wot-font-semibold"
           >
+            <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
             <wd-icon css-icon="i-lucide-cloud" size="12px" />
             <text>{{ $t("bms.mine.cloudOnline") }}</text>
           </view>
 
           <!-- 去登录标签 -->
-          <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
           <view
             v-else
             class="wot-bg-orange-50 wot-text-orange-700 wot-border wot-border-orange-200/50 wot-rounded-full wot-px-2.5 wot-py-0.5 wot-text-caption wot-flex wot-items-center wot-gap-1 wot-font-semibold"
           >
+            <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
             <wd-icon css-icon="i-lucide-user-x" size="12px" />
             <text>{{ $t("bms.mine.clickToLogin") }}</text>
           </view>
@@ -74,6 +75,7 @@
         <!-- Source: uni_modules/wot-ui/components/wd-cell-group/wd-cell-group.vue -->
         <wd-cell-group border custom-class="custom-settings-group">
           <!-- 手动切换语言的单元格 -->
+          <!-- Source: uni_modules/wot-ui/components/wd-cell/wd-cell.vue -->
           <wd-cell
             :title="$t('bms.mine.language')"
             :value="currentLanguageLabel"
@@ -81,6 +83,7 @@
             @click="showLanguagePicker = true"
           >
             <template #prefix>
+              <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
               <wd-icon css-icon="i-lucide-globe" size="20px" class="wot-mr-2" color="#858585" />
             </template>
           </wd-cell>
@@ -89,6 +92,7 @@
           <!-- Source: uni_modules/wot-ui/components/wd-cell/wd-cell.vue -->
           <wd-cell :title="$t('bms.mine.themeMode')" center custom-class="compact-cell">
             <template #prefix>
+              <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
               <wd-icon css-icon="i-lucide-palette" size="20px" class="wot-mr-2" color="#858585" />
             </template>
             <view class="wot-flex wot-justify-end">
@@ -103,6 +107,7 @@
                 <!-- 自定义分段器选项的插槽渲染，在选项中增加对应图标 -->
                 <template #label="{ option }">
                   <view class="wot-flex wot-items-center wot-justify-center wot-py-0.5">
+                    <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
                     <wd-icon :css-icon="getThemeIcon(option.value)" size="18px" />
                   </view>
                 </template>
@@ -114,6 +119,7 @@
           <!-- Source: uni_modules/wot-ui/components/wd-cell/wd-cell.vue -->
           <wd-cell :title="$t('bms.mine.autoConnect')" center custom-class="compact-cell">
             <template #prefix>
+              <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
               <wd-icon css-icon="i-lucide-zap" size="20px" class="wot-mr-2" color="#858585" />
             </template>
             <!-- Source: uni_modules/wot-ui/components/wd-switch/wd-switch.vue -->
@@ -121,15 +127,19 @@
           </wd-cell>
 
           <!-- 项目配置入口单元格：点击跳转至独立的设置页面 -->
+          <!-- Source: uni_modules/wot-ui/components/wd-cell/wd-cell.vue -->
           <wd-cell :title="$t('bms.settings.title')" is-link @click="navigateToSettings">
             <template #prefix>
+              <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
               <wd-icon css-icon="i-lucide-settings" size="20px" class="wot-mr-2" color="#858585" />
             </template>
           </wd-cell>
 
           <!-- 系统权限诊断入口单元格：点击跳转至独立的诊断页面 -->
+          <!-- Source: uni_modules/wot-ui/components/wd-cell/wd-cell.vue -->
           <wd-cell :title="$t('bms.mine.permissionsTitle')" is-link @click="navigateToPermissionCheck">
             <template #prefix>
+              <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
               <wd-icon css-icon="i-lucide-shield-check" size="20px" class="wot-mr-2" color="#858585" />
             </template>
           </wd-cell>
@@ -147,6 +157,7 @@
           <!-- Source: uni_modules/wot-ui/components/wd-cell/wd-cell.vue -->
           <wd-cell :title="$t('bms.mine.appVersion')" :value="appVersionDisplay" is-link @click="checkUpdate">
             <template #prefix>
+              <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
               <wd-icon css-icon="i-lucide-info" size="20px" class="wot-mr-2" color="#858585" />
             </template>
           </wd-cell>
@@ -220,9 +231,19 @@ const dialog = useDialog();
 
 // 如果直接作为独立页面加载（比如外部回跳），则自动重定向至主 Shell 页面的“我的”标签页以防布局错乱
 onLoad(() => {
-  uni.reLaunch({
-    url: "/pages/index/index?tab=mine",
-  });
+  try {
+    const pages = getCurrentPages();
+    if (pages.length > 0) {
+      const currentPage = pages[pages.length - 1];
+      if (currentPage && currentPage.route === "pages/mine/index") {
+        uni.reLaunch({
+          url: "/pages/index/index?tab=mine",
+        });
+      }
+    }
+  } catch (e) {
+    console.error("检测当前页面路由失败:", e);
+  }
 });
 
 // 解构状态仓中的身份凭证、资料和激活截止时间

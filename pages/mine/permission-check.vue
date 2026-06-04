@@ -18,13 +18,16 @@
           class="wot-p-4 wot-border-b wot-border-gray-100 dark:wot-border-neutral-800 wot-flex wot-justify-between wot-items-center"
         >
           <view class="wot-flex wot-items-center">
+            <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
             <wd-icon css-icon="i-lucide-shield-check" size="20px" class="wot-mr-2" :color="activeThemeColor" />
             <text class="wot-text-base wot-font-bold wot-text-text-main">{{ $t("bms.mine.permissionsTitle") }}</text>
           </view>
+          <!-- Source: uni_modules/wot-ui/components/wd-button/wd-button.vue -->
           <wd-button size="small" plain @click="checkAllPermissions(true)">
             {{ $t("bms.mine.checkPermissions") }}
           </wd-button>
         </view>
+        <!-- Source: uni_modules/wot-ui/components/wd-cell-group/wd-cell-group.vue -->
         <wd-cell-group border>
           <!-- 系统蓝牙服务 -->
           <!-- Source: uni_modules/wot-ui/components/wd-cell/wd-cell.vue -->

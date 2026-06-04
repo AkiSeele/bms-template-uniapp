@@ -73,6 +73,7 @@
       "chargeSuccess": "Charge switch sent successfully",
       "clearStatus": "Clear State",
       "clearStatusConfirm": "Are you sure you want to force reset and clear all current protection board exception flags? This might mask real hardware faults. Please proceed with caution.",
+      "clearStatusDesc": "Reset and clear temporary exception flags inside the hardware",
       "dischargeMos": "Discharge MOS",
       "dischargeMosDesc": "Controls whether current can discharge from the battery pack",
       "dischargeSending": "Sending discharge control command...",
@@ -80,8 +81,11 @@
       "executing": "Executing command...",
       "forceSleep": "Force Sleep",
       "forceSleepConfirm": "[WARNING] Forcing sleep will cut off both charging and discharging currents completely! It may cause device power loss and shutdown. Are you sure you want to execute?",
+      "forceSleepDesc": "Force the protection board into low-power deep sleep mode",
       "forceStart": "Force Start",
       "forceStartConfirm": "Are you sure you want to force wake and restart the protection board system?",
+      "forceStartDesc": "Force activate and start protection board hardware from deep sleep",
+      "hardwareEmergencyAction": "Hardware-level Emergency Maintenance",
       "heatMos": "Heater MOSFET",
       "heatMosDesc": "Enable/Disable low-temperature heater",
       "heatSending": "Sending heater control command...",
@@ -172,7 +176,10 @@
       "cancel": "Cancel",
       "confirm": "Confirm",
       "cyclesUnit": "Cycles",
+      "day": "d",
       "goOpen": "Enable",
+      "hour": "h",
+      "minute": "m",
       "goSettings": "Settings",
       "gpsTitle": "Location Service Disabled",
       "locationPermission": "Location",
@@ -286,7 +293,9 @@
       "title": "Firmware Update",
       "updateSuccess": "Flash Successful",
       "updating": "Flashing...",
-      "updatingNoSelect": "Flashing in progress, please wait"
+      "updatingNoSelect": "Flashing in progress, please wait",
+      "updatingNoBack": "Firmware flashing in progress, returning or closing page is prohibited",
+      "updatingNoCancel": "Firmware flashing in progress, cancelling is prohibited"
     }
   }
 }

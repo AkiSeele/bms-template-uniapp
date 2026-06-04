@@ -72,7 +72,8 @@
       "chargeSending": "發送充電控制指令...",
       "chargeSuccess": "充電開關下發成功",
       "clearStatus": "清除異常狀態",
-      "clearStatusConfirm": "您確定要強制重置並清除保護板目前的全部異常狀態標識嗎？這可能會掩蓋硬體真實故障，請謹慎操作。",
+      "clearStatusConfirm": "您確定要強制重置並清除保護板目前的全部異常狀態標识嗎？這可能會掩蓋硬體真實故障，請謹慎操作。",
+      "clearStatusDesc": "重置並清除硬體內部的臨時異常報警標識",
       "dischargeMos": "放電 MOS 狀態",
       "dischargeMosDesc": "控制電池包是否允許向外輸出電流",
       "dischargeSending": "發送放電控制指令...",
@@ -80,8 +81,11 @@
       "executing": "執行指令中...",
       "forceSleep": "強制休眠保護",
       "forceSleepConfirm": "【警告】強制休眠將徹底切斷電池組向外輸出與充電電流！可能會導致設備掉電關機，確定執行嗎？",
+      "forceSleepDesc": "強行迫使保護板進入低功耗深度休眠關斷模式",
       "forceStart": "強制拉起啟動",
       "forceStartConfirm": "確定要強制喚醒並重新拉起啟動電池保護板系統嗎？",
+      "forceStartDesc": "強行從深度休眠中激活啟動電池保護板硬體工作",
+      "hardwareEmergencyAction": "硬體級緊急維護動作",
       "heatMos": "自加熱開關",
       "heatMosDesc": "開啟/關閉電池低溫自加熱功能",
       "heatSending": "下發加熱控制...",
@@ -172,7 +176,10 @@
       "cancel": "取消",
       "confirm": "確定",
       "cyclesUnit": "次",
+      "day": "天",
       "goOpen": "去開啟",
+      "hour": "時",
+      "minute": "分",
       "goSettings": "去設定",
       "gpsTitle": "定位開關未開啟",
       "locationPermission": "位置資訊",
@@ -286,7 +293,9 @@
       "title": "固件升級",
       "updateSuccess": "寫入成功",
       "updating": "寫入中...",
-      "updatingNoSelect": "固件寫入中，請勿重新選擇檔案"
+      "updatingNoSelect": "固件寫入中，請勿重新選擇檔案",
+      "updatingNoBack": "固件寫入中，禁止返回或關閉頁面",
+      "updatingNoCancel": "固件寫入中，禁止取消更新"
     }
   }
 }

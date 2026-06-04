@@ -22,6 +22,7 @@
             <view class="wot-flex wot-items-center wot-bg-filled-main wot-rounded-lg wot-px-3 wot-py-1.5">
               <input v-model="themeColor" :placeholder="actualTheme === 'dark' ? '#0ea5e9' : '#0052d9'" placeholder-class="settings-placeholder" class="settings-input wot-flex-1 wot-text-xs wot-text-text-main" />
               <view v-if="themeColor" class="clear-btn wot-flex wot-items-center wot-justify-center wot-p-0.5" @click="themeColor = ''">
+                <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
                 <wd-icon css-icon="i-ri-close-fill" size="14px" color="#80868b" />
               </view>
             </view>
@@ -50,6 +51,7 @@
             <view class="wot-flex wot-items-center wot-bg-filled-main wot-rounded-lg wot-px-3 wot-py-1.5">
               <input v-model="warningColor" placeholder="#e37318" placeholder-class="settings-placeholder" class="settings-input wot-flex-1 wot-text-xs wot-text-text-main" />
               <view v-if="warningColor" class="clear-btn wot-flex wot-items-center wot-justify-center wot-p-0.5" @click="warningColor = ''">
+                <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
                 <wd-icon css-icon="i-ri-close-fill" size="14px" color="#80868b" />
               </view>
             </view>
@@ -78,6 +80,7 @@
             <view class="wot-flex wot-items-center wot-bg-filled-main wot-rounded-lg wot-px-3 wot-py-1.5">
               <input v-model="successColor" placeholder="#2ba471" placeholder-class="settings-placeholder" class="settings-input wot-flex-1 wot-text-xs wot-text-text-main" />
               <view v-if="successColor" class="clear-btn wot-flex wot-items-center wot-justify-center wot-p-0.5" @click="successColor = ''">
+                <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
                 <wd-icon css-icon="i-ri-close-fill" size="14px" color="#80868b" />
               </view>
             </view>
@@ -106,6 +109,7 @@
             <view class="wot-flex wot-items-center wot-bg-filled-main wot-rounded-lg wot-px-3 wot-py-1.5">
               <input v-model="dangerColor" placeholder="#d54941" placeholder-class="settings-placeholder" class="settings-input wot-flex-1 wot-text-xs wot-text-text-main" />
               <view v-if="dangerColor" class="clear-btn wot-flex wot-items-center wot-justify-center wot-p-0.5" @click="dangerColor = ''">
+                <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
                 <wd-icon css-icon="i-ri-close-fill" size="14px" color="#80868b" />
               </view>
             </view>

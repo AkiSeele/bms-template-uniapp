@@ -123,7 +123,7 @@
         <wd-tab name="api" :title="$t('bms.logs.tabApi')">
           <scroll-view scroll-y class="scroll-container wot-p-2.5 wot-box-border wot-h-full">
             <view v-if="apiLogs.length === 0" class="wot-py-12">
-              <!-- Source: uni_modules/wd-empty/wd-empty.vue -->
+              <!-- Source: uni_modules/wot-ui/components/wd-empty/wd-empty.vue -->
               <wd-empty :description="$t('bms.logs.empty')" />
             </view>
             <view v-else class="wot-flex wot-flex-col wot-gap-1">
