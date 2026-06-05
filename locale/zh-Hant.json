@@ -28,6 +28,13 @@
       "searchPlaceholder": "輸入設備名稱或 MAC 地址搜尋",
       "searchTitle": "藍牙搜尋",
       "unknownProtocol": "未知協議",
+      "steps": {
+        "physicalConnect": "物理連接失敗",
+        "discoverService": "服務發現失敗",
+        "discoverCharacteristic": "特征值發現失敗",
+        "subscribeNotify": "訂閱通知失敗",
+        "protocolMismatch": "協議匹配失敗，未知電池協議"
+      },
       "env": {
         "androidGpsDisabled": "掃描附近的藍牙外設需要開啟“手機定位服務”，請點擊“去開啟”前往系統設定頁打開定位服務。",
         "androidPermissionDenied": "您拒絕了連接所需的藍牙/定位權限，App 將無法獲取電池數據。如需開啟，請前往“系統設定 -> 權限管理”手動授權。",

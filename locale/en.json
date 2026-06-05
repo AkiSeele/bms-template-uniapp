@@ -28,6 +28,13 @@
       "searchPlaceholder": "Enter device name or MAC address to search",
       "searchTitle": "Search Bluetooth",
       "unknownProtocol": "Unknown Protocol",
+      "steps": {
+        "physicalConnect": "Physical connection failed",
+        "discoverService": "Service discovery failed",
+        "discoverCharacteristic": "Characteristics discovery failed",
+        "subscribeNotify": "Subscription failed",
+        "protocolMismatch": "Protocol mismatch, unknown battery protocol"
+      },
       "env": {
         "androidGpsDisabled": "Scanning Bluetooth requires location service. Click 'Enable' to open location settings.",
         "androidPermissionDenied": "Bluetooth/Location permission denied. App cannot get battery data. Please enable it in system settings.",

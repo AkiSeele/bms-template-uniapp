@@ -621,25 +621,45 @@ export const permissionManager = {
       // 组装最终需要向系统请求的权限列表
       const permissions: string[] = [];
 
-      // 1. 附近设备权限（直接加入列表，由系统真实核验状态）
-      permissions.push(APP_CONFIG.ANDROID_PERMISSIONS.BLUETOOTH_SCAN);
-      permissions.push(APP_CONFIG.ANDROID_PERMISSIONS.BLUETOOTH_CONNECT);
-
-      // 2. 定位权限：前置 checkSelfPermission 过滤，若用户已授权"使用时允许"则跳过，
-      //    彻底规避系统反复弹出"始终允许"提示的 Bug
       try {
         const context = plus.android.runtimeMainActivity();
+        const Build = plus.android.importClass("android.os.Build");
+        const sdkVersion = Build.VERSION.SDK_INT;
+
+        // 1. 附近设备权限：针对 Android 12+ (SDK >= 31) 进行 checkSelfPermission 预检，已授权则跳过
+        if (sdkVersion >= 31) {
+          const btScanGranted = context.checkSelfPermission(APP_CONFIG.ANDROID_PERMISSIONS.BLUETOOTH_SCAN) === 0;
+          const btConnectGranted = context.checkSelfPermission(APP_CONFIG.ANDROID_PERMISSIONS.BLUETOOTH_CONNECT) === 0;
+
+          if (!btScanGranted) {
+            permissions.push(APP_CONFIG.ANDROID_PERMISSIONS.BLUETOOTH_SCAN);
+          }
+          if (!btConnectGranted) {
+            permissions.push(APP_CONFIG.ANDROID_PERMISSIONS.BLUETOOTH_CONNECT);
+          }
+        }
+        
+        // 2. 定位权限：前置 checkSelfPermission 过滤，已授权则跳过，规避系统反复弹出"始终允许"提示的缺陷
         const locGranted = context.checkSelfPermission(APP_CONFIG.ANDROID_PERMISSIONS.ACCESS_FINE_LOCATION) === 0;
         if (!locGranted) {
           permissions.push(APP_CONFIG.ANDROID_PERMISSIONS.ACCESS_FINE_LOCATION);
         }
       } catch (e) {
+        // 反射异常时作为防守，默认加入必要申请列表中
+        permissions.push(APP_CONFIG.ANDROID_PERMISSIONS.BLUETOOTH_SCAN);
+        permissions.push(APP_CONFIG.ANDROID_PERMISSIONS.BLUETOOTH_CONNECT);
         permissions.push(APP_CONFIG.ANDROID_PERMISSIONS.ACCESS_FINE_LOCATION);
+      }
+
+      // 如果所有核心权限都已被预先授权通过，直接放行，无需进行跨进程系统请求
+      if (permissions.length === 0) {
+        console.log("[BLE 权限] 附近设备及定位权限已被预先授权通过，快速放行蓝牙流程");
+        return resolve(true);
       }
 
       console.log("[BLE 权限] 混合核验 - 开始请求 Android 必要权限:", permissions);
 
-      // 直接调用 plus 权限模块申请，如果已授权系统会自动跳过弹窗，如果被关闭则必然拉起原生弹窗
+      // 直接调用 plus 权限模块申请，拉起系统原生授权弹窗
       plus.android.requestPermissions(
         permissions,
         (resultObj: any) => {

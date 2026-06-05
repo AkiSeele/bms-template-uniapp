@@ -70,6 +70,9 @@ export const calculateChecksum = (data: Uint8Array): number => {
   return sum & 0xff;
 };
 
+// 声明局部平台缓存变量以降低同步查询系统信息的开销
+let cachedPlatform = "";
+
 /**
  * 从蓝牙扫描设备对象中解析真实的物理 MAC 地址
  * 针对 iOS 和鸿蒙系统，将 advertisData（自定义广播数据包）的前 6 字节逆序重排得到真实 MAC 地址；
@@ -78,14 +81,22 @@ export const calculateChecksum = (data: Uint8Array): number => {
  * @returns 格式化后的标准 MAC 地址字符串，例如 "A4:C1:38:00:52:5C"
  */
 export const resolveDeviceMac = (device: any): string => {
-  if (!device) return "";
+  if (!device) {
+    return "";
+  }
 
-  // 获取系统平台并转换为小写
-  const systemInfo = uni.getSystemInfoSync();
-  const platform = (systemInfo.platform || "").toLowerCase();
+  // 首次执行时读取系统平台信息并缓存，防止高频同步调用 getSystemInfoSync 导致主线程卡顿
+  if (!cachedPlatform) {
+    try {
+      const systemInfo = uni.getSystemInfoSync();
+      cachedPlatform = (systemInfo.platform || "").toLowerCase();
+    } catch (e) {
+      cachedPlatform = "unknown";
+    }
+  }
 
   // Android 下 deviceId 直接是设备物理 MAC 地址
-  if (platform === "android") {
+  if (cachedPlatform === "android") {
     return device.deviceId;
   }
 

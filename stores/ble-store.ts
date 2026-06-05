@@ -7,6 +7,7 @@ import { useAppStore } from "@/stores/app";
 import { BmsProtocolParser, BmsExtendedData } from "@/types/protocol";
 import { resolveProtocol, getRegisteredUuids } from "@/service/protocol/protocol-registry";
 import { useLogStore } from "@/stores/log-store";
+import { translate } from "@/locale/i18n";
 
 /**
  * BLE 蓝牙遥测数据全局 Pinia Store
@@ -709,7 +710,9 @@ export const useBleStore = defineStore("ble", () => {
           console.warn(`[BLE 连接] 设备已处于连接状态，跳过并保持连接 ✓`);
         } else {
           logStore.addConnectionLog("uni.createBLEConnection", { deviceId }, connectErr, "fail");
-          throw connectErr;
+          throw new Error(
+            `${translate("bms.ble.steps.physicalConnect")}: ${connectErr.message || connectErr.errMsg || String(connectErr)}`
+          );
         }
       }
 
@@ -749,7 +752,9 @@ export const useBleStore = defineStore("ble", () => {
         logStore.addConnectionLog("matchProtocol", { matchedServiceId: matchedConfig.serviceId }, "success", "success");
       } catch (serviceErr: any) {
         logStore.addConnectionLog("uni.getBLEDeviceServices", { deviceId }, serviceErr, "fail");
-        throw serviceErr;
+        throw new Error(
+          `${translate("bms.ble.steps.discoverService")}: ${serviceErr.message || serviceErr.errMsg || String(serviceErr)}`
+        );
       }
 
       // 步骤 6：通过协议注册表动态解析并实例化对应的协议策略解析器（零 if-else）
@@ -775,6 +780,7 @@ export const useBleStore = defineStore("ble", () => {
         console.warn(
           `[BLE 连接] 协议注册表中未找到匹配项，UUID=${activeServiceConfig.value.serviceId}`,
         );
+        throw new Error(translate("bms.ble.steps.protocolMismatch"));
       }
 
       // 步骤 7：特征值发现（iOS / 鸿蒙防 10004 的关键步骤）
@@ -789,7 +795,7 @@ export const useBleStore = defineStore("ble", () => {
           "success",
         );
 
-        // 将特征值 UUID 也自动对齐为系统物理发现的原始 UUID 大小写，彻底消除 Android/iOS 特征值大小写不匹配导致的 10008 异常
+        // 将特征值 UUID 也自动对齐为 system 物理发现的原始 UUID 大小写，彻底消除 Android/iOS 特征值大小写不匹配导致的 10008 异常
         const realWriteChar = discoveredCharUuids.find(
           (uuid: string) => uuid.toUpperCase() === activeServiceConfig.value.writeCharacteristicId.toUpperCase(),
         );
@@ -804,7 +810,9 @@ export const useBleStore = defineStore("ble", () => {
         }
       } catch (charErr: any) {
         logStore.addConnectionLog("uni.getBLEDeviceCharacteristics", { deviceId, serviceId }, charErr, "fail");
-        throw charErr;
+        throw new Error(
+          `${translate("bms.ble.steps.discoverCharacteristic")}: ${charErr.message || charErr.errMsg || String(charErr)}`
+        );
       }
 
       // 步骤 8：动态 MTU 协商（非 iOS 平台主动协商，目标值取自配置）
@@ -848,7 +856,9 @@ export const useBleStore = defineStore("ble", () => {
           notifyErr,
           "fail",
         );
-        throw notifyErr;
+        throw new Error(
+          `${translate("bms.ble.steps.subscribeNotify")}: ${notifyErr.message || notifyErr.errMsg || String(notifyErr)}`
+        );
       }
 
       // 订阅成功后，强制等待链路稳定再下发心跳指令，防 10007 冲突

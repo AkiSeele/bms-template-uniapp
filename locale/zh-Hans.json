@@ -28,6 +28,13 @@
       "searchPlaceholder": "输入设备名称或 MAC 地址搜索",
       "searchTitle": "蓝牙搜索",
       "unknownProtocol": "未知协议",
+      "steps": {
+        "physicalConnect": "物理连接失败",
+        "discoverService": "服务发现失败",
+        "discoverCharacteristic": "特征值发现失败",
+        "subscribeNotify": "订阅通知失败",
+        "protocolMismatch": "协议匹配失败，未知电池协议"
+      },
       "env": {
         "androidGpsDisabled": "扫描附近的蓝牙外设需要开启“手机定位服务”，请点击“去开启”前往系统设置页打开定位服务。",
         "androidPermissionDenied": "您拒绝了连接所需的蓝牙/定位权限，App 将无法获取电池数据。如需开启，请前往“系统设置 -> 权限管理”手动授权。",
