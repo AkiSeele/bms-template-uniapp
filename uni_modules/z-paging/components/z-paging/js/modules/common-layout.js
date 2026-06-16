@@ -41,10 +41,17 @@ export default {
 		isOldWebView() {
 			// #ifndef APP-NVUE || MP-KUAISHOU
 			try {
-				const systemInfos = u.getSystemInfoSync(true).system.split(' ');
-				const deviceType = systemInfos[0];
-				const version = parseInt(systemInfos[1]);
-				if ((deviceType === 'iOS' && version <= 10) || (deviceType === 'Android' && version <= 6)) {
+				const systemInfoSync = u.getSystemInfoSync(true);
+				const osName = (systemInfoSync.osName || "").toLowerCase();
+				const platform = (systemInfoSync.platform || "").toLowerCase();
+				if (osName === "harmonyos" || platform === "harmonyos") {
+					return false;
+				}
+				const systemStr = systemInfoSync.system || "";
+				const systemInfos = systemStr.split(" ");
+				const deviceType = systemInfos[0] || "";
+				const version = parseInt(systemInfos[1] || "99");
+				if ((deviceType === "iOS" && version <= 10) || (deviceType === "Android" && version <= 6)) {
 					return true;
 				}
 			} catch(e) {

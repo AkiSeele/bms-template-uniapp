@@ -1,145 +1,235 @@
 <template>
-  <view>
+  <view class="wot-w-full wot-bg-filled-bottom wot-box-border wot-px-4">
+    <!-- 自定义顶部导航栏 -->
     <!-- Source: uni_modules/wot-ui/components/wd-navbar/wd-navbar.vue -->
-    <wd-navbar :title="$t('bms.tab.control') + ' (Default)'" fixed safe-area-inset-top />
+    <wd-navbar :title="$t('bms.tab.control')" fixed safe-area-inset-top />
 
-    <view class="tab-content-wrap wot-px-3 wot-py-4 wot-pb-10 page-body-animate">
-      <view class="wot-flex wot-flex-col wot-gap-4">
-        <!-- 头部设备概览小卡片 -->
+    <view class="tab-content-wrap page-body-animate">
+      <!-- 蓝牙未连接时的空状态 -->
+      <view v-if="!isConnected" class="wot-flex wot-flex-col wot-items-center wot-justify-center wot-py-20">
+        <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
+        <wd-icon css-icon="i-ri-bluetooth-connect-line" size="64px" color="var(--wot-icon-disabled)" />
+        <text class="wot-text-text-auxiliary wot-mt-4" :style="{ fontSize: '26rpx' }">
+          {{ $t("bms.battery.noData") }}
+        </text>
+      </view>
+
+      <!-- 已连接时的控制面板 -->
+      <view v-else class="wot-flex wot-flex-col wot-gap-4">
+        <!-- 1. 核心开关控制卡片 (开启/关闭按钮组方式，解决读不到状态值引起的 Switch 假滑动问题) -->
         <view
-          class="wot-bg-filled-oppo wot-rounded-2xl wot-p-main wot-shadow-sm wot-flex wot-items-center wot-justify-between"
+          class="wot-bg-filled-oppo wot-p-4 control-panel-card"
         >
-          <view class="wot-flex wot-items-center wot-gap-3">
+          <view class="wot-flex wot-items-center wot-gap-2 wot-mb-4 wot-border-0 wot-border-b wot-border-solid wot-border-divider-main wot-pb-2.5">
             <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-            <wd-icon css-icon="i-lucide-cpu" size="32px" :color="activeThemeColor" />
-            <view class="wot-flex wot-flex-col">
-              <text class="wot-text-body-main wot-font-bold wot-text-text-main">{{ connectedName }}</text>
-              <text class="wot-text-caption wot-text-text-secondary wot-mt-0.5">
-                {{ protocolName }} ({{ protocolType.toUpperCase() }})
-              </text>
-            </view>
-          </view>
-          <view
-            class="wot-bg-success-surface wot-text-success-main wot-rounded-full wot-px-tight wot-py-extra-tight wot-text-caption wot-font-semibold wot-flex wot-items-center wot-gap-1"
-          >
-            <view class="wot-w-2 wot-h-2 wot-bg-success-main wot-rounded-full animate-ping" />
-            {{ $t("bms.protect.normal") }}
-          </view>
-        </view>
-
-        <!-- 通用 MOS 控制卡片 -->
-        <view class="wot-bg-filled-oppo wot-rounded-2xl wot-p-main wot-shadow-sm">
-          <view class="wot-flex wot-items-center wot-gap-2 wot-mb-3 wot-border-b wot-border-border-main wot-pb-2">
-            <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-            <wd-icon css-icon="i-lucide-toggle-left" size="24px" color="#858585" />
-            <text class="wot-text-body-main wot-font-bold wot-text-text-main">
+            <wd-icon css-icon="i-ri-toggle-line" size="20px" color="var(--wot-icon-auxiliary)" />
+            <text class="wot-font-bold wot-text-text-main" :style="{ fontSize: '30rpx' }">
               {{ $t("bms.control.title") }}
             </text>
           </view>
 
           <view class="wot-flex wot-flex-col wot-gap-4">
-            <!-- 充电 MOS -->
+            <!-- 充电 MOS 控制 -->
             <view class="wot-flex wot-items-center wot-justify-between">
-              <view class="wot-flex wot-flex-col">
-                <text class="wot-text-body-main wot-font-medium wot-text-text-main">
-                  {{ $t("bms.control.chargeMos") }}
-                </text>
-                <text class="wot-text-caption wot-text-text-secondary">
-                  {{ $t("bms.control.chargeMosDesc") }}
-                </text>
+              <text class="wot-font-semibold wot-text-text-main" :style="{ fontSize: '28rpx' }">
+                {{ $t("bms.control.chargeMos") }}
+              </text>
+              <view class="wot-flex wot-items-center wot-gap-1.5 wot-flex-shrink-0">
+                <!-- Source: uni_modules/wot-ui/components/wd-button/wd-button.vue -->
+                <wd-button
+                  size="small"
+                  type="primary"
+                  plain
+                  @click="handleControlAction('charge', true)"
+                  custom-class="btn-control-style"
+                >
+                  {{ $t("bms.common.enable") }}
+                </wd-button>
+                <!-- Source: uni_modules/wot-ui/components/wd-button/wd-button.vue -->
+                <wd-button
+                  size="small"
+                  type="danger"
+                  plain
+                  @click="handleControlAction('charge', false)"
+                  custom-class="btn-control-style"
+                >
+                  {{ $t("bms.common.disable") }}
+                </wd-button>
               </view>
-              <switch :checked="isCharging" @change="toggleCharge" :color="activeThemeColor" />
             </view>
 
-            <!-- 放电 MOS -->
-            <view class="wot-flex wot-items-center wot-justify-between">
-              <view class="wot-flex wot-flex-col">
-                <text class="wot-text-body-main wot-font-medium wot-text-text-main">
-                  {{ $t("bms.control.dischargeMos") }}
-                </text>
-                <text class="wot-text-caption wot-text-text-secondary">
-                  {{ $t("bms.control.dischargeMosDesc") }}
-                </text>
+            <!-- 放电 MOS 控制 -->
+            <view class="wot-flex wot-items-center wot-justify-between wot-pt-3 wot-border-0 wot-border-t wot-border-solid wot-border-divider-main">
+              <text class="wot-font-semibold wot-text-text-main" :style="{ fontSize: '28rpx' }">
+                {{ $t("bms.control.dischargeMos") }}
+              </text>
+              <view class="wot-flex wot-items-center wot-gap-1.5 wot-flex-shrink-0">
+                <!-- Source: uni_modules/wot-ui/components/wd-button/wd-button.vue -->
+                <wd-button
+                  size="small"
+                  type="primary"
+                  plain
+                  @click="handleControlAction('discharge', true)"
+                  custom-class="btn-control-style"
+                >
+                  {{ $t("bms.common.enable") }}
+                </wd-button>
+                <!-- Source: uni_modules/wot-ui/components/wd-button/wd-button.vue -->
+                <wd-button
+                  size="small"
+                  type="danger"
+                  plain
+                  @click="handleControlAction('discharge', false)"
+                  custom-class="btn-control-style"
+                >
+                  {{ $t("bms.common.disable") }}
+                </wd-button>
               </view>
-              <switch :checked="isDischarging" @change="toggleDischarge" :color="activeThemeColor" />
             </view>
 
-            <!-- 聚力威独有高阶控制：低温加热 MOSFET (0x52) -->
-            <view class="wot-flex wot-items-center wot-justify-between wot-mt-2 wot-pt-2 wot-border-t wot-border-border-main">
-              <view class="wot-flex wot-flex-col">
-                <text class="wot-text-body-main wot-font-medium wot-text-text-main">
-                  {{ $t("bms.control.heatMos") }}
-                </text>
-                <text class="wot-text-caption wot-text-text-secondary">
-                  {{ $t("bms.control.heatMosDesc") }}
-                </text>
+            <!-- 低温自加热控制 -->
+            <view class="wot-flex wot-items-center wot-justify-between wot-pt-3 wot-border-0 wot-border-t wot-border-solid wot-border-divider-main">
+              <text class="wot-font-semibold wot-text-text-main" :style="{ fontSize: '28rpx' }">
+                {{ $t("bms.control.heatMos") }}
+              </text>
+              <view class="wot-flex wot-items-center wot-gap-1.5 wot-flex-shrink-0">
+                <!-- Source: uni_modules/wot-ui/components/wd-button/wd-button.vue -->
+                <wd-button
+                  size="small"
+                  type="primary"
+                  plain
+                  @click="handleControlAction('heat', true)"
+                  custom-class="btn-control-style"
+                >
+                  {{ $t("bms.common.enable") }}
+                </wd-button>
+                <!-- Source: uni_modules/wot-ui/components/wd-button/wd-button.vue -->
+                <wd-button
+                  size="small"
+                  type="danger"
+                  plain
+                  @click="handleControlAction('heat', false)"
+                  custom-class="btn-control-style"
+                >
+                  {{ $t("bms.common.disable") }}
+                </wd-button>
               </view>
-              <switch :checked="isHeating" @change="toggleHeating" color="#10b981" />
+            </view>
+
+            <!-- 测试模式控制 -->
+            <view class="wot-flex wot-items-center wot-justify-between wot-pt-3 wot-border-0 wot-border-t wot-border-solid wot-border-divider-main">
+              <text class="wot-font-semibold wot-text-text-main" :style="{ fontSize: '28rpx' }">
+                {{ $t("bms.control.testMode") }}
+              </text>
+              <view class="wot-flex wot-items-center wot-gap-1.5 wot-flex-shrink-0">
+                <!-- Source: uni_modules/wot-ui/components/wd-button/wd-button.vue -->
+                <wd-button
+                  size="small"
+                  type="primary"
+                  plain
+                  @click="handleControlAction('test', true)"
+                  custom-class="btn-control-style"
+                >
+                  {{ $t("bms.common.enable") }}
+                </wd-button>
+                <!-- Source: uni_modules/wot-ui/components/wd-button/wd-button.vue -->
+                <wd-button
+                  size="small"
+                  type="danger"
+                  plain
+                  @click="handleControlAction('test', false)"
+                  custom-class="btn-control-style"
+                >
+                  {{ $t("bms.common.disable") }}
+                </wd-button>
+              </view>
             </view>
           </view>
         </view>
 
-        <!-- 聚力威专有硬件系统级别保护动作面板 -->
-        <view class="wot-bg-filled-oppo wot-rounded-2xl wot-p-main wot-shadow-sm">
-          <view class="wot-flex wot-items-center wot-gap-2 wot-mb-3 wot-border-b wot-border-border-main wot-pb-2">
+        <!-- 2. 系统维护与紧急动作卡片 -->
+        <view
+          class="wot-bg-filled-oppo wot-p-4 control-panel-card"
+        >
+          <view class="wot-flex wot-items-center wot-gap-2 wot-mb-4 wot-border-0 wot-border-b wot-border-solid wot-border-divider-main wot-pb-2.5">
             <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-            <wd-icon css-icon="i-lucide-shield-alert" size="24px" color="#e37318" />
-            <text class="wot-text-body-main wot-font-bold wot-text-text-main">{{ $t("bms.control.hardwareEmergencyAction") }}</text>
+            <wd-icon css-icon="i-ri-settings-5-line" size="20px" color="var(--wot-icon-secondary)" />
+            <text class="wot-font-bold wot-text-text-main" :style="{ fontSize: '30rpx' }">
+              {{ $t("bms.control.systemMaintenance") }}
+            </text>
           </view>
 
-          <view class="wot-flex wot-flex-col wot-gap-3 wot-mt-2">
+          <!-- 维护与紧急指令按钮列表 -->
+          <view class="wot-flex wot-flex-col wot-gap-3.5">
             <!-- 清除异常状态 -->
             <view class="wot-flex wot-items-center wot-justify-between">
-              <view class="wot-flex wot-flex-col wot-w-[65%]">
-                <text class="wot-text-body-main wot-font-medium wot-text-text-main">
-                  {{ $t("bms.control.clearStatus") }}
-                </text>
-                <text class="wot-text-caption wot-text-text-secondary">{{ $t("bms.control.clearStatusDesc") }}</text>
-              </view>
-              <button
-                @click="confirmAction('clear')"
-                class="action-btn wot-rounded-lg wot-border-border-main wot-text-text-main wot-text-caption wot-font-semibold wot-py-extra-tight wot-px-main wot-shadow-sm"
-              >
+              <text class="wot-font-semibold wot-text-text-main" :style="{ fontSize: '28rpx' }">
                 {{ $t("bms.control.clearStatus") }}
-              </button>
+              </text>
+              <!-- Source: uni_modules/wot-ui/components/wd-button/wd-button.vue -->
+              <wd-button
+                size="small"
+                plain
+                @click="confirmAction('clear')"
+                custom-class="btn-style"
+              >
+                {{ $t("bms.control.btnClear") }}
+              </wd-button>
             </view>
 
-            <!-- 强制休眠保护 -->
-            <view class="wot-flex wot-items-center wot-justify-between wot-pt-2 wot-border-t wot-border-border-main">
-              <view class="wot-flex wot-flex-col wot-w-[65%]">
-                <text class="wot-text-body-main wot-font-medium wot-text-text-main">
-                  {{ $t("bms.control.forceSleep") }}
-                </text>
-                <text class="wot-text-caption wot-text-text-secondary">{{ $t("bms.control.forceSleepDesc") }}</text>
-              </view>
-              <button
-                @click="confirmAction('sleep')"
-                class="action-btn wot-rounded-lg wot-bg-error-surface wot-text-danger-main wot-text-caption wot-font-semibold wot-py-extra-tight wot-px-main wot-shadow-sm"
+            <!-- 清除累计参数 -->
+            <view class="wot-flex wot-items-center wot-justify-between wot-pt-3 wot-border-0 wot-border-t wot-border-solid wot-border-divider-main">
+              <text class="wot-font-semibold wot-text-text-main" :style="{ fontSize: '28rpx' }">
+                {{ $t("bms.control.clearParam") }}
+              </text>
+              <!-- Source: uni_modules/wot-ui/components/wd-button/wd-button.vue -->
+              <wd-button
+                size="small"
+                plain
+                @click="confirmAction('clearParam')"
+                custom-class="btn-style"
               >
-                {{ $t("bms.control.forceSleep") }}
-              </button>
+                {{ $t("bms.control.btnClear") }}
+              </wd-button>
             </view>
 
             <!-- 强制拉起启动 -->
-            <view class="wot-flex wot-items-center wot-justify-between wot-pt-2 wot-border-t wot-border-border-main">
-              <view class="wot-flex wot-flex-col wot-w-[65%]">
-                <text class="wot-text-body-main wot-font-medium wot-text-text-main">
-                  {{ $t("bms.control.forceStart") }}
-                </text>
-                <text class="wot-text-caption wot-text-text-secondary">{{ $t("bms.control.forceStartDesc") }}</text>
-              </view>
-              <button
-                @click="confirmAction('start')"
-                class="action-btn wot-rounded-lg wot-bg-success-surface wot-text-success-main wot-text-caption wot-font-semibold wot-py-extra-tight wot-px-main wot-shadow-sm"
-              >
+            <view class="wot-flex wot-items-center wot-justify-between wot-pt-3 wot-border-0 wot-border-t wot-border-solid wot-border-divider-main">
+              <text class="wot-font-semibold wot-text-text-main" :style="{ fontSize: '28rpx' }">
                 {{ $t("bms.control.forceStart") }}
-              </button>
+              </text>
+              <!-- Source: uni_modules/wot-ui/components/wd-button/wd-button.vue -->
+              <wd-button
+                size="small"
+                plain
+                @click="confirmAction('start')"
+                custom-class="btn-style"
+              >
+                {{ $t("bms.control.btnStart") }}
+              </wd-button>
+            </view>
+
+            <!-- 强制休眠关断 -->
+            <view class="wot-flex wot-items-center wot-justify-between wot-pt-3 wot-border-0 wot-border-t wot-border-solid wot-border-divider-main">
+              <text class="wot-font-semibold wot-text-text-main" :style="{ fontSize: '28rpx' }">
+                {{ $t("bms.control.forceSleep") }}
+              </text>
+              <!-- Source: uni_modules/wot-ui/components/wd-button/wd-button.vue -->
+              <wd-button
+                size="small"
+                plain
+                @click="confirmAction('sleep')"
+                custom-class="btn-style"
+              >
+                {{ $t("bms.control.btnSleep") }}
+              </wd-button>
             </view>
           </view>
         </view>
       </view>
     </view>
 
+    <!-- 挂载 wot-ui 反馈实例 -->
     <!-- Source: uni_modules/wot-ui/components/wd-toast/wd-toast.vue -->
     <wd-toast />
     <!-- Source: uni_modules/wot-ui/components/wd-dialog/wd-dialog.vue -->
@@ -154,37 +244,19 @@ import { useI18n } from "vue-i18n";
 import { useToast, useDialog } from "@/uni_modules/wot-ui";
 import { useBleStore } from "@/stores/ble-store";
 import { useUserStore } from "@/stores/user";
-import { useAppStore } from "@/stores/app";
 
-// 初始化 UI 交互及多语言翻译
+// 初始化 UI 交互反馈与翻译
 const toast = useToast();
 const dialog = useDialog();
 const { t } = useI18n();
 
-// 获取全局用户授权状态仓及全局蓝牙状态
+// 获取状态存储层数据
 const userStore = useUserStore();
 const { isAuthorized } = storeToRefs(userStore);
-const appStore = useAppStore();
-const { activeThemeColor } = storeToRefs(appStore);
 const bleStore = useBleStore();
-const {
-  isBleConnected: isConnected,
-  connectedDeviceName: connectedName,
-  isCharging,
-  isDischarging,
-  extendedProtocolData,
-} = storeToRefs(bleStore);
+const { isBleConnected: isConnected } = storeToRefs(bleStore);
 
-// 读取协议基本描述
-const protocolType = computed(() => bleStore.activeProtocolParser?.protocolType || "");
-const protocolName = computed(() => bleStore.activeProtocolParser?.protocolName || t("bms.ble.unknownProtocol"));
-
-// 判断低温加热管是否开启
-const isHeating = computed(() => {
-  return extendedProtocolData.value?.mosTemperature !== undefined && extendedProtocolData.value.mosTemperature > 45;
-});
-
-// 弹出授权激活引导对话框
+// 未授权激活弹框提示
 const showAuthRequiredDialog = () => {
   dialog
     .confirm({
@@ -197,11 +269,11 @@ const showAuthRequiredDialog = () => {
       });
     })
     .catch(() => {
-      // 用户取消
+      // 用户取消授权跳转
     });
 };
 
-// 获取控制下发错误提示字串
+// 异常响应错误清洗
 const getControlErrorMessage = (err: any): string => {
   if (err?.message === "Timeout waiting for response") {
     return t("bms.control.timeout");
@@ -209,69 +281,63 @@ const getControlErrorMessage = (err: any): string => {
   return err?.message || t("bms.control.sendFailed");
 };
 
-// 充电控制
-const toggleCharge = async (e: any) => {
-  const nextVal = e.detail.value;
-  if (!isAuthorized.value) {
-    isCharging.value = !nextVal;
-    showAuthRequiredDialog();
-    return;
-  }
-  try {
-    toast.loading({ msg: t("bms.control.chargeSending"), cover: true });
-    await bleStore.sendControlCommand("charge", nextVal);
-    toast.success(t("bms.control.sendSuccess"));
-  } catch (err: any) {
-    console.error("充电开关下发异常:", err);
-    toast.error(getControlErrorMessage(err));
-    isCharging.value = !nextVal;
-  } finally {
-    toast.close();
-  }
-};
-
-// 放电控制
-const toggleDischarge = async (e: any) => {
-  const nextVal = e.detail.value;
-  if (!isAuthorized.value) {
-    isDischarging.value = !nextVal;
-    showAuthRequiredDialog();
-    return;
-  }
-  try {
-    toast.loading({ msg: t("bms.control.dischargeSending"), cover: true });
-    await bleStore.sendControlCommand("discharge", nextVal);
-    toast.success(t("bms.control.sendSuccess"));
-  } catch (err: any) {
-    console.error("放电开关下发异常:", err);
-    toast.error(getControlErrorMessage(err));
-    isDischarging.value = !nextVal;
-  } finally {
-    toast.close();
-  }
-};
-
-// 低温自加热控制
-const toggleHeating = async (e: any) => {
-  const nextVal = e.detail.value;
+// 统一的开关控制动作下发
+const handleControlAction = (type: "charge" | "discharge" | "heat" | "test", open: boolean) => {
   if (!isAuthorized.value) {
     showAuthRequiredDialog();
     return;
   }
-  try {
-    toast.loading({ msg: t("bms.control.heatSending"), cover: true });
-    await bleStore.sendControlCommand("heat", nextVal);
-    toast.success(t("bms.control.sendSuccess"));
-  } catch (err: any) {
-    console.error("自加热下发异常:", err);
-    toast.error(getControlErrorMessage(err));
-  } finally {
-    toast.close();
+
+  // 动态拼装二次确认文案
+  let title = "";
+  let typeText = "";
+  if (type === "charge") {
+    title = t("bms.control.chargeMos");
+    typeText = t("bms.control.charge");
+  } else if (type === "discharge") {
+    title = t("bms.control.dischargeMos");
+    typeText = t("bms.control.discharge");
+  } else if (type === "heat") {
+    title = t("bms.control.heatMos");
+    typeText = t("bms.control.heatMos");
+  } else {
+    title = t("bms.control.testMode");
+    typeText = t("bms.control.testMode");
   }
+
+  const actionText = open ? t("bms.common.enable") : t("bms.common.disable");
+  const isEn = t("bms.control.confirmPrefix").startsWith("Are");
+  const space = isEn ? " " : "";
+  const actionWord = isEn ? actionText.toLowerCase() : actionText;
+  const typeWord = isEn ? typeText.toLowerCase() : typeText;
+  const promptMsg = t("bms.control.confirmPrefix") + actionWord + space + typeWord + t("bms.control.confirmSuffix");
+
+  dialog
+    .confirm({
+      title: title,
+      msg: promptMsg,
+    })
+    .then(async () => {
+      try {
+        toast.loading({ msg: t("bms.control.sending"), cover: true });
+        await bleStore.sendControlCommand(type, open);
+        toast.success(t("bms.control.sendSuccess"));
+      } catch (err: any) {
+        console.error(`${typeText}控制下发异常:`, err);
+        toast.error(getControlErrorMessage(err));
+      } finally {
+        toast.close();
+      }
+    })
+    .catch(() => {
+      // 用户取消
+    });
 };
 
-// 针对紧急、危险指令加装弹窗二次校验确认
-const confirmAction = (action: "clear" | "sleep" | "start") => {
+
+
+// 系统级维护与安全拉起动作 Dialog 二次授权校验
+const confirmAction = (action: "clear" | "sleep" | "start" | "clearParam") => {
   if (!isAuthorized.value) {
     showAuthRequiredDialog();
     return;
@@ -285,9 +351,12 @@ const confirmAction = (action: "clear" | "sleep" | "start") => {
   } else if (action === "sleep") {
     title = t("bms.control.forceSleep");
     msg = t("bms.control.forceSleepConfirm");
-  } else {
+  } else if (action === "start") {
     title = t("bms.control.forceStart");
     msg = t("bms.control.forceStartConfirm");
+  } else {
+    title = t("bms.control.clearParam");
+    msg = t("bms.control.clearParamConfirm");
   }
 
   dialog
@@ -301,11 +370,8 @@ const confirmAction = (action: "clear" | "sleep" | "start") => {
         await bleStore.sendControlCommand(action, true);
         toast.success(t("bms.common.opSuccess"));
       } catch (err: any) {
-        console.error(`紧急指令下发失败: ${action}`, err);
-        const errMsg = err?.message === "Timeout waiting for response"
-          ? t("bms.control.timeout")
-          : (err?.message || t("bms.common.opFailed"));
-        toast.error(errMsg);
+        console.error(`维护指令下发失败: ${action}`, err);
+        toast.error(getControlErrorMessage(err));
       } finally {
         toast.close();
       }
@@ -317,22 +383,27 @@ const confirmAction = (action: "clear" | "sleep" | "start") => {
 </script>
 
 <style scoped>
-.action-btn {
-  font-size: 24rpx;
-  line-height: 2.2;
-  margin: 0;
-  border: 1px solid #bfbfbf;
-  background-color: transparent;
-  transition: all 0.2s ease;
+/* 按钮基础风格重置，融入 wot-ui 配色设计 */
+:deep(.btn-style) {
+  min-width: 140rpx;
+  font-weight: 600;
+  border-radius: 12rpx;
 }
 
-.action-btn:active {
-  opacity: 0.8;
-  transform: scale(0.96);
+:deep(.btn-control-style) {
+  min-width: 110rpx;
+  font-weight: 600;
+  border-radius: 12rpx;
+}
+
+.control-panel-card {
+  border-radius: 28rpx;
+  box-shadow: 0 8px 20px rgba(163, 177, 198, 0.1);
 }
 
 /* 顶部安全区域与自定义导航栏高度自适应占位 */
 .tab-content-wrap {
-  padding-top: calc(var(--status-bar-height) + 44px + 16px) !important;
+  padding-top: calc(var(--status-bar-height) + 44px + 16px);
+  padding-bottom: env(safe-area-inset-bottom);
 }
 </style>

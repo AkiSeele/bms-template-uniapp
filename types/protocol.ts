@@ -105,6 +105,20 @@ export interface BmsExtendedData {
   wireBrokenStates?: boolean[];
   /** 单体电芯电压列表 (mV)，索引对应电芯编号 */
   cellVoltages?: number[];
+  /** 充电开关状态 (开启为真，关闭为假) */
+  chargeFetState?: boolean;
+  /** 放电开关状态 (开启为真，关闭为假) */
+  dischargeFetState?: boolean;
+  /** 预放电开关状态 (开启为真，关闭为假) */
+  preChargeFetState?: boolean;
+  /** 低温加热开关状态 (开启为真，关闭为假) */
+  heatingState?: boolean;
+  /** 活跃报警多语言键列表 */
+  activeAlarms?: string[];
+  /** 系统测试模式状态 */
+  testModeState?: boolean;
+  /** 保护板固件硬件版本号 */
+  softwareVersion?: string;
 }
 
 /**
@@ -127,12 +141,16 @@ export interface BmsTelemetryUpdate {
   temperature?: number;
   /** 扩展高阶遥测参数增量更新包 */
   extendedData?: BmsExtendedData;
+  /** 各个字段解析前对应的原始十六进制字符串 */
+  fieldRawHex?: Record<string, string>;
   /** 控制指令的响应状态 */
   controlResponse?: {
     /** 响应的命令 ID */
     cmdId: number;
     /** 操作是否成功 */
     success: boolean;
+    /** 响应携带的数据 (如版本号字符串) */
+    data?: any;
   };
 }
 
@@ -193,7 +211,16 @@ export interface BmsProtocolParser {
    * @returns 十六进制字符串指令，协议不支持该控制类型时返回空字符串
    */
   getControlCommand(
-    type: "charge" | "discharge" | "heat" | "clear" | "sleep" | "start",
+    type:
+      | "charge"
+      | "discharge"
+      | "heat"
+      | "clear"
+      | "sleep"
+      | "start"
+      | "clearParam"
+      | "test"
+      | "readVersion",
     open: boolean,
   ): string;
 }

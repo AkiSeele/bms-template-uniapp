@@ -1,7 +1,7 @@
 <template>
   <!-- 自定义底部导航栏组件，fixed 属性开启固定定位，placeholder 属性生成底部占位，bordered 开启上边框 -->
   <!-- Source: uni_modules/wot-ui/components/wd-tabbar/wd-tabbar.vue -->
-  <wd-tabbar :model-value="activeTab" @change="handleChange" fixed placeholder bordered :active-color="activeThemeColor">
+  <wd-tabbar :model-value="activeTab" @change="handleChange" fixed :placeholder="activeTab !== 'realtime'" bordered safe-area-inset-bottom :z-index="100" :active-color="activeThemeColor">
     <!-- 实时数据 Tab 选项项 -->
     <!-- Source: uni_modules/wot-ui/components/wd-tabbar-item/wd-tabbar-item.vue -->
     <wd-tabbar-item name="realtime" :title="$t('bms.tab.realtime')">

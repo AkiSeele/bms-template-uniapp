@@ -12,6 +12,9 @@ import { useLogStore } from "@/stores/log-store";
 // 全局低功耗蓝牙当前协商成功的最大单包数据发送载荷限额（初始化时读取配置的默认 MTU 缓存，协商成功后自动拓宽，iOS 自动，Android 手动）
 let currentMtu = APP_CONFIG.BLE_SCAN.DEFAULT_MTU;
 
+// 缓存回调函数的引用以防止内存泄漏
+let activeDeviceFoundCallback: ((res: any) => void) | null = null;
+
 export const bleManager = {
   /**
    * 初始化手机蓝牙适配器模块
@@ -32,7 +35,7 @@ export const bleManager = {
         },
         fail: (err: any) => {
           console.error("[BLE 错误] 手机蓝牙未开启或未授权适配器:", err);
-          // 拦截错误码 10001（系统蓝牙关闭）或包含特定关键字的系统报错，标准化转换为友好中文字符串抛出
+          // 拦截错误码 10001（系统蓝牙关闭）或包含特定关键字 of 系统报错，标准化转换为友好中文字符串抛出
           const isPowerOff =
             err.errCode === 10001 ||
             (err.errMsg && (err.errMsg.indexOf("not available") !== -1 || err.errMsg.indexOf("power off") !== -1));
@@ -55,24 +58,35 @@ export const bleManager = {
    */
   startScan(onDeviceFound: (device: UniApp.BluetoothDeviceInfo) => void): Promise<UniApp.GeneralCallbackResult> {
     return new Promise((resolve, reject) => {
-      // H5 平台防护拦截
       if (typeof uni.startBluetoothDevicesDiscovery !== "function") {
         return reject(new Error("H5 platform does not support starting Bluetooth device discovery, please test in a real device environment."));
       }
 
-      // 先注销旧的设备发现监听回调，防止频繁进出页面导致回调叠加累积，造成同一设备被多次上报
+      // 先注销旧的设备发现监听回调以防止内存泄漏
       if (typeof uni.offBluetoothDeviceFound === "function") {
-        uni.offBluetoothDeviceFound();
+        try {
+          if (activeDeviceFoundCallback) {
+            uni.offBluetoothDeviceFound(activeDeviceFoundCallback);
+          } else {
+            uni.offBluetoothDeviceFound();
+          }
+        } catch (e) {
+          console.error("注销旧的发现设备监听异常:", e);
+        }
+        activeDeviceFoundCallback = null;
       }
 
-      // 开启监听新外设发现的 API
-      uni.onBluetoothDeviceFound((res) => {
-        res.devices.forEach((device) => {
+      // 保存本次的回调引用
+      activeDeviceFoundCallback = (res: any) => {
+        res.devices.forEach((device: UniApp.BluetoothDeviceInfo) => {
           if (device.name || device.localName) {
             onDeviceFound(device);
           }
         });
-      });
+      };
+
+      // 注册回调监听
+      uni.onBluetoothDeviceFound(activeDeviceFoundCallback);
 
       // 启动蓝牙搜索
       console.warn("[BLE Manager] 启动低功耗蓝牙适配器设备发现扫描 (startBluetoothDevicesDiscovery)...");
@@ -85,19 +99,40 @@ export const bleManager = {
   },
 
   /**
-   * 停止扫描蓝牙设备（连接蓝牙前必须主动停止，以防占用带宽或导致连接失败）
+   * 停止扫描蓝牙设备
    */
   stopScan(): Promise<UniApp.GeneralCallbackResult> {
     return new Promise((resolve, reject) => {
-      // H5 平台防护拦截，优雅放行，避免阻断后面的物理连接逻辑
       if (typeof uni.stopBluetoothDevicesDiscovery !== "function") {
         return resolve({ errMsg: "stopBluetoothDevicesDiscovery:ok" });
       }
 
       console.warn("[BLE Manager] 停止低功耗蓝牙设备扫描 (stopBluetoothDevicesDiscovery)...");
+      
+      // 注销回调以防止内存泄漏
+      if (typeof uni.offBluetoothDeviceFound === "function") {
+        try {
+          if (activeDeviceFoundCallback) {
+            console.log("[BLE Manager] 检测到活跃的设备发现回调引用，正在注销以防内存泄漏");
+            uni.offBluetoothDeviceFound(activeDeviceFoundCallback);
+          } else {
+            console.log("[BLE Manager] 未检测到活跃的回调引用，清除所有监听器");
+            uni.offBluetoothDeviceFound();
+          }
+        } catch (e) {
+          console.error("停止扫描时注销发现设备监听异常:", e);
+        }
+        activeDeviceFoundCallback = null;
+      }
+
       uni.stopBluetoothDevicesDiscovery({
-        success: (res) => resolve(res),
-        fail: (err) => reject(err),
+        success: (res) => {
+          resolve(res);
+        },
+        fail: (err) => {
+          console.error("[BLE Manager] 调用停止手机蓝牙硬件扫描接口失败:", err);
+          reject(err);
+        },
       });
     });
   },
@@ -112,7 +147,7 @@ export const bleManager = {
 
     const attemptConnect = (remainingRetries: number): Promise<UniApp.GeneralCallbackResult> => {
       return new Promise((resolve, reject) => {
-        // H5 平台防护拦截
+        // H5 platform protection
         if (typeof uni.createBLEConnection !== "function") {
           return reject(new Error("H5 platform does not support creating BLE connection, please test in a real device environment."));
         }
@@ -167,7 +202,7 @@ export const bleManager = {
 
   /**
    * 开启对指定特征值（Notification / Indication）的通知监听
-   * 用于实时接收 BMS 电池外设发送的二进制数据帧
+   * 用于实时接收 BMS 电池外设发送 of 二进制数据帧
    */
   subscribeNotify(
     deviceId: string,
@@ -282,11 +317,6 @@ export const bleManager = {
     });
   },
 
-  /**
-   * 向 BMS 蓝牙设备写入指令字节数据（支持底层自动分包以避让 MTU 字节限制）
-   * @param deviceId 蓝牙设备 ID
-   * @param commandHex 十六进制指令字符串，如 "A55A010100"
-   */
   /**
    * 向 BMS 蓝牙设备写入指令字节数据（支持底层自动分包以避让 MTU 字节限制）
    * @param deviceId 蓝牙设备 ID

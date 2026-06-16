@@ -60,13 +60,13 @@ export const useBleStore = defineStore("ble", () => {
   // 扩展的高阶电池遥测属性（各协议通过增量更新包上报各自特有数据）
   const extendedProtocolData = ref<BmsExtendedData>({});
 
-  // 电池核心电量及物理遥测响应式状态（初始化为模拟值，防止首屏空状态黑屏）
-  const batteryPercent = ref(85);
-  const totalVoltage = ref(53.28);
-  const realtimeCurrent = ref(12.5);
-  const isCharging = ref(true);
+  // 电池核心电量及物理遥测响应式状态（初始化为 0 / false，只有在读取协议且成功解析后才更新）
+  const batteryPercent = ref(0);
+  const totalVoltage = ref(0);
+  const realtimeCurrent = ref(0);
+  const isCharging = ref(false);
   const isDischarging = ref(false);
-  const temperature = ref(28);
+  const temperature = ref(0);
 
   // 轮询下发查询指令的定时器句柄（非响应式，内部管理）
   let queryInterval: ReturnType<typeof setInterval> | null = null;
@@ -107,7 +107,7 @@ export const useBleStore = defineStore("ble", () => {
   const setPollingActive = (active: boolean) => {
     isPollingActive.value = active;
     if (active) {
-      if (isBleConnected.value && connectedDeviceId.value) {
+      if (isBleConnected.value && connectedDeviceId.value && queryInterval === null) {
         startQueryTimer(connectedDeviceId.value);
       }
     } else {
@@ -439,7 +439,7 @@ export const useBleStore = defineStore("ble", () => {
    */
   const processFullFrame = (bytes: Uint8Array) => {
     const hex = uint8ArrayToHexString(bytes);
-    console.warn(`[BLE Store] (HEX):`, hex);
+    console.warn("[BLE Store] 收到指令 (HEX):", hex);
 
     // 记录接收完整响应指令 (RX) 日志，方便时序对账
     try {
@@ -451,6 +451,75 @@ export const useBleStore = defineStore("ble", () => {
     // 完全委托给当前激活的协议策略解析器进行解析，Store 层零参与
     const update = activeProtocolParser.value.parseReceivedData(bytes);
     const cmdId = bytes[1]; // 命令字节
+
+    // 格式化输出协议解析日志，以 JSON 格式打印原始十六进制及各字段名与解析值
+    if (update) {
+      // 字段名到中文名称的映射字典，便于以更直观的方式查看各物理量
+      const fieldZhNameMap: Record<string, string> = {
+        totalVoltage: "总电压",
+        realtimeCurrent: "实时电流",
+        batteryPercent: "剩余电量 SOC",
+        isCharging: "正在充电",
+        isDischarging: "放电中",
+        temperature: "最大代表温度",
+        runTimeDays: "系统运行天数",
+        runTimeHours: "系统运行小时数",
+        runTimeMinutes: "系统运行分钟数",
+        chargeFetState: "充电开关状态",
+        heatingState: "自加热开关状态",
+        dischargeFetState: "放电开关状态",
+        preChargeFetState: "预放电开关状态",
+        activeAlarms: "当前活动报警列表",
+        balanceStates: "各电芯平衡状态",
+        wireBrokenStates: "各电芯断线状态",
+        cellVoltages: "单体电芯电压列表",
+        cycleCount: "循环次数",
+        remainingCapacity: "剩余容量",
+        fullCapacity: "充满容量",
+        soh: "电池健康度 SOH",
+        mosTemperature: "MOS 管温度",
+        envTemperature: "环境温度",
+        temperatures: "多路电芯温度",
+        controlResponse: "控制响应状态"
+      };
+
+      const logList: Array<{
+        rawHex: string;
+        value: any;
+        fieldName: string;
+        fieldZhName: string;
+      }> = [];
+
+      // 1. 遍历并装配基础遥测字段
+      const baseKeys = ["totalVoltage", "realtimeCurrent", "batteryPercent", "isCharging", "isDischarging", "temperature"];
+      baseKeys.forEach((key) => {
+        const val = (update as any)[key];
+        if (val !== undefined) {
+          logList.push({
+            rawHex: update.fieldRawHex?.[key] || hex,
+            value: val,
+            fieldName: key,
+            fieldZhName: fieldZhNameMap[key] || "未知遥测项"
+          });
+        }
+      });
+
+      // 2. 遍历并装配扩展数据字段 (如 0x20 状态帧解析出的各子属性)
+      if (update.extendedData) {
+        Object.entries(update.extendedData).forEach(([key, val]) => {
+          if (val !== undefined) {
+            logList.push({
+              rawHex: update.fieldRawHex?.[key] || hex,
+              value: val,
+              fieldName: key,
+              fieldZhName: fieldZhNameMap[key] || "自定义扩展数据"
+            });
+          }
+        });
+      }
+
+      // 物理日志打印已被移除
+    }
 
     // 检查是否能匹配到当前正在执行的任务响应
     const currentTask = currentExecutingTask.value;
@@ -543,17 +612,33 @@ export const useBleStore = defineStore("ble", () => {
       }
 
       try {
-        // 一次性把这一轮的全部轮询指令都拿出来推入队列，保证首页各项数据均得到刷新
-        // 动态读取当前协议策略所声明的循环步数周期长度
-        const cycleLength = activeProtocolParser.value.pollingCycleLength || 1;
+        const appStore = useAppStore();
         const cmdSet = new Set<string>();
-        for (let offset = 0; offset < cycleLength; offset++) {
-          const cmds = activeProtocolParser.value.getPollCommands(queryStep + offset);
+
+        if (appStore.activeTab === "param") {
+          // 在状态页面时，仅轮询发送 READ_STATUS (即 0x20) 这一条指令，降低通信开销
+          const sequence = activeProtocolParser.value.spec.pollingSequence || [];
+          const statusIndex = sequence.indexOf("READ_STATUS");
+          const targetStep = statusIndex !== -1 ? statusIndex : 0;
+          const cmds = activeProtocolParser.value.getPollCommands(targetStep);
           for (const cmd of cmds) {
             if (cmd) {
               cmdSet.add(cmd);
             }
           }
+        } else {
+          // 在其它页面（如实时页面）时，轮询发送当前周期的全部指令包
+          const cycleLength = activeProtocolParser.value.pollingCycleLength || 1;
+          for (let offset = 0; offset < cycleLength; offset++) {
+            const cmds = activeProtocolParser.value.getPollCommands(queryStep + offset);
+            for (const cmd of cmds) {
+              if (cmd) {
+                cmdSet.add(cmd);
+              }
+            }
+          }
+          // 仅在完整轮询模式下，推进轮询步数计数器
+          queryStep += cycleLength;
         }
 
         // 依次将各指令任务推入队列进行排队执行
@@ -563,9 +648,6 @@ export const useBleStore = defineStore("ble", () => {
             console.warn("[指令队列] 轮询任务执行异常:", err);
           });
         }
-
-        // 轮转步数增加对应的周期长度
-        queryStep += cycleLength;
       } catch (err) {
         console.error("[BLE Store] 轮询查询任务生成入队失败:", err);
       }
@@ -617,7 +699,16 @@ export const useBleStore = defineStore("ble", () => {
    * @returns 返回一个 Promise，成功收到响应 resolve(true)，超时或设备返回失败则 reject
    */
   const sendControlCommand = async (
-    type: "charge" | "discharge" | "heat" | "clear" | "sleep" | "start",
+    type:
+      | "charge"
+      | "discharge"
+      | "heat"
+      | "clear"
+      | "sleep"
+      | "start"
+      | "clearParam"
+      | "test"
+      | "readVersion",
     open: boolean,
   ): Promise<boolean> => {
     if (!isBleConnected.value || !connectedDeviceId.value || !activeProtocolParser.value) {
@@ -666,7 +757,7 @@ export const useBleStore = defineStore("ble", () => {
         console.log(`[BLE 连接] 正在等待物理通道彻底拆除 (${APP_CONFIG.BLE_SCAN.DISCONNECT_DELAY_MS}ms)...`);
         await new Promise((resolve) => setTimeout(resolve, APP_CONFIG.BLE_SCAN.DISCONNECT_DELAY_MS));
       } catch (disErr) {
-        console.warn(`[BLE 连接] 自动断开老设备失败（可忽略并强行建立新连接）:`, disErr);
+        console.warn(`[BLE 连接] 自动断开老设备失败（可忽略）:`, disErr);
       }
     }
 
@@ -716,8 +807,7 @@ export const useBleStore = defineStore("ble", () => {
         }
       }
 
-      // 步骤 3：更新基础连接状态
-      isBleConnected.value = true;
+      // 步骤 3：更新基础连接设备 ID 与名称
       connectedDeviceId.value = deviceId;
       connectedDeviceMac.value = macAddress || deviceId;
       connectedDeviceName.value = name || "Unknown Device";
@@ -795,7 +885,7 @@ export const useBleStore = defineStore("ble", () => {
           "success",
         );
 
-        // 将特征值 UUID 也自动对齐为 system 物理发现的原始 UUID 大小写，彻底消除 Android/iOS 特征值大小写不匹配导致的 10008 异常
+        // 将特征值 UUID 也自动对齐为系统物理发现的原始 UUID 大小写，彻底消除 Android/iOS 特征值大小写不匹配导致的 10008 异常
         const realWriteChar = discoveredCharUuids.find(
           (uuid: string) => uuid.toUpperCase() === activeServiceConfig.value.writeCharacteristicId.toUpperCase(),
         );
@@ -811,7 +901,7 @@ export const useBleStore = defineStore("ble", () => {
       } catch (charErr: any) {
         logStore.addConnectionLog("uni.getBLEDeviceCharacteristics", { deviceId, serviceId }, charErr, "fail");
         throw new Error(
-          `${translate("bms.ble.steps.discoverCharacteristic")}: ${charErr.message || charErr.errMsg || String(charErr)}`
+          `${translate("bms.ble.steps.discoverCharacteristics")}: ${charErr.message || charErr.errMsg || String(charErr)}`
         );
       }
 
@@ -863,6 +953,9 @@ export const useBleStore = defineStore("ble", () => {
 
       // 订阅成功后，强制等待链路稳定再下发心跳指令，防 10007 冲突
       await new Promise((resolve) => setTimeout(resolve, APP_CONFIG.BLE_SCAN.POST_SUBSCRIBE_DELAY_MS));
+
+      // 步骤 10：蓝牙连接、发现、订阅配置全部准备完毕，正式激活连接状态
+      isBleConnected.value = true;
 
       // 仅在有活跃页面需要轮询时才启动后台查询定时器
       if (isPollingActive.value) {

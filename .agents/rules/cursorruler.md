@@ -25,6 +25,9 @@ trigger: always_on
    - **图片路径**：SCSS/CSS 的 `background-image` 禁止使用本地相对路径，必须使用 Base64 或网络 URL，或用 `<image>` 标签替代。
    - **分包管理**：单包限 2MB。非主包首屏引用的页面/组件必须放入分包（`subPackages`）。
    - **原生层级**：`video`、`canvas` 等原生组件层级最高，其上覆盖自定义内容必须使用 `cover-view` 和 `cover-image`。
+   - **动态组件限制**：微信小程序端不支持 `<component :is="...">`。编译器遇到此标签会直接报错中断构建。在页面容器中，**必须**使用条件编译进行分流（`#ifdef MP-WEIXIN`），静态导入组件并通过 `v-if` / `v-else-if` 进行渲染。
+   - **UnoCSS 小程序编译转义机制**：微信小程序的 WXSS 样式编译器完全不支持带有转义反斜杠（`\`）的类名选择器。项目已引入 `unocss-preset-weapp` 依赖与 `transformerClass` 转换器，在小程序打包编译时会自动将模板及 CSS 样式中的特殊符号（如中括号 `[`、`]`、小数点 `.`、斜杠 `/`、冒号 `:` 等）安全转译为普通合法字符类名（如将 `wot-p-2.5` 转译为 `wot-p-2_5`）。开发时必须确保 `uno.config.js` 中的 `transformerClass` 处于激活状态。
+   - **高危类名防御**：尽管有自动转换器，但为了防止转换漏网或部分边缘情况（如动态字符串拼接类名），依然建议尽量避免在模板中书写极其怪异的任意值类名。对于复杂的颜色透明度，应优先通过 `:style` 绑定 RGBA 颜色或局部 scoped 样式，以确保渲染的绝对稳定性。
 3. **App 限制**：顶部安全留白使用 `var(--status-bar-height)`，底部使用 `safe-area-inset-bottom`；输入框防遮挡优先用 `<wd-input>`。
 4. **设备信息与鸿蒙自适应**：
    - **单点抓取**：设备信息抓取**仅允许在 `App.vue` 的 `onLaunch`** 中通过 `uni.getDeviceInfo()` 获取并写入 Pinia `appStore`，严禁在页面零散高频调用。
@@ -240,8 +243,9 @@ trigger: always_on
 
 **小程序兼容性红线（核心约束）：**
 
-- 禁止运行时动态 `import()` 加载组件，禁止使用组件的字符串名称绑定 `<component :is>`。
-- **必须在 `panel-registry.ts` 中静态 import 所有组件**，通过 `protocolType` 键值查找组件对象引用后，将对象引用传给 `<component :is>`。
+- 微信小程序端完全不支持 `<component :is>` 动态组件编译。编译器解析到此标签会直接报错中断构建。
+- 在需要支持小程序的页面容器中，**必须**使用条件编译（`#ifdef MP-WEIXIN`）来通过 `v-if` / `v-else-if` 分流并显式渲染静态导入的子面板组件（如实时数据页、参数配置页、控制指令页等）。
+- 动态组件 `:is` 对象绑定（由 `panel-registry.ts` 返回组件对象引用）的动态渲染设计仅允许在非小程序端（如 App、H5）作为 `#ifndef MP-WEIXIN` 分支执行。
 
 **页面使用姿势：**
 
@@ -252,14 +256,25 @@ import { storeToRefs } from "pinia";
 import { useBleStore } from "@/stores/ble-store";
 import { resolveHomePanel } from "@/components/protocol-panels/panel-registry";
 
+// 静态导入默认面板以兼容微信小程序条件编译
+import DefaultHomePanel from "./components/default.vue";
+
 const { activeProtocolParser } = storeToRefs(useBleStore());
-// 获取组件对象引用，以支持小程序端动态渲染
+const currentProtocolType = computed(() => activeProtocolParser.value?.protocolType || "default");
+
+// 非小程序端自适应解析组件对象引用
 const homePanelComponent = computed(() => resolveHomePanel(activeProtocolParser.value?.protocolType));
 </script>
 
 <template>
+  <!-- #ifdef MP-WEIXIN -->
+  <default-home-panel v-if="currentProtocolType === 'default'" />
+  <!-- #endif -->
+  
+  <!-- #ifndef MP-WEIXIN -->
   <component :is="homePanelComponent" v-if="homePanelComponent" />
   <default-home-panel v-else />
+  <!-- #endif -->
 </template>
 ```
 

@@ -1,4 +1,6 @@
-import { defineConfig, presetUno } from 'unocss'
+import { defineConfig } from 'unocss'
+import presetWeapp from 'unocss-preset-weapp'
+import { transformerClass } from 'unocss-preset-weapp/transformer'
 import { presetWot } from '@wot-ui/unocss-preset'
 import presetIcons from '@unocss/preset-icons'
 
@@ -8,8 +10,9 @@ import riIcons from '@iconify-json/ri/icons.json'
 
 export default defineConfig({
   presets: [
-    presetUno({
+    presetWeapp({
       prefix: 'wot-',
+      platform: 'uniapp',
     }),
     presetWot({
       prefix: 'wot',
@@ -28,5 +31,8 @@ export default defineConfig({
         'vertical-align': 'middle',
       },
     }),
+  ],
+  transformers: [
+    transformerClass(),
   ],
 })

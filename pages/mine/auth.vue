@@ -251,8 +251,9 @@ const openSystemSettings = () => {
   // #ifdef APP-PLUS
   try {
     const systemInfo = uni.getSystemInfoSync();
+    const osName = (systemInfo.osName || "").toLowerCase();
     const platform = (systemInfo.platform || "").toLowerCase();
-    if (platform === "android") {
+    if (platform === "android" || osName === "harmonyos" || platform === "harmonyos") {
       const main = plus.android.runtimeMainActivity();
       const Intent = plus.android.importClass("android.content.Intent");
       const Settings = plus.android.importClass("android.provider.Settings");

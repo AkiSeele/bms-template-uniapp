@@ -153,21 +153,21 @@
             </template>
           </wd-cell>
 
-          <!-- 当前应用的版本信息单元格，点击可主动负责检测升级 -->
-          <!-- Source: uni_modules/wot-ui/components/wd-cell/wd-cell.vue -->
-          <wd-cell :title="$t('bms.mine.appVersion')" :value="appVersionDisplay" is-link @click="checkUpdate">
-            <template #prefix>
-              <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-              <wd-icon css-icon="i-lucide-info" size="20px" class="wot-mr-2" color="#858585" />
-            </template>
-          </wd-cell>
-
           <!-- 固件升级入口单元格：跳转至固件写入页面 -->
           <!-- Source: uni_modules/wot-ui/components/wd-cell/wd-cell.vue -->
           <wd-cell :title="$t('bms.firmware.title')" is-link @click="navigateToFirmwareUpdate">
             <template #prefix>
               <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
               <wd-icon css-icon="i-lucide-cpu" size="20px" class="wot-mr-2" color="#858585" />
+            </template>
+          </wd-cell>
+
+          <!-- 当前应用的版本信息单元格，点击可主动负责检测升级 -->
+          <!-- Source: uni_modules/wot-ui/components/wd-cell/wd-cell.vue -->
+          <wd-cell :title="$t('bms.mine.appVersion')" :value="appVersionDisplay" is-link @click="checkUpdate">
+            <template #prefix>
+              <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
+              <wd-icon css-icon="i-lucide-info" size="20px" class="wot-mr-2" color="#858585" />
             </template>
           </wd-cell>
 
@@ -202,11 +202,6 @@
       :z-index="150"
       @select="handleLanguageSelect"
     />
-
-    <!-- 显式挂载 toast 实例，防止 useToast() 弹窗失效 -->
-    <wd-toast />
-    <!-- Source: uni_modules/wot-ui/components/wd-dialog/wd-dialog.vue -->
-    <wd-dialog />
   </view>
 </template>
 
@@ -442,29 +437,32 @@ watch(passwordPromptTrigger, (newVal) => {
 
 // 显示输入 6 位密码的弹窗
 const showPasswordPrompt = () => {
-  dialog.prompt({
-    title: t("bms.logs.inputPasswordTitle"),
-    inputValue: "",
-    inputProps: {
-      type: "text",
-      showPassword: true,
-      maxlength: 6,
-      placeholder: t("bms.logs.inputPasswordPlaceholder"),
-    },
-    beforeConfirm: (value: string | number) => {
-      if (String(value) === APP_CONFIG.DEBUG_CONFIG.PASSWORD) {
-        return true;
-      } else {
-        toast.error(t("bms.logs.passwordError"));
-        return false;
-      }
-    }
-  }).then(() => {
-    logStore.unlockSystemLogs();
-    toast.success(t("bms.logs.unlocked"));
-  }).catch(() => {
-    // 用户取消
-  });
+  dialog
+    .prompt({
+      title: t("bms.logs.inputPasswordTitle"),
+      inputValue: "",
+      inputProps: {
+        type: "text",
+        showPassword: true,
+        maxlength: 6,
+        placeholder: t("bms.logs.inputPasswordPlaceholder"),
+      },
+      beforeConfirm: (value: string | number) => {
+        if (String(value) === APP_CONFIG.DEBUG_CONFIG.PASSWORD) {
+          return true;
+        } else {
+          toast.error(t("bms.logs.passwordError"));
+          return false;
+        }
+      },
+    })
+    .then(() => {
+      logStore.unlockSystemLogs();
+      toast.success(t("bms.logs.unlocked"));
+    })
+    .catch(() => {
+      // 用户取消
+    });
 };
 
 /**

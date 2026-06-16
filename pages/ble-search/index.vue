@@ -13,11 +13,10 @@
       :use-local-list="true"
       :refresher-enabled="true"
       :refresher-only="true"
-      class="wot-min-h-0 wot-bg-[#f6f8fc]"
+      class="wot-min-h-0 wot-bg-filled-bottom"
     >
       <!-- 将自定义顶部导航栏放在 z-paging 内部的 slot="top" 内，让组件自动精确计算高度，防止白边及首项遮挡 -->
       <template #top>
-        <!-- Source: uni_modules/wot-ui/components/wd-navbar/wd-navbar.vue -->
         <wd-navbar :title="$t('bms.ble.searchTitle')" left-arrow safe-area-inset-top @click-left="goBack" />
 
         <!-- Google 风格的水平流光进度条：展现现代无边框加载的流场感 -->
@@ -26,18 +25,17 @@
         </view>
 
         <!-- 搜索控制台：手写极其轻量精致的 Google Material 圆角输入框，无任何多余嵌套 -->
-        <view class="search-box-wrapper wot-px-4 wot-py-3 wot-bg-[#f6f8fc]">
+        <view class="search-box-wrapper wot-px-4 wot-py-3 wot-bg-filled-bottom">
           <view
-            class="google-search-box wot-flex wot-items-center wot-bg-white wot-rounded-full wot-px-4 wot-border wot-border-solid wot-border-[#e0e3eb]"
+            class="google-search-box wot-flex wot-items-center wot-bg-filled-oppo wot-rounded-full wot-px-4 wot-border wot-border-solid wot-border-border-main"
           >
-            <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-            <wd-icon css-icon="i-ri-search-line" size="18px" color="#5f6368" class="wot-mr-2" />
+            <wd-icon css-icon="i-ri-search-line" size="18px" color="var(--wot-icon-secondary)" class="wot-mr-2" />
             <input
               v-model="searchQuery"
               type="text"
               :placeholder="$t('bms.ble.searchPlaceholder')"
               placeholder-class="search-placeholder"
-              class="search-input wot-flex-1 wot-text-sm wot-text-[#202124]"
+              class="search-input wot-flex-1 wot-text-sm wot-text-text-main"
             />
             <!-- 文本清空按钮 -->
             <view
@@ -45,8 +43,7 @@
               class="clear-btn wot-flex wot-items-center wot-justify-center wot-p-1"
               @click="clearSearch"
             >
-              <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-              <wd-icon css-icon="i-ri-close-circle-fill" size="16px" color="#80868b" />
+              <wd-icon css-icon="i-ri-close-circle-fill" size="16px" color="var(--wot-icon-secondary)" />
             </view>
           </view>
         </view>
@@ -58,82 +55,71 @@
           v-for="device in deviceList"
           :key="device.deviceId"
           @click="handleConnect(device)"
-          class="device-card wot-bg-white wot-rounded-xl wot-px-3 wot-py-2.5 wot-mb-2 wot-flex wot-items-center wot-justify-between wot-border wot-border-solid wot-border-[#e0e3eb] active:wot-bg-[#f1f3f4]"
+          class="device-card wot-bg-filled-oppo wot-rounded-xl wot-px-3 wot-py-2.5 wot-mb-2 wot-flex wot-items-center wot-justify-between wot-border wot-border-solid wot-border-border-main active:wot-bg-filled-content"
         >
-          <!-- 左侧设备信息：min-w-0 flex-1 以保障内部 wot-truncate 省略截断正常生效，flex-shrink-0 保护左侧图标 -->
+          <!-- Left side device info -->
           <view class="wot-flex wot-items-center wot-gap-3 wot-min-w-0 wot-flex-1">
-            <!-- 蓝牙图标圆形外包围，防止被长名称挤变形 -->
+            <!-- Bluetooth icon circle -->
             <view
-              class="icon-circle wot-flex wot-items-center wot-justify-center wot-bg-[#e8f0fe] wot-rounded-full wot-flex-shrink-0"
+              class="icon-circle wot-flex wot-items-center wot-justify-center wot-bg-primary-1 wot-rounded-full wot-flex-shrink-0"
             >
-              <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-              <wd-icon css-icon="i-ri-bluetooth-fill" size="18px" color="#1a73e8" />
+              <wd-icon css-icon="i-ri-bluetooth-fill" size="18px" color="var(--wot-primary-color)" />
             </view>
-            <!-- 名称与 MAC 容器：通过 flex-1 与 min-w-0 让剩余空间自适应分配 -->
+            <!-- Name & MAC container -->
             <view class="wot-flex wot-flex-col wot-min-w-0 wot-flex-1">
-              <!-- 设备名称：加上 wot-truncate 确保文字超长时自动截断为省略号 -->
-              <text class="wot-text-sm wot-font-bold wot-text-[#202124] wot-truncate">
+              <text class="wot-text-sm wot-font-bold wot-text-text-main wot-truncate">
                 {{ device.name || device.localName || "Unknown Device" }}
               </text>
-              <!-- 物理 MAC 地址展示，加上 wot-truncate 确保超长自动截断 -->
-              <text class="wot-text-xs wot-text-[#5f6368] wot-mt-0.5 wot-truncate">
+              <text class="wot-text-xs wot-text-text-secondary wot-mt-0.5 wot-truncate">
                 {{ device.macAddress || "" }}
               </text>
             </view>
           </view>
 
-          <!-- 右侧状态：flex-shrink-0 保护右侧信号不被左侧超长文本挤压 -->
+          <!-- Right side status -->
           <view class="wot-flex wot-items-center wot-gap-3 wot-flex-shrink-0 wot-ml-2">
-            <!-- 信号强度与数值 -->
+            <!-- Signal strength -->
             <view class="wot-flex wot-items-center wot-gap-1">
-              <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
               <wd-icon :css-icon="getSignalIcon(device.RSSI)" size="16px" :color="getSignalColor(device.RSSI)" />
-              <text class="wot-text-xs wot-font-medium wot-text-[#5f6368]">{{ device.RSSI }} dBm</text>
+              <text class="wot-text-xs wot-font-medium wot-text-text-secondary">{{ device.RSSI }} dBm</text>
             </view>
 
-            <!-- 连接指示箭头 -->
-            <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-            <wd-icon css-icon="i-ri-arrow-right-s-line" size="18px" color="#9aa0a6" />
+            <!-- Arrow icon -->
+            <wd-icon css-icon="i-ri-arrow-right-s-line" size="18px" color="var(--wot-icon-secondary)" />
           </view>
         </view>
       </view>
 
-      <!-- 空列表缺省图插槽：当未搜寻到设备时，若在扫描中则展示 Google 同心圆雷达，否则展示静态缺省 -->
+      <!-- Empty state -->
       <template #empty>
         <view class="wot-flex wot-flex-col wot-items-center wot-justify-center wot-py-12 wot-px-6 wot-mt-10">
-          <!-- 雷达波纹同心圆扩散动画区域 -->
+          <!-- Radar animation -->
           <view class="radar-container wot-mb-8" v-if="isScanning">
             <view class="radar-ripple ripple-1"></view>
             <view class="radar-ripple ripple-2"></view>
             <view class="radar-ripple ripple-3"></view>
-            <view class="radar-center wot-flex wot-items-center wot-justify-center">
-              <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-              <wd-icon css-icon="i-ri-bluetooth-line" size="32px" color="#1a73e8" />
+            <view class="radar-center wot-bg-primary-1 wot-flex wot-items-center wot-justify-center">
+              <wd-icon css-icon="i-ri-bluetooth-line" size="32px" color="var(--wot-primary-color)" />
             </view>
           </view>
 
-          <!-- 静态蓝牙无设备插画 -->
+          <!-- Static empty view -->
           <view class="wot-flex wot-flex-col wot-items-center" v-else>
-            <view class="empty-icon-wrapper wot-bg-[#f1f3f4] wot-rounded-full wot-p-4 wot-mb-4">
-              <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-              <wd-icon css-icon="i-ri-bluetooth-line" size="48px" color="#5f6368" />
+            <view class="empty-icon-wrapper wot-bg-filled-content wot-rounded-full wot-p-4 wot-mb-4">
+              <wd-icon css-icon="i-ri-bluetooth-line" size="48px" color="var(--wot-icon-secondary)" />
             </view>
           </view>
 
-          <text class="wot-text-base wot-font-medium wot-text-[#202124] wot-mt-2">
+          <text class="wot-text-base wot-font-medium wot-text-text-main wot-mt-2">
             {{ isScanning ? $t("bms.ble.scanning") : $t("bms.ble.searchEmpty") }}
           </text>
-          <text class="wot-text-xs wot-text-[#5f6368] wot-mt-1 wot-text-center wot-max-w-xs" v-if="isScanning">
+          <text class="wot-text-xs wot-text-text-secondary wot-mt-1 wot-text-center wot-max-w-xs" v-if="isScanning">
             {{ $t("bms.ble.promptConnect") }}
           </text>
         </view>
       </template>
     </z-paging>
 
-    <!-- Source: uni_modules/wot-ui/components/wd-toast/wd-toast.vue -->
-    <wd-toast />
-    <!-- Source: uni_modules/wot-ui/components/wd-dialog/wd-dialog.vue -->
-    <wd-dialog />
   </layout-provider>
 </template>
 
@@ -156,8 +142,6 @@ const { t } = useI18n();
 
 // 初始化 wot-ui 反馈 Toast
 const toast = useToast();
-
-
 
 // 初始化 Pinia 全局蓝牙状态仓
 const bleStore = useBleStore();
@@ -249,7 +233,7 @@ const goBack = async () => {
 
 /**
  * 封装停止扫描的流程，防止内存泄漏以及接口调用冲突
- * 注意：此处绝不能调用无参 paging.complete() 导致渲染列表被静默清空
+ * 注意：此处决不能调用无参 paging.complete() 导致渲染列表被静默清空
  */
 const stopScanProcess = async () => {
   if (scanTimer) {
@@ -393,7 +377,6 @@ const handleConnect = async (device: any) => {
     }, 1200);
   } catch (err: any) {
     console.error("[连接] 蓝牙连接流程异常:", err);
-    // 异常流程由全局 layout-provider 自动捕获提示，页面层在此不做任何多余的局部拦截处理
   }
 };
 
@@ -401,6 +384,7 @@ const handleConnect = async (device: any) => {
 let animContext: any = null;
 
 onMounted(() => {
+  // #ifdef H5
   // 页面首次挂载时，利用 GSAP 实现顶栏和搜索控制台的弹性入场动画
   animContext = gsap.context(() => {
     // 搜索控制台由上方滑入并微调透明度
@@ -419,13 +403,16 @@ onMounted(() => {
       ease: "back.out(1.5)",
     });
   });
+  // #endif
 });
 
 // 页面卸载时，强制清理长扫描进程，防止内存泄漏
 onUnload(() => {
   stopScanProcess();
+  // #ifdef H5
   // 释放 GSAP 动画上下文追踪的所有动画资源，避免 detached 节点内存泄漏
   animContext?.revert();
+  // #endif
 });
 
 /**
@@ -542,7 +529,6 @@ onShow(async () => {
   z-index: 10;
   width: 64px;
   height: 64px;
-  background-color: #e8f0fe;
   border-radius: 50%;
   box-shadow: 0 4px 12px rgba(26, 115, 232, 0.15);
 }
@@ -611,7 +597,7 @@ onShow(async () => {
   background-color: #fce8e6;
 }
 
-/* 列表项加入的平滑渐显飞入动画，100% 避免小程序及 APP 端 shadow-DOM 布局破坏缺陷 */
+/* 列表项加入的平滑渐显飞入动画 */
 .device-card {
   animation: cardFadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }

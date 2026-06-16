@@ -188,8 +188,6 @@
       </view>
     </view>
     
-    <wd-toast />
-    <wd-dialog />
   </layout-provider>
 </template>
 
