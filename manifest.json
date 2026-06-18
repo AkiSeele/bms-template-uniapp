@@ -1,5 +1,5 @@
 {
-    "name" : "BMS模版",
+    "name" : "%bms.title%",
     "appid" : "__UNI__F1BFD71",
     "description" : "",
     "versionName" : "1.0.0",
@@ -143,7 +143,10 @@
         "usingComponents" : true
     },
     "mp-toutiao" : {
-        "usingComponents" : true
+        "usingComponents" : true,
+        "setting" : {
+            "es6" : true
+        }
     },
     "uniStatistics" : {
         "enable" : false

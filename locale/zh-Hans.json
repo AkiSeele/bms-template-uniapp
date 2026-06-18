@@ -1,6 +1,6 @@
 {
   "bms": {
-    "title": "BMS 电池管理",
+    "title": "BMS调试工具",
     "ble": {
       "autoConnecting": "自动搜索中...",
       "autoConnectTimeout": "自动连接超时",

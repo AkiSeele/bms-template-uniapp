@@ -114,6 +114,17 @@
       </view>
     </view>
 
+    <!-- 独立的抽屉顶部阴影层：使用纯 opacity 变化，结合 transform 随抽屉移动。
+         在拖拽和动画过程中只触发 GPU 合成（Composite），不引发 Layout 重排，保障低端机极致流畅 -->
+    <view
+      class="drawer-shadow-layer"
+      :style="{
+        transform: 'translate3d(0, ' + drawerY + 'px, 0)',
+        opacity: shadowOpacity,
+        borderRadius: borderRadiusStyle
+      }"
+    />
+
     <!-- 3. 上层拖拽覆盖卡片：绑定触控手势与动态 GSAP 平移样式 -->
     <!-- .prevent 修饰符使 Vue 将此 touchmove 监听器注册为 { passive: false }，确保在激活拖拽时合法调用 preventDefault 阻止底层弹性滚动，消除 passive listener 警告 -->
     <view
@@ -123,8 +134,8 @@
       @touchmove.prevent="onTouchMove"
       @touchend="onTouchEnd"
     >
-      <!-- 抽屉顶部拉手指示条 -->
-      <view class="drawer-handle wot-flex wot-justify-center wot-items-center wot-pt-3.5 wot-pb-2">
+      <!-- 抽屉顶部拉手指示条：保持静态常驻，避免吸顶隐藏导致内容高度发生突变 -->
+      <view class="drawer-handle wot-flex wot-justify-center wot-items-center">
         <view class="wot-w-10 wot-h-1 wot-bg-gray-300 wot-opacity-60 wot-rounded-full"></view>
       </view>
 
@@ -137,7 +148,6 @@
         :enhanced="true"
         @scroll="onInnerScroll"
         @scrolltoupper="onScrollToUpper"
-        :style="{ height: 'calc(100vh - ' + navbarHeight + 'px - 28px)' }"
       >
         <view class="wot-px-4 wot-pb-24">
           <!-- 4 个核心参数 Google MD3 规格卡片网格 -->
@@ -182,7 +192,7 @@
                 {{ $t("bms.params.cycleCount") }}
               </text>
               <text class="metric-value wot-text-text-main wot-font-extrabold wot-text-center wot-mt-1">
-                {{ isConnected ? (extendedProtocolData?.cycleCount ?? 0) : "--" }}
+                {{ cycleCountDisplay }}
               </text>
             </view>
 
@@ -472,18 +482,35 @@ const navbarHeight = computed(() => {
 // 是否处于吸顶最大化状态
 const isMaximized = ref(false);
 
-// 动态根据抽屉高度计算圆角大小，在最顶部（navbarHeight）到上方24px区间内平滑过渡，免去 class transition 的重排卡顿，提高滑动性能
+// 动态根据抽屉高度计算圆角大小（冷冻圆角策略）：
+// 在绝大部分的滑行/拖拽行程中恒定为 24px 以便 GPU 进行图层缓存。
+// 仅在接近最顶部的最后 20px 临界范围内，圆角才做平滑缩回 0px。
 const borderRadiusStyle = computed(() => {
   const minY = navbarHeight.value;
-  if (drawerY.value <= minY) {
+  if (drawerY.value <= minY + 2) {
     return "0px 0px 0 0";
   }
-  if (drawerY.value >= minY + 24) {
+  if (drawerY.value >= minY + 20) {
     return "24px 24px 0 0";
   }
-  const r = Math.max(0, drawerY.value - minY);
+  // 在最后 18px 范围内做线性缩放
+  const r = Math.max(0, ((drawerY.value - (minY + 2)) / 18) * 24);
   return `${r}px ${r}px 0 0`;
 });
+
+// 动态计算 GPU 阴影图层透明度，在抽屉接近顶部的 80px 范围内进行平滑插值，完全吸顶时为 0
+const shadowOpacity = computed(() => {
+  const minY = navbarHeight.value;
+  if (drawerY.value <= minY) {
+    return 0;
+  }
+  if (drawerY.value >= minY + 80) {
+    return 1;
+  }
+  return (drawerY.value - minY) / 80;
+});
+
+// 拉手指示条保持常驻静态以提升视觉自然度与零重排性能
 
 // 内部列表是否允许滚动（只有吸顶时才开启，完美防冲突）
 const isScrollEnabled = ref(false);
@@ -508,39 +535,56 @@ const navbarStyle = computed(() => {
   if (drawerY.value < minDrawerY + 80) {
     const ratio = Math.max(0, Math.min(1, (drawerY.value - minDrawerY) / 80));
     const opacity = 1 - ratio;
+    
+    // 阴影透明度随吸顶进度平滑渐变，吸顶时完全浮现，退出吸顶时平滑淡出，消除突变感
+    const shadowAlpha = isDark ? 0.25 * opacity : 0.05 * opacity;
+    const shadow = `box-shadow: 0 4px 20px rgba(0, 0, 0, ${shadowAlpha.toFixed(3)}) !important;`;
+
     if (isDark) {
-      return `background-color: rgba(18, 18, 18, ${opacity}) !important; border-bottom: none !important; box-shadow: none !important;`;
+      return `background-color: rgba(18, 18, 18, ${opacity}) !important; border-bottom: none !important; ${shadow}`;
     } else {
-      return `background-color: rgba(246, 248, 252, ${opacity}) !important; border-bottom: none !important; box-shadow: none !important;`;
+      return `background-color: rgba(246, 248, 252, ${opacity}) !important; border-bottom: none !important; ${shadow}`;
     }
   }
   
   return "background-color: transparent !important; border-bottom: none !important; box-shadow: none !important;";
 });
 
-// 动态计算导航栏内容颜色，滑至上方时自动反色以保证阅读对比度
+// 动态计算导航栏内容颜色，滑至上方时自动反色以保证阅读对比度（RGB 插值渐变以防突切掉帧）
 const navbarContentColor = computed(() => {
   const isDark = actualTheme.value === "dark";
   if (isDark) {
     return "#ffffff";
   }
   const minDrawerY = navbarHeight.value;
-  return drawerY.value < minDrawerY + 60 ? "#1d1f29" : "#ffffff";
+  if (drawerY.value >= minDrawerY + 80) {
+    return "#ffffff";
+  }
+  if (drawerY.value <= minDrawerY) {
+    return "#1d1f29"; // 完全吸顶时使用黑灰色
+  }
+  // 在最后 80px 的范围内平滑插值过渡
+  // 从白色 rgb(255, 255, 255) 渐变到黑灰色 rgb(29, 31, 41)
+  const ratio = (drawerY.value - minDrawerY) / 80; // 0 ~ 1
+  const r = Math.round(29 + (255 - 29) * ratio);
+  const g = Math.round(31 + (255 - 31) * ratio);
+  const b = Math.round(41 + (255 - 41) * ratio);
+  return `rgb(${r}, ${g}, ${b})`;
 });
 
-// 监听导航栏前景色变化，联动更新系统状态栏图标与文字的颜色 (黑/白字)
+// 监听吸顶状态变化，在吸顶成功瞬间才联动更新系统状态栏图标与文字的颜色，防御拖拽期间的高频原生 API 调用卡顿
 watch(
-  navbarContentColor,
-  (newColor) => {
-    const textStyle = newColor === "#ffffff" ? "white" : "black";
+  isMaximized,
+  (maximized) => {
     // #ifdef MP-WEIXIN || APP-PLUS
     uni.setNavigationBarColor({
-      frontColor: textStyle === "white" ? "#ffffff" : "#000000",
+      frontColor: maximized ? "#000000" : "#ffffff",
       backgroundColor: "#000000",
+      // uni.d.ts 对 animation.type 的字面量类型声明与运行期实际支持的值存在偏差，强制使用 as any 兜底
       animation: {
         duration: 200,
         type: "linear",
-      },
+      } as any,
     });
     // #endif
   },
@@ -682,6 +726,11 @@ const statusLabelText = computed(() => {
     return t("bms.battery.discharging");
   }
   return t("bms.protect.normal");
+});
+
+// 动态处理循环次数显示描述，收拢多重三目表达式于计算属性中以符合模板极简规范
+const cycleCountDisplay = computed(() => {
+  return isConnected.value ? String(extendedProtocolData.value?.cycleCount ?? 0) : "--";
 });
 
 // 动态处理容量显示描述
@@ -891,7 +940,8 @@ onMounted(() => {
 /* 抽屉内部局部滚动容器 */
 .drawer-scroll-view {
   width: 100%;
-  height: 100%;
+  flex: 1;
+  height: 0; /* 激活 Flex 子容器自动高度伸缩，省去 calc() 计算属性 */
   box-sizing: border-box;
   /* 在父容器 touch-action: none 的基础上单独开放纵向拖拽权限，使内部列表可以正常上下滚动 */
   touch-action: pan-y;
@@ -968,7 +1018,22 @@ onMounted(() => {
   background-color: rgba(255, 255, 255, 0.18);
 }
 
-/* 上层绝对定位拖拽抽屉容器 */
+/* 独立的抽屉顶部阴影层，使用 GPU 高效加速的 transform 和 opacity 驱动，防止拖拽重排卡顿 */
+.drawer-shadow-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 100vh; /* 长度保持一致，让投影从下方顺利向上溢出投射 */
+  pointer-events: none; /* 穿透触摸，防止阻断抽屉上的拖拽事件 */
+  z-index: 9; /* 刚好夹在背景仪表盘层之上，抽屉内容层之下 */
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.15);
+  background-color: transparent;
+  will-change: transform, opacity;
+  box-sizing: border-box;
+}
+
+/* 上层绝对定位拖拽抽屉容器：使用 Flexbox 布局实现内部 scroll-view 自动撑满剩余空间 */
 .page-bottom-content {
   background-color: #f6f8fc;
   position: absolute;
@@ -978,10 +1043,23 @@ onMounted(() => {
   bottom: -300px; /* 增加底部冗余至 -300px，确保在任何极限回弹或下拉情况下，下方都绝对不穿帮 */
   z-index: 10;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
   /* 初始物理加速渲染硬件通道，防止频繁绘制产生的抖动 */
   will-change: transform;
-  /* 增加向上投影，让覆盖层级更有立体质感 */
-  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.12);
+  /* 彻底移除主容器自身的 box-shadow，依靠 GPU 加速的 drawer-shadow-layer 减少重排开销 */
+}
+
+/* 拉手指示条固定尺寸和 padding，在非吸顶时稳定占位，避免动画过程中由于修改 height/margin 触发重排 */
+.drawer-handle {
+  width: 100%;
+  height: 4px;
+  padding: 14px 0 8px; /* 相当于 pt-3.5 = 14px, pb-2 = 8px */
+  box-sizing: content-box; /* content-box 确保 padding 不挤压 height，维持 26px 的固定物理高度占位 */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  will-change: transform, opacity;
 }
 
 /* MD3 看板和核心参数卡片 */
