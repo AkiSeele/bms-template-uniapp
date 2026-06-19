@@ -273,7 +273,10 @@
       "successColor": "Success State Color",
       "themeColor": "Theme Primary",
       "title": "Theme Config",
-      "warningColor": "Warning State Color"
+      "warningColor": "Warning State Color",
+      "homeStyle": "Home Layout Style",
+      "drawerMode": "Drawer Gesture Mode",
+      "scrollMode": "Overall Scroll Mode"
     },
     "scan": {
       "noQrCodeFound": "No QR code found",

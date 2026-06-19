@@ -1,6 +1,7 @@
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
 import { i18n } from "@/locale/i18n";
+import { APP_CONFIG } from "@/config";
 
 // 全局设备基础信息实体类型定义
 export interface AppDeviceInfo {
@@ -18,9 +19,7 @@ export interface AppDeviceInfo {
 export const useAppStore = defineStore("app", () => {
   // 应用级别的全局语言配置状态，初始化时优先从本地缓存读取，无缓存则自适应系统语言（从 i18n 实例获取）
   const locale = ref<"zh-Hans" | "zh-Hant" | "en">(
-    (uni.getStorageSync("app_locale") as any) ||
-      (i18n.global.locale as any).value ||
-      "zh-Hans",
+    (uni.getStorageSync("app_locale") as any) || (i18n.global.locale as any).value || "zh-Hans",
   );
 
   // 全局主题模式配置状态，支持亮色 (light)、暗色 (dark) 和跟随系统 (system)，默认 system
@@ -147,6 +146,16 @@ export const useAppStore = defineStore("app", () => {
     activeTab.value = tab;
   };
 
+  // 首页样式风格配置状态，支持 "drawer"（抽屉手势模式）和 "scroll"（整体滑动模式）
+  const homeStyle = ref<"drawer" | "scroll">(
+    (uni.getStorageSync("home_style") as any) || APP_CONFIG.HOME_STYLE || "drawer",
+  );
+
+  const setHomeStyle = (style: "drawer" | "scroll") => {
+    homeStyle.value = style;
+    uni.setStorageSync("home_style", style);
+  };
+
   return {
     locale,
     theme,
@@ -161,10 +170,12 @@ export const useAppStore = defineStore("app", () => {
     activeSuccessColor,
     activeDangerColor,
     activeTab,
+    homeStyle,
     setLocale,
     setTheme,
     setDeviceInfo,
     setProjectColors,
     setActiveTab,
+    setHomeStyle,
   };
 });

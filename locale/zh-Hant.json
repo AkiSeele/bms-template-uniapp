@@ -263,7 +263,10 @@
       "successColor": "成功狀態色",
       "themeColor": "主題主色",
       "title": "主題配置",
-      "warningColor": "警告狀態色"
+      "warningColor": "警告狀態色",
+      "homeStyle": "首頁樣式風格",
+      "drawerMode": "抽屜手勢模式",
+      "scrollMode": "整體滑動模式"
     },
     "scan": {
       "noQrCodeFound": "未發現二維碼",

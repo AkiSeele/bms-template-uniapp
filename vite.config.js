@@ -20,9 +20,9 @@ export default defineConfig(async () => {
     build: {
       target: "es2015",
     },
-    esbuild: {
+    /* esbuild: {
       target: "es2015",
-    },
+    }, */
     define: {
       // 消除 vue-i18n esm-bundler 警告，明确声明特性标志为布尔值以支持正确的 tree-shaking
       // __VUE_I18N_FULL_INSTALL__: true  启用完整安装（包含所有组件 and 指令）

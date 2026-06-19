@@ -2,11 +2,20 @@
   <layout-provider>
     <!-- 自定义顶部导航栏，固定在顶部并生成占位元素 -->
     <!-- Source: uni_modules/wot-ui/components/wd-navbar/wd-navbar.vue -->
-    <wd-navbar :title="$t('bms.settings.title')" fixed placeholder left-arrow safe-area-inset-top @click-left="goBack" />
+    <wd-navbar
+      :title="$t('bms.settings.title')"
+      fixed
+      placeholder
+      left-arrow
+      safe-area-inset-top
+      @click-left="goBack"
+    />
 
     <view class="wot-px-3 wot-py-4 wot-flex wot-flex-col wot-gap-4 page-body-animate">
       <!-- 全站视觉配色配置卡片 (主题色、警告色、成功色、危险色) -->
-      <view class="config-card wot-bg-filled-oppo wot-rounded-2xl wot-p-3.5 wot-border wot-border-solid wot-border-border-main wot-shadow-sm">
+      <view
+        class="config-card wot-bg-filled-oppo wot-rounded-2xl wot-p-3.5 wot-border wot-border-solid wot-border-border-main wot-shadow-sm"
+      >
         <view class="wot-flex wot-flex-col wot-mb-4">
           <text class="wot-text-sm wot-font-bold wot-text-text-main">{{ $t("bms.settings.colorConfig") }}</text>
         </view>
@@ -17,22 +26,37 @@
             <view class="wot-flex wot-items-center wot-justify-between">
               <text class="wot-text-xs wot-font-semibold wot-text-text-main">{{ $t("bms.settings.themeColor") }}</text>
               <!-- 实时色块预览 -->
-              <view class="color-preview wot-rounded-md" :style="{ backgroundColor: themeColor || (actualTheme === 'dark' ? '#0ea5e9' : '#0052d9') }"></view>
+              <view
+                class="color-preview wot-rounded-md"
+                :style="{ backgroundColor: themeColor || (actualTheme === 'dark' ? '#0ea5e9' : '#0052d9') }"
+              ></view>
             </view>
             <view class="wot-flex wot-items-center wot-bg-filled-main wot-rounded-lg wot-px-3 wot-py-1.5">
-              <input v-model="themeColor" :placeholder="actualTheme === 'dark' ? '#0ea5e9' : '#0052d9'" placeholder-class="settings-placeholder" class="settings-input wot-flex-1 wot-text-xs wot-text-text-main" />
-              <view v-if="themeColor" class="clear-btn wot-flex wot-items-center wot-justify-center wot-p-0.5" @click="themeColor = ''">
+              <input
+                v-model="themeColor"
+                :placeholder="actualTheme === 'dark' ? '#0ea5e9' : '#0052d9'"
+                placeholder-class="settings-placeholder"
+                class="settings-input wot-flex-1 wot-text-xs wot-text-text-main"
+              />
+              <view
+                v-if="themeColor"
+                class="clear-btn wot-flex wot-items-center wot-justify-center wot-p-0.5"
+                @click="themeColor = ''"
+              >
                 <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
                 <wd-icon css-icon="i-ri-close-fill" size="14px" color="#80868b" />
               </view>
             </view>
             <!-- 预设色块选项 -->
             <view class="presets-row wot-flex wot-items-center wot-gap-1.5 wot-flex-wrap wot-mt-0.5">
-              <view 
-                v-for="color in themePresets" 
-                :key="color" 
+              <view
+                v-for="color in themePresets"
+                :key="color"
                 class="preset-chip wot-rounded-full wot-flex wot-items-center wot-justify-center"
-                :style="{ backgroundColor: color, boxShadow: themeColor === color ? `0 0 0 1.5px #ffffff, 0 0 0 3px ${color}` : 'none' }"
+                :style="{
+                  backgroundColor: color,
+                  boxShadow: themeColor === color ? `0 0 0 1.5px #ffffff, 0 0 0 3px ${color}` : 'none',
+                }"
                 @click="themeColor = color"
               >
                 <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
@@ -44,24 +68,38 @@
           <!-- 2. 警告状态色配置项 -->
           <view class="color-item-wrapper wot-flex wot-flex-col wot-gap-1.5">
             <view class="wot-flex wot-items-center wot-justify-between">
-              <text class="wot-text-xs wot-font-semibold wot-text-text-main">{{ $t("bms.settings.warningColor") }}</text>
+              <text class="wot-text-xs wot-font-semibold wot-text-text-main">
+                {{ $t("bms.settings.warningColor") }}
+              </text>
               <!-- 实时色块预览 -->
               <view class="color-preview wot-rounded-md" :style="{ backgroundColor: warningColor || '#e37318' }"></view>
             </view>
             <view class="wot-flex wot-items-center wot-bg-filled-main wot-rounded-lg wot-px-3 wot-py-1.5">
-              <input v-model="warningColor" placeholder="#e37318" placeholder-class="settings-placeholder" class="settings-input wot-flex-1 wot-text-xs wot-text-text-main" />
-              <view v-if="warningColor" class="clear-btn wot-flex wot-items-center wot-justify-center wot-p-0.5" @click="warningColor = ''">
+              <input
+                v-model="warningColor"
+                placeholder="#e37318"
+                placeholder-class="settings-placeholder"
+                class="settings-input wot-flex-1 wot-text-xs wot-text-text-main"
+              />
+              <view
+                v-if="warningColor"
+                class="clear-btn wot-flex wot-items-center wot-justify-center wot-p-0.5"
+                @click="warningColor = ''"
+              >
                 <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
                 <wd-icon css-icon="i-ri-close-fill" size="14px" color="#80868b" />
               </view>
             </view>
             <!-- 预设色块选项 -->
             <view class="presets-row wot-flex wot-items-center wot-gap-1.5 wot-flex-wrap wot-mt-0.5">
-              <view 
-                v-for="color in warningPresets" 
-                :key="color" 
+              <view
+                v-for="color in warningPresets"
+                :key="color"
                 class="preset-chip wot-rounded-full wot-flex wot-items-center wot-justify-center"
-                :style="{ backgroundColor: color, boxShadow: warningColor === color ? `0 0 0 1.5px #ffffff, 0 0 0 3px ${color}` : 'none' }"
+                :style="{
+                  backgroundColor: color,
+                  boxShadow: warningColor === color ? `0 0 0 1.5px #ffffff, 0 0 0 3px ${color}` : 'none',
+                }"
                 @click="warningColor = color"
               >
                 <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
@@ -73,24 +111,38 @@
           <!-- 3. 成功状态色配置项 -->
           <view class="color-item-wrapper wot-flex wot-flex-col wot-gap-1.5">
             <view class="wot-flex wot-items-center wot-justify-between">
-              <text class="wot-text-xs wot-font-semibold wot-text-text-main">{{ $t("bms.settings.successColor") }}</text>
+              <text class="wot-text-xs wot-font-semibold wot-text-text-main">
+                {{ $t("bms.settings.successColor") }}
+              </text>
               <!-- 实时色块预览 -->
               <view class="color-preview wot-rounded-md" :style="{ backgroundColor: successColor || '#2ba471' }"></view>
             </view>
             <view class="wot-flex wot-items-center wot-bg-filled-main wot-rounded-lg wot-px-3 wot-py-1.5">
-              <input v-model="successColor" placeholder="#2ba471" placeholder-class="settings-placeholder" class="settings-input wot-flex-1 wot-text-xs wot-text-text-main" />
-              <view v-if="successColor" class="clear-btn wot-flex wot-items-center wot-justify-center wot-p-0.5" @click="successColor = ''">
+              <input
+                v-model="successColor"
+                placeholder="#2ba471"
+                placeholder-class="settings-placeholder"
+                class="settings-input wot-flex-1 wot-text-xs wot-text-text-main"
+              />
+              <view
+                v-if="successColor"
+                class="clear-btn wot-flex wot-items-center wot-justify-center wot-p-0.5"
+                @click="successColor = ''"
+              >
                 <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
                 <wd-icon css-icon="i-ri-close-fill" size="14px" color="#80868b" />
               </view>
             </view>
             <!-- 预设色块选项 -->
             <view class="presets-row wot-flex wot-items-center wot-gap-1.5 wot-flex-wrap wot-mt-0.5">
-              <view 
-                v-for="color in successPresets" 
-                :key="color" 
+              <view
+                v-for="color in successPresets"
+                :key="color"
                 class="preset-chip wot-rounded-full wot-flex wot-items-center wot-justify-center"
-                :style="{ backgroundColor: color, boxShadow: successColor === color ? `0 0 0 1.5px #ffffff, 0 0 0 3px ${color}` : 'none' }"
+                :style="{
+                  backgroundColor: color,
+                  boxShadow: successColor === color ? `0 0 0 1.5px #ffffff, 0 0 0 3px ${color}` : 'none',
+                }"
                 @click="successColor = color"
               >
                 <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
@@ -107,19 +159,31 @@
               <view class="color-preview wot-rounded-md" :style="{ backgroundColor: dangerColor || '#d54941' }"></view>
             </view>
             <view class="wot-flex wot-items-center wot-bg-filled-main wot-rounded-lg wot-px-3 wot-py-1.5">
-              <input v-model="dangerColor" placeholder="#d54941" placeholder-class="settings-placeholder" class="settings-input wot-flex-1 wot-text-xs wot-text-text-main" />
-              <view v-if="dangerColor" class="clear-btn wot-flex wot-items-center wot-justify-center wot-p-0.5" @click="dangerColor = ''">
+              <input
+                v-model="dangerColor"
+                placeholder="#d54941"
+                placeholder-class="settings-placeholder"
+                class="settings-input wot-flex-1 wot-text-xs wot-text-text-main"
+              />
+              <view
+                v-if="dangerColor"
+                class="clear-btn wot-flex wot-items-center wot-justify-center wot-p-0.5"
+                @click="dangerColor = ''"
+              >
                 <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
                 <wd-icon css-icon="i-ri-close-fill" size="14px" color="#80868b" />
               </view>
             </view>
             <!-- 预设色块选项 -->
             <view class="presets-row wot-flex wot-items-center wot-gap-1.5 wot-flex-wrap wot-mt-0.5">
-              <view 
-                v-for="color in dangerPresets" 
-                :key="color" 
+              <view
+                v-for="color in dangerPresets"
+                :key="color"
                 class="preset-chip wot-rounded-full wot-flex wot-items-center wot-justify-center"
-                :style="{ backgroundColor: color, boxShadow: dangerColor === color ? `0 0 0 1.5px #ffffff, 0 0 0 3px ${color}` : 'none' }"
+                :style="{
+                  backgroundColor: color,
+                  boxShadow: dangerColor === color ? `0 0 0 1.5px #ffffff, 0 0 0 3px ${color}` : 'none',
+                }"
                 @click="dangerColor = color"
               >
                 <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
@@ -128,6 +192,22 @@
             </view>
           </view>
         </view>
+      </view>
+
+      <!-- 首页布局风格配置卡片 -->
+      <view
+        class="config-card wot-bg-filled-oppo wot-rounded-2xl wot-p-3.5 wot-border wot-border-solid wot-border-border-main wot-shadow-sm"
+      >
+        <view class="wot-flex wot-flex-col wot-mb-4">
+          <text class="wot-text-sm wot-font-bold wot-text-text-main">{{ $t("bms.settings.homeStyle") }}</text>
+        </view>
+
+        <!-- Source: uni_modules/wot-ui/components/wd-radio-group/wd-radio-group.vue -->
+        <!-- Source: uni_modules/wot-ui/components/wd-radio/wd-radio.vue -->
+        <wd-radio-group v-model="homeStyle" inline :active-color="appStore.activeThemeColor">
+          <wd-radio value="drawer">{{ $t("bms.settings.drawerMode") }}</wd-radio>
+          <wd-radio value="scroll">{{ $t("bms.settings.scrollMode") }}</wd-radio>
+        </wd-radio-group>
       </view>
     </view>
   </layout-provider>
@@ -171,17 +251,21 @@ const goBack = () => {
 };
 
 // 监听各个自定义配色的状态变动，直接联动提交 appStore 实现无保存按钮式实时热重绘
-watch(
-  [themeColor, warningColor, successColor, dangerColor],
-  ([newTheme, newWarning, newSuccess, newDanger]) => {
-    appStore.setProjectColors({
-      themeColor: (newTheme || "").trim(),
-      warningColor: (newWarning || "").trim(),
-      successColor: (newSuccess || "").trim(),
-      dangerColor: (newDanger || "").trim(),
-    });
-  }
-);
+watch([themeColor, warningColor, successColor, dangerColor], ([newTheme, newWarning, newSuccess, newDanger]) => {
+  appStore.setProjectColors({
+    themeColor: (newTheme || "").trim(),
+    warningColor: (newWarning || "").trim(),
+    successColor: (newSuccess || "").trim(),
+    dangerColor: (newDanger || "").trim(),
+  });
+});
+
+// 首页样式配置双向绑定联动
+const homeStyle = ref(appStore.homeStyle);
+
+watch(homeStyle, (newStyle) => {
+  appStore.setHomeStyle(newStyle);
+});
 </script>
 
 <style scoped>
@@ -215,7 +299,9 @@ watch(
   width: 20px;
   height: 20px;
   cursor: pointer;
-  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease;
+  transition:
+    transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.25s ease;
 }
 .preset-chip:active {
   transform: scale(0.85);
