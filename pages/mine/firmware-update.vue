@@ -170,12 +170,6 @@
       </view>
     </view>
 
-    <!-- 显式挂载 toast 实例，useToast() 必须对应模板中的 wd-toast 实例 -->
-    <!-- Source: uni_modules/wot-ui/components/wd-toast/wd-toast.vue -->
-    <wd-toast />
-    <!-- 显式挂载 dialog 实例，useDialog() 必须对应模板中的 wd-dialog 实例 -->
-    <!-- Source: uni_modules/wot-ui/components/wd-dialog/wd-dialog.vue -->
-    <wd-dialog />
   </layout-provider>
 </template>
 
@@ -398,6 +392,7 @@ const handleSelectFile = () => {
         .confirm({
           title: t("bms.firmware.permTitle"),
           msg: t("bms.firmware.permMsg"),
+          zIndex: 2000,
         })
         .then(() => {
           fileSelectPlugin.gotoSetting();
@@ -543,6 +538,7 @@ const handleCancelOrReset = () => {
     .confirm({
       title: t("bms.common.prompt"),
       msg: t("bms.firmware.cancelConfirm"),
+      zIndex: 2000,
     })
     .then(() => {
       停止模拟写入();

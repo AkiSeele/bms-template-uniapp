@@ -1,8 +1,6 @@
-import { ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useToast } from "@/uni_modules/wot-ui";
 import { useBleStore } from "@/stores/ble-store";
-
 import { bleManager } from "@/service/ble-manager";
 import { permissionManager } from "@/service/permission";
 import { resolveDeviceMac } from "@/utils/bms-helper";
@@ -10,7 +8,7 @@ import { APP_CONFIG } from "@/config";
 
 /**
  * 视图交互服务：扫码一键连接蓝牙设备的业务控制组合式函数
- * 提供跨端自适应扫码与硬件扫描配对的流程管理，实现视图与物理通讯的彻底解耦与复用
+ * 统一使用 uni.scanCode 系统原生全屏扫码，兼容所有端（App / 微信小程序）
  */
 export function useScanConnect() {
   const toast = useToast();
@@ -38,77 +36,7 @@ export function useScanConnect() {
       return;
     }
 
-    // 获取设备信息与平台标识
-    let isHarmonyOS = false;
-    try {
-      const systemInfo = uni.getSystemInfoSync();
-      const platform = (systemInfo.platform || "").toLowerCase();
-      const osName = (systemInfo.osName || "").toLowerCase();
-      isHarmonyOS = platform === "harmonyos" || osName === "harmonyos";
-    } catch (e) {
-      console.error("[扫码连接] 获取设备系统信息异常:", e);
-    }
-
-    // App 原生端（Android / iOS / 鸿蒙 App）：
-    // 鸿蒙 Next 目前不支持 barcode nvue 专属组件，因此鸿蒙 App 端应降级使用 uni.scanCode；
-    // 安卓与 iOS App 正常使用 nvue 专属 barcode 扫码页进行跳转，且配有 navigateTo 失败后的降级兜底机制
-    // #ifdef APP-PLUS
-    if (isHarmonyOS) {
-      console.log("[扫码连接] 检测到鸿蒙系统，降级使用 uni.scanCode 进行全屏扫码");
-      uni.scanCode({
-        success: (res: any) => {
-          const codeResult = (res.result || "").trim();
-          if (!codeResult) {
-            toast.error(t("bms.ble.scanFailed"));
-            return;
-          }
-          console.log("[扫码连接] 鸿蒙 App 扫码成功，内容:", codeResult);
-          processScanResult(codeResult);
-        },
-        fail: (err: any) => {
-          console.warn("[扫码连接] 鸿蒙 App 扫码操作被取消或失败:", err);
-        },
-      });
-    } else {
-      console.log("[扫码连接] 安卓/iOS App 平台，跳转至 nvue 专属扫码页");
-      uni.navigateTo({
-        url: "/pages/scan/scan",
-        events: {
-          onScanResult: (data: { result: string }) => {
-            const codeResult = (data.result || "").trim();
-            if (!codeResult) {
-              toast.error(t("bms.ble.scanFailed"));
-              return;
-            }
-            console.log("[扫码连接] nvue barcode 页面扫码成功，内容:", codeResult);
-            // 延迟 350ms 等待页面返回动画彻底完成后，再激活连接弹窗，确保 toast/popup 正确挂载在主页上下文
-            setTimeout(() => {
-              processScanResult(codeResult);
-            }, 350);
-          },
-        },
-        fail: () => {
-          console.error("[扫码连接] 跳转至扫码页面失败，自动降级为系统 uni.scanCode");
-          uni.scanCode({
-            success: (res: any) => {
-              const codeResult = (res.result || "").trim();
-              if (codeResult) {
-                processScanResult(codeResult);
-              } else {
-                toast.error(t("bms.ble.scanFailed"));
-              }
-            },
-            fail: (err: any) => {
-              console.error("[扫码连接] 降级 uni.scanCode 同样失败:", err);
-            }
-          });
-        },
-      });
-    }
-    // #endif
-
-    // 微信小程序端及其他多端平台：保持直接调用原生系统全屏扫码 API，不进行页面跳转
-    // #ifndef APP-PLUS
+    // 统一调用系统原生全屏扫码，无需区分端差异
     uni.scanCode({
       success: (res: any) => {
         const codeResult = (res.result || "").trim();
@@ -116,14 +44,13 @@ export function useScanConnect() {
           toast.error(t("bms.ble.scanFailed"));
           return;
         }
-        console.log("[扫码连接] 多端/微信小程序 uni.scanCode 扫码成功，内容:", codeResult);
+        console.log("[扫码连接] 扫码成功，内容:", codeResult);
         processScanResult(codeResult);
       },
       fail: (err: any) => {
         console.warn("[扫码连接] 扫码操作被取消或失败:", err);
       },
     });
-    // #endif
   };
 
   /**
@@ -160,12 +87,12 @@ export function useScanConnect() {
         connectWithToast(formattedMac, "BMS Device", formattedMac);
       } else {
         // 苹果端、小程序、以及鸿蒙系统：启动限时扫描比对真实地址流程
-        console.log(`[扫码连接] 苹果/小程序/鸿蒙平台，启动十秒扫描比对配对流程`);
+        console.log(`[扫码连接] 苹果/小程序/鸿蒙平台，启动扫描比对配对流程`);
         pairDeviceByMac(cleanResult, formattedMac);
       }
     } else {
       // 广播名称模式：扫码内容为目标设备蓝牙广播名
-      console.log(`[扫码连接] 广播名称模式，启动十秒扫描比对配对流程: ${rawResult}`);
+      console.log(`[扫码连接] 广播名称模式，启动扫描比对配对流程: ${rawResult}`);
       pairDeviceByName(rawResult);
     }
   };
@@ -187,7 +114,9 @@ export function useScanConnect() {
         bleManager.stopScan().catch(() => {});
         toast.close();
         toast.error(t("bms.ble.scanTimeout"));
-        console.warn(`[扫码连接] 配对超时，未能在 ${APP_CONFIG.BLE_SCAN.PAIRING_TIMEOUT_MS / 1000} 秒内匹配到指定的物理地址设备`);
+        console.warn(
+          `[扫码连接] 配对超时，未能在 ${APP_CONFIG.BLE_SCAN.PAIRING_TIMEOUT_MS / 1000} 秒内匹配到指定的物理地址设备`,
+        );
       }
     }, APP_CONFIG.BLE_SCAN.PAIRING_TIMEOUT_MS);
 
@@ -195,7 +124,9 @@ export function useScanConnect() {
       await bleManager.startScan((device) => {
         if (hasFound) return;
 
-        const deviceMac = resolveDeviceMac(device).toUpperCase().replace(/[^0-9A-F]/g, "");
+        const deviceMac = resolveDeviceMac(device)
+          .toUpperCase()
+          .replace(/[^0-9A-F]/g, "");
         console.log(`[扫码配对] 搜寻到附近设备: ${device.name}, 物理地址: ${deviceMac}`);
 
         if (deviceMac === cleanMac) {
@@ -233,7 +164,9 @@ export function useScanConnect() {
         bleManager.stopScan().catch(() => {});
         toast.close();
         toast.error(t("bms.ble.scanTimeout"));
-        console.warn(`[扫码连接] 配对超时，未能在 ${APP_CONFIG.BLE_SCAN.PAIRING_TIMEOUT_MS / 1000} 秒内匹配到指定的广播名设备`);
+        console.warn(
+          `[扫码连接] 配对超时，未能在 ${APP_CONFIG.BLE_SCAN.PAIRING_TIMEOUT_MS / 1000} 秒内匹配到指定的广播名设备`,
+        );
       }
     }, APP_CONFIG.BLE_SCAN.PAIRING_TIMEOUT_MS);
 

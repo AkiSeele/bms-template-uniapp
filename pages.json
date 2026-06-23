@@ -60,18 +60,6 @@
       "style": {
         "navigationStyle": "custom"
       }
-    },
-    {
-      "path": "pages/scan/scan",
-      "style": {
-        "navigationStyle": "custom",
-        "disableScroll": true,
-        "app-plus": {
-          "animationType": "slide-in-bottom",
-          "animationDuration": 250,
-          "background": "#000000"
-        }
-      }
     }
   ],
   "globalStyle": {

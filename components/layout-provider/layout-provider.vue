@@ -84,7 +84,7 @@
       <!-- Source: uni_modules/wot-ui/components/wd-toast/wd-toast.vue -->
       <wd-toast />
       <!-- Source: uni_modules/wot-ui/components/wd-dialog/wd-dialog.vue -->
-      <wd-dialog />
+      <wd-dialog root-portal />
     </view>
   </wd-config-provider>
 </template>

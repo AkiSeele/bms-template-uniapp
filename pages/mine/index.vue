@@ -98,6 +98,7 @@
             <view class="wot-flex wot-justify-end">
               <!-- Source: uni_modules/wot-ui/components/wd-segmented/wd-segmented.vue -->
               <wd-segmented
+                v-if="activeTab === 'mine'"
                 v-model:value="themeMode"
                 :options="themeOptions"
                 @change="handleThemeModeChange"
@@ -162,15 +163,6 @@
             </template>
           </wd-cell>
 
-          <!-- 当前应用的版本信息单元格，点击可主动负责检测升级 -->
-          <!-- Source: uni_modules/wot-ui/components/wd-cell/wd-cell.vue -->
-          <wd-cell :title="$t('bms.mine.appVersion')" :value="appVersionDisplay" is-link @click="checkUpdate">
-            <template #prefix>
-              <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-              <wd-icon css-icon="i-lucide-info" size="20px" class="wot-mr-2" color="#858585" />
-            </template>
-          </wd-cell>
-
           <!-- 系统日志入口单元格，仅在解锁时显示 -->
           <!-- Source: uni_modules/wot-ui/components/wd-cell/wd-cell.vue -->
           <wd-cell v-if="isSystemLogsUnlocked" :title="$t('bms.mine.systemLogs')" is-link @click="navigateToSystemLogs">
@@ -189,6 +181,27 @@
             </template>
           </wd-cell>
         </wd-cell-group>
+      </view>
+
+      <!-- 底部备案号与版本号显示区域，符合规范 -->
+      <view class="mine-footer wot-flex wot-flex-col wot-items-center wot-justify-center wot-mt-8 wot-pb-6">
+        <text class="icp-text wot-text-text-auxiliary">
+          {{ $t("bms.mine.icpLicense") }}
+        </text>
+        <view class="version-text wot-mt-1.5 wot-flex wot-items-center wot-text-text-auxiliary">
+          <text class="wot-mr-1">{{ $t("bms.mine.appVersion") }}:</text>
+          <!-- 离线模式：纯文本不可点击 -->
+          <text v-if="isOfflineMode">{{ appVersionDisplay }}</text>
+          <!-- 云端模式：仅版本号为纯文字按钮，点击后显示文字 loading -->
+          <view
+            v-else
+            class="version-btn-online"
+            :class="{ 'version-btn-checking': isChecking }"
+            @click="handleVersionClick"
+          >
+            <text>{{ isChecking ? $t("bms.mine.checking") : appVersionDisplay }}</text>
+          </view>
+        </view>
       </view>
     </view>
 
@@ -245,16 +258,17 @@ onLoad(() => {
 const { token, userInfo, isAuthorized } = storeToRefs(userStore);
 const { isSystemLogsUnlocked, passwordPromptTrigger } = storeToRefs(logStore);
 
-// 自动连接开关状态的响应式状态，默认从本地缓存初始化
-const autoConnectEnabled = ref(!!uni.getStorageSync("auto_connect_enabled"));
+// 自动连接开关状态的响应式状态，默认从本地缓存初始化，若无缓存则读取全局 APP_CONFIG 配置项
+const autoConnectStorage = uni.getStorageSync("auto_connect_enabled");
+const autoConnectEnabled = ref(autoConnectStorage === "" ? APP_CONFIG.AUTO_CONNECT : !!autoConnectStorage);
 
 // 自动连接开关变更时的回调函数，持久化状态至本地缓存
 const handleAutoConnectChange = ({ value }: { value: boolean }) => {
   uni.setStorageSync("auto_connect_enabled", value);
 };
 
-// 响应式解构 appStore 中的明暗主题状态，符合规范
-const { theme, activeThemeColor } = storeToRefs(appStore);
+// 响应式解构 appStore 中的明暗主题状态和 activeTab，符合规范
+const { theme, activeThemeColor, activeTab } = storeToRefs(appStore);
 
 // 双向绑定分段器选中的当前主题模式值，以保障多端切换的顺畅与同步
 const themeMode = ref(theme.value);
@@ -382,35 +396,49 @@ const appVersionDisplay = computed(() => {
   return version;
 });
 
-// 分平台自适应的版本检测升级函数
+// 版本号点击检测更新的 loading 状态
+const isChecking = ref(false);
+
+// 处理版本号点击事件，离线模式或正在检测中不响应
+const handleVersionClick = () => {
+  if (isOfflineMode.value || isChecking.value) return;
+  checkUpdate();
+};
+
+// 分平台自适应的版本检测升级函数，提供按钮文本 loading 体验
 const checkUpdate = () => {
-  if (APP_CONFIG.APP_MODE === "offline") {
-    toast.show({ msg: t("bms.mine.updateUnsupported") });
+  if (APP_CONFIG.APP_MODE === "offline" || isChecking.value) {
     return;
   }
 
+  isChecking.value = true;
+
   // #ifdef MP-WEIXIN
   try {
-    toast.show({ msg: t("bms.mine.checking"), duration: 1500 });
     const updateManager = uni.getUpdateManager();
     updateManager.onCheckForUpdate((res) => {
-      if (res.hasUpdate) {
-        toast.show({ msg: t("bms.mine.newVersionFound"), duration: 2500 });
-      } else {
-        toast.show({ msg: t("bms.mine.alreadyLatest"), duration: 2000 });
-      }
+      // 延迟 1 秒使文本检测中... loading 效果对于用户肉眼清晰可见
+      setTimeout(() => {
+        isChecking.value = false;
+        if (res.hasUpdate) {
+          toast.show({ msg: t("bms.mine.newVersionFound"), duration: 2500 });
+        } else {
+          toast.show({ msg: t("bms.mine.alreadyLatest"), duration: 2000 });
+        }
+      }, 1000);
     });
   } catch (e) {
     console.error("微信小程序版本检测异常:", e);
+    isChecking.value = false;
     toast.show({ msg: t("bms.mine.updateFailed") });
   }
   // #endif
 
-  // #ifdef APP-PLUS
-  toast.show({ msg: t("bms.mine.checking"), duration: 1500 });
+  // #ifndef MP-WEIXIN
   setTimeout(() => {
+    isChecking.value = false;
     toast.show({ msg: t("bms.mine.alreadyLatest"), duration: 2000 });
-  }, 1200);
+  }, 1500);
   // #endif
 };
 
@@ -441,6 +469,7 @@ const showPasswordPrompt = () => {
     .prompt({
       title: t("bms.logs.inputPasswordTitle"),
       inputValue: "",
+      zIndex: 2000,
       inputProps: {
         type: "text",
         showPassword: true,
@@ -519,6 +548,7 @@ const handleUserCardClick = () => {
       .confirm({
         title: t("bms.common.prompt"),
         msg: t("bms.mine.cloudLoginPrompt"),
+        zIndex: 2000,
       })
       .then(async () => {
         try {
@@ -545,6 +575,7 @@ const handleLogout = () => {
     .confirm({
       title: t("bms.common.prompt"),
       msg: t("bms.mine.logoutConfirm"),
+      zIndex: 2000,
     })
     .then(() => {
       userStore.logout();
@@ -584,5 +615,35 @@ const handleLogout = () => {
 /* 顶部安全区域与自定义导航栏高度自适应占位 */
 .tab-content-wrap {
   padding-top: calc(var(--status-bar-height) + 44px + 16px) !important;
+}
+
+/* 底部 Footer 备案区与版本样式 */
+.mine-footer {
+  text-align: center;
+}
+
+.icp-text {
+  font-size: 24rpx;
+  opacity: 0.85;
+}
+
+.version-text {
+  font-size: 24rpx;
+}
+
+.version-btn-online {
+  font-size: 24rpx;
+  color: var(--wot-color-theme, #0052d9);
+  cursor: pointer;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.version-btn-online:active {
+  opacity: 0.6;
+}
+
+.version-btn-checking {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 </style>

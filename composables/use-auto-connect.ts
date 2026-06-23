@@ -25,7 +25,7 @@ export function useAutoConnect() {
   // 主动取消自动连接的方法
   const cancelAutoConnect = async () => {
     console.log("[自动连接] 正在主动取消或关闭自动连接流程");
-    
+
     if (timeoutTimer) {
       clearTimeout(timeoutTimer);
       timeoutTimer = null;
@@ -51,10 +51,11 @@ export function useAutoConnect() {
     // 标记已触发过，确保仅重连一次
     hasTriggeredAutoConnect = true;
 
-    // 从本地缓存中读取是否开启了自动连接开关
-    const autoConnectEnabled = uni.getStorageSync("auto_connect_enabled");
+    // 从本地缓存中读取是否开启了自动连接开关，若无缓存值则采用 APP_CONFIG.AUTO_CONNECT
+    const autoConnectStorage = uni.getStorageSync("auto_connect_enabled");
+    const autoConnectEnabled = autoConnectStorage === "" ? APP_CONFIG.AUTO_CONNECT : !!autoConnectStorage;
     if (!autoConnectEnabled) {
-      console.log("[自动连接] 本地缓存中未开启自动连接开关，跳过自动连接");
+      console.log("[自动连接] 自动连接开关未开启，跳过自动连接");
       return;
     }
 
@@ -109,14 +110,16 @@ export function useAutoConnect() {
         bleStore.isAutoConnecting = false;
         bleStore.isAutoConnectingCancelable = false;
         toast.error(t("bms.ble.autoConnectTimeout"));
-        console.warn(`[自动连接] 配对超时，未能在 ${APP_CONFIG.BLE_SCAN.PAIRING_TIMEOUT_MS / 1000} 秒内搜索匹配到指定的物理地址设备`);
+        console.warn(
+          `[自动连接] 配对超时，未能在 ${APP_CONFIG.BLE_SCAN.PAIRING_TIMEOUT_MS / 1000} 秒内搜索匹配到指定的物理地址设备`,
+        );
       }
     }, APP_CONFIG.BLE_SCAN.PAIRING_TIMEOUT_MS);
 
     // 步骤三：发起搜寻比对流程
     try {
       const cleanTargetMac = lastConnectedMac.toUpperCase().replace(/[^0-9A-F]/g, "");
-      
+
       await bleManager.startScan(async (device) => {
         if (hasFound) return;
         // 核心防御：在设备扫描回调中，如果用户已经主动取消了自动重连，则直接退出不执行任何匹配和物理连接
@@ -125,12 +128,14 @@ export function useAutoConnect() {
         }
 
         // 提取物理地址并过滤掉非物理字符
-        const deviceMac = resolveDeviceMac(device).toUpperCase().replace(/[^0-9A-F]/g, "");
+        const deviceMac = resolveDeviceMac(device)
+          .toUpperCase()
+          .replace(/[^0-9A-F]/g, "");
         console.log(`[自动连接扫描] 搜寻到设备: ${device.name}, 物理地址: ${deviceMac}`);
 
         if (deviceMac === cleanTargetMac) {
           hasFound = true;
-          
+
           // 清除超时计时器
           if (timeoutTimer) {
             clearTimeout(timeoutTimer);

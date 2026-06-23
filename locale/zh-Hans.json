@@ -61,7 +61,7 @@
       "softwareVersion": "软件版本"
     },
     "params": {
-      "cellVoltage": "单体电压",
+      "cellVoltage": "电芯电压",
       "cycleCount": "循环次数",
       "envTemperature": "环境温度",
       "envTempShort": "环境",
@@ -234,7 +234,8 @@
       "traditional": "繁體中文",
       "unauthorized": "未授权",
       "updateFailed": "检查更新失败，请稍后重试",
-      "updateUnsupported": "离线模式下不支持检查更新"
+      "updateUnsupported": "离线模式下不支持检查更新",
+      "icpLicense": "粤ICP备20240101号-1"
     },
     "common": {
       "authPrompt": "授权提示",
@@ -273,10 +274,7 @@
       "successColor": "成功状态色",
       "themeColor": "主题主色",
       "title": "主题配置",
-      "warningColor": "警告状态色",
-      "homeStyle": "首页样式风格",
-      "drawerMode": "抽屉手势模式",
-      "scrollMode": "整体滑动模式"
+      "warningColor": "警告状态色"
     },
     "scan": {
       "noQrCodeFound": "未发现二维码",

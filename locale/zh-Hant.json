@@ -60,7 +60,7 @@
       "softwareVersion": "軟件版本"
     },
     "params": {
-      "cellVoltage": "單體電壓",
+      "cellVoltage": "電芯電壓",
       "cycleCount": "循環次數",
       "envTemperature": "環境溫度",
       "envTempShort": "環境",
@@ -227,7 +227,8 @@
       "traditional": "繁體中文",
       "unauthorized": "未授權",
       "updateFailed": "檢查更新失敗，請稍後重試",
-      "updateUnsupported": "離線模式下不支援檢查更新"
+      "updateUnsupported": "離線模式下不支援檢查更新",
+      "icpLicense": "粵ICP備20240101號-1"
     },
     "common": {
       "authPrompt": "授權提示",
@@ -263,10 +264,7 @@
       "successColor": "成功狀態色",
       "themeColor": "主題主色",
       "title": "主題配置",
-      "warningColor": "警告狀態色",
-      "homeStyle": "首頁樣式風格",
-      "drawerMode": "抽屜手勢模式",
-      "scrollMode": "整體滑動模式"
+      "warningColor": "警告狀態色"
     },
     "scan": {
       "noQrCodeFound": "未發現二維碼",

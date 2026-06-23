@@ -146,16 +146,6 @@ export const useAppStore = defineStore("app", () => {
     activeTab.value = tab;
   };
 
-  // 首页样式风格配置状态，支持 "drawer"（抽屉手势模式）和 "scroll"（整体滑动模式）
-  const homeStyle = ref<"drawer" | "scroll">(
-    (uni.getStorageSync("home_style") as any) || APP_CONFIG.HOME_STYLE || "drawer",
-  );
-
-  const setHomeStyle = (style: "drawer" | "scroll") => {
-    homeStyle.value = style;
-    uni.setStorageSync("home_style", style);
-  };
-
   return {
     locale,
     theme,
@@ -170,12 +160,10 @@ export const useAppStore = defineStore("app", () => {
     activeSuccessColor,
     activeDangerColor,
     activeTab,
-    homeStyle,
     setLocale,
     setTheme,
     setDeviceInfo,
     setProjectColors,
     setActiveTab,
-    setHomeStyle,
   };
 });

@@ -95,7 +95,10 @@ function setChange(child: TabbarItem) {
 }
 
 function setPlaceholderHeight() {
+  // 当 fixed 或 placeholder 为 false 时，必须将占位高度归零，
+  // 否则外层 view 的 height 会保留上次测量值（约 50px），导致页面被撑高可滚动
   if (!props.fixed || !props.placeholder) {
+    height.value = 0
     return
   }
 

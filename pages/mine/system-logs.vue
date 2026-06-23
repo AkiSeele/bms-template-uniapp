@@ -286,6 +286,7 @@ const handleClearLogs = () => {
   dialog.confirm({
     title: t("bms.common.prompt"),
     msg: t("bms.logs.clearConfirmMsg"),
+    zIndex: 2000,
   }).then(() => {
     logStore.clearLogs();
     toast.success(t("bms.logs.clearSuccess"));

@@ -234,7 +234,8 @@
       "traditional": "繁體中文",
       "unauthorized": "Denied",
       "updateFailed": "Version check failed, please try again later",
-      "updateUnsupported": "Version check is not supported in offline mode"
+      "updateUnsupported": "Version check is not supported in offline mode",
+      "icpLicense": "ICP Filing No. 20240101-1"
     },
     "common": {
       "authPrompt": "Authorize Prompt",
@@ -273,10 +274,7 @@
       "successColor": "Success State Color",
       "themeColor": "Theme Primary",
       "title": "Theme Config",
-      "warningColor": "Warning State Color",
-      "homeStyle": "Home Layout Style",
-      "drawerMode": "Drawer Gesture Mode",
-      "scrollMode": "Overall Scroll Mode"
+      "warningColor": "Warning State Color"
     },
     "scan": {
       "noQrCodeFound": "No QR code found",

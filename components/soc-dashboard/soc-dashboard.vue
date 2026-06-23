@@ -8,23 +8,6 @@
       class="soc-dashboard-dial wot-relative wot-flex wot-items-center wot-justify-center"
       :style="[dialBgStyle, dialStyle]"
     >
-      <!-- 进度条末端的发光游标指示点：由于小程序不支持 inline SVG 互动，使用绝对定位 view 实现，百分百多端兼容 -->
-      <view
-        v-if="isConnected && animatedPercent > 0.5"
-        class="indicator-dot wot-absolute wot-flex wot-items-center wot-justify-center"
-        :style="{
-          left: indicatorCoords.x + 'px',
-          top: indicatorCoords.y + 'px',
-        }"
-      >
-        <!-- 外层大晕染圈 -->
-        <view class="indicator-glow-outer wot-absolute" :style="{ backgroundColor: indicatorGlowColor }" />
-        <!-- 中层半透明圈 -->
-        <view class="indicator-glow-mid wot-absolute" :style="{ backgroundColor: indicatorGlowColor }" />
-        <!-- 内层实体白点 -->
-        <view class="indicator-inner-white wot-absolute" />
-      </view>
-
       <!-- 仪表盘内部信息块（绝对定位，以支持多国语言自适应换行） -->
       <view class="dial-content wot-flex wot-flex-col wot-items-center wot-justify-end">
         <!-- SOC 电量大百分比字样 -->
@@ -77,7 +60,7 @@ const props = defineProps({
 
 // 获取应用配置以获取全局实际主题状态
 const appStore = useAppStore();
-const { actualTheme } = storeToRefs(appStore);
+const { actualTheme, activeThemeColor } = storeToRefs(appStore);
 
 // 动态计算底盘内发光与呼吸阴影效果，深度融合科技拟物美感
 const dialStyle = computed(() => {
@@ -144,45 +127,97 @@ const displayPercent = computed(() => {
   return Math.round(animatedPercent.value);
 });
 
-// 根据当前百分比与状态动态匹配末端指示点发光颜色
-const indicatorGlowColor = computed(() => {
-  if (animatedPercent.value < 20) {
-    return "#ef4444"; // 报警红色
+/**
+ * 在保持饱和度和明度不变的前提下，旋转十六进制颜色的色相，生成极其自然的高纯度邻近色
+ * @param hex 十六进制颜色字符串 (如 "#0052d9")
+ * @param degrees 色相旋转角度 (如 -40 代表逆时针旋转 40 度)
+ */
+const rotateColorHue = (hex: string, degrees: number): string => {
+  let color = hex.replace(/^#/, "");
+  if (color.length === 3) {
+    color = color
+      .split("")
+      .map((c) => c + c)
+      .join("");
   }
-  if (props.isCharging) {
-    return "#10b981"; // 充电绿色
-  }
-  return "#10b981"; // 默认翡翠绿
-});
+  let r = parseInt(color.substring(0, 2), 16) / 255;
+  let g = parseInt(color.substring(2, 4), 16) / 255;
+  let b = parseInt(color.substring(4, 6), 16) / 255;
 
-// 根据当前插值百分比，计算末端游标在绝对定位下的物理坐标 (left, top)
-const indicatorCoords = computed(() => {
-  const p = animatedPercent.value;
-  // 仪表盘起始于 135 度，全长 270 度
-  const angle = 135 + p * 2.7;
-  const rad = (angle * Math.PI) / 180;
-  // 半径为 84（在主轨 R90 的内切边缘 84 px 处顺畅运行，实现游标内凹并紧扣内圈的效果），圆心位于 (110, 110)
-  const x = 110 + 84 * Math.cos(rad);
-  const y = 110 + 84 * Math.sin(rad);
-  // 避让指示点自身半宽度（如整体宽度为 16px，则减去 8px）
-  return {
-    x: (x - 8).toFixed(1),
-    y: (y - 8).toFixed(1),
+  let max = Math.max(r, g, b),
+    min = Math.min(r, g, b);
+  let h = 0,
+    s = 0,
+    l = (max + min) / 2;
+
+  if (max !== min) {
+    let d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r:
+        h = (g - b) / d + (g < b ? 6 : 0);
+        break;
+      case g:
+        h = (b - r) / d + 2;
+        break;
+      case b:
+        h = (r - g) / d + 4;
+        break;
+    }
+    h /= 6;
+  }
+
+  h = (h * 360 + degrees) % 360;
+  if (h < 0) h += 360;
+  h /= 360;
+
+  const hue2rgb = (p: number, q: number, t: number) => {
+    if (t < 0) t += 1;
+    if (t > 1) t -= 1;
+    if (t < 1 / 6) return p + (q - p) * 6 * t;
+    if (t < 1 / 2) return q;
+    if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+    return p;
   };
-});
+
+  let newR = l,
+    newG = l,
+    newB = l;
+  if (s !== 0) {
+    let q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+    let p = 2 * l - q;
+    newR = hue2rgb(p, q, h + 1 / 3);
+    newG = hue2rgb(p, q, h);
+    newB = hue2rgb(p, q, h - 1 / 3);
+  }
+
+  const toHex = (val: number) => {
+    return Math.max(0, Math.min(255, Math.round(val * 255)))
+      .toString(16)
+      .padStart(2, "0");
+  };
+
+  return `#${toHex(newR)}${toHex(newG)}${toHex(newB)}`;
+};
 
 // 动态生成 SVG 代码并进行 URL 编码，供给 CSS background-image，以彻底解决微信小程序端无法使用 inline <svg> 的问题
 const dialBgStyle = computed(() => {
   const isDarkTheme = actualTheme.value === "dark";
+  const themeColor = activeThemeColor.value;
   const p = animatedPercent.value;
+
+  // 动态生成起终点高饱和度的极光实体色，实现左右颜色渐变反向过渡的效果
+  const startColor = rotateColorHue(themeColor, -20);
+  const endColor = themeColor;
+
   // 环圈加大至最外侧半径 90 后的 270 度总像素弧长为 424.12
   const activeLength = ((p / 100) * 424.12).toFixed(2);
+  // 当百分比接近 0 时，设线宽为 0，防止 stroke-linecap='round' 强制绘制多余的首端圆点
+  const strokeWidth = p <= 0.1 ? 0 : 12;
 
   let strokeColor = isDarkTheme ? "rgba(255, 255, 255, 0.15)" : "rgba(0, 0, 0, 0.08)";
   if (props.isConnected) {
-    if (p < 20) {
-      strokeColor = "url(#lowGrad)";
-    } else if (props.isCharging) {
+    if (props.isCharging) {
       strokeColor = "url(#chargingGrad)";
     } else {
       strokeColor = "url(#normalGrad)";
@@ -201,19 +236,14 @@ const dialBgStyle = computed(() => {
   // 构造标准的 SVG 数据格式，包含刻度、背景环、进度条、跑车红色指针、刻度文字
   const svgString = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'>
     <defs>
+      <!-- 对角线性渐变，起终点均使用 100% 实体纯色，消除发虚感 -->
       <linearGradient id='normalGrad' x1='0%' y1='100%' x2='100%' y2='0%'>
-        <stop offset='0%' stop-color='#2563eb' />
-        <stop offset='60%' stop-color='#3b82f6' />
-        <stop offset='100%' stop-color='#10b981' />
+        <stop offset='0%' stop-color='${startColor}' />
+        <stop offset='100%' stop-color='${endColor}' />
       </linearGradient>
       <linearGradient id='chargingGrad' x1='0%' y1='100%' x2='100%' y2='0%'>
         <stop offset='0%' stop-color='#10b981' />
-        <stop offset='50%' stop-color='#34d399' />
         <stop offset='100%' stop-color='#06b6d4' />
-      </linearGradient>
-      <linearGradient id='lowGrad' x1='0%' y1='100%' x2='100%' y2='0%'>
-        <stop offset='0%' stop-color='#f59e0b' />
-        <stop offset='100%' stop-color='#ef4444' />
       </linearGradient>
     </defs>
     <!-- 1. 内侧精细装饰刻度虚线环（半径增大至 81 贴合在主轨内壁，轨宽 1.5，作为中层轨道标尺） -->
@@ -221,7 +251,7 @@ const dialBgStyle = computed(() => {
     <!-- 2. 内侧主进度条背景轨道（半径增大至最外侧 90，轨宽加宽至 10） -->
     <path d='M 36.36 163.64 A 90 90 0 1 1 163.64 163.64' fill='none' stroke='${trackBg}' stroke-width='10' stroke-linecap='round' />
     <!-- 3. 动态彩色进度条（半径增大至最外侧 90，进度条加宽至 12） -->
-    <path d='M 36.36 163.64 A 90 90 0 1 1 163.64 163.64' fill='none' stroke='${strokeColor}' stroke-width='12' stroke-linecap='round' stroke-dasharray='${activeLength} 424.12' />
+    <path d='M 36.36 163.64 A 90 90 0 1 1 163.64 163.64' fill='none' stroke='${strokeColor}' stroke-width='${strokeWidth}' stroke-linecap='round' stroke-dasharray='${activeLength} 424.12' />
     <!-- 4. 跑车仪表精密数字刻度值（自适应向外贴近半径 81 虚线刻度环，字号放大至 10.5） -->
     <text x='51' y='149' font-size='10.5' fill='${textColor}' font-weight='800' font-family='sans-serif' text-anchor='middle'>0</text>
     <text x='36' y='74' font-size='10.5' fill='${textColor}' font-weight='800' font-family='sans-serif' text-anchor='middle'>25</text>
@@ -281,38 +311,6 @@ const dialBgStyle = computed(() => {
     0 14px 35px -4px rgba(148, 163, 184, 0.28),
     inset 0 3px 6px rgba(255, 255, 255, 0.8),
     inset 0 -4px 12px rgba(148, 163, 184, 0.06) !important;
-}
-
-/* 游标指示点样式定义（多端兼容） */
-.indicator-dot {
-  width: 16px;
-  height: 16px;
-  pointer-events: none;
-  z-index: 15;
-}
-
-.indicator-glow-outer {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  opacity: 0.35;
-  filter: blur(2px);
-  animation: glow-pulse 2s infinite ease-in-out;
-}
-
-.indicator-glow-mid {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  opacity: 0.6;
-}
-
-.indicator-inner-white {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background-color: #ffffff;
-  box-shadow: 0 0 4px rgba(255, 255, 255, 0.8);
 }
 
 /* 内部内容层绝对居中 */
@@ -378,20 +376,5 @@ const dialBgStyle = computed(() => {
     -apple-system,
     BlinkMacSystemFont,
     sans-serif;
-}
-
-@keyframes glow-pulse {
-  0% {
-    transform: scale(0.85);
-    opacity: 0.25;
-  }
-  50% {
-    transform: scale(1.2);
-    opacity: 0.55;
-  }
-  100% {
-    transform: scale(0.85);
-    opacity: 0.25;
-  }
 }
 </style>

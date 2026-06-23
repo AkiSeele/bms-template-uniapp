@@ -194,21 +194,6 @@
         </view>
       </view>
 
-      <!-- 首页布局风格配置卡片 -->
-      <view
-        class="config-card wot-bg-filled-oppo wot-rounded-2xl wot-p-3.5 wot-border wot-border-solid wot-border-border-main wot-shadow-sm"
-      >
-        <view class="wot-flex wot-flex-col wot-mb-4">
-          <text class="wot-text-sm wot-font-bold wot-text-text-main">{{ $t("bms.settings.homeStyle") }}</text>
-        </view>
-
-        <!-- Source: uni_modules/wot-ui/components/wd-radio-group/wd-radio-group.vue -->
-        <!-- Source: uni_modules/wot-ui/components/wd-radio/wd-radio.vue -->
-        <wd-radio-group v-model="homeStyle" inline :active-color="appStore.activeThemeColor">
-          <wd-radio value="drawer">{{ $t("bms.settings.drawerMode") }}</wd-radio>
-          <wd-radio value="scroll">{{ $t("bms.settings.scrollMode") }}</wd-radio>
-        </wd-radio-group>
-      </view>
     </view>
   </layout-provider>
 </template>
@@ -258,13 +243,6 @@ watch([themeColor, warningColor, successColor, dangerColor], ([newTheme, newWarn
     successColor: (newSuccess || "").trim(),
     dangerColor: (newDanger || "").trim(),
   });
-});
-
-// 首页样式配置双向绑定联动
-const homeStyle = ref(appStore.homeStyle);
-
-watch(homeStyle, (newStyle) => {
-  appStore.setHomeStyle(newStyle);
 });
 </script>
 

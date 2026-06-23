@@ -105,10 +105,6 @@
     </view>
 
     <!-- 挂载反馈实例 -->
-    <!-- Source: uni_modules/wot-ui/components/wd-toast/wd-toast.vue -->
-    <wd-toast />
-    <!-- Source: uni_modules/wot-ui/components/wd-dialog/wd-dialog.vue -->
-    <wd-dialog />
   </layout-provider>
 </template>
 
@@ -237,6 +233,7 @@ const showPermissionDialog = () => {
       msg: t("bms.auth.clipboardPermissionMsg"),
       confirmButtonText: t("bms.common.goSettings"),
       cancelButtonText: t("bms.common.cancel"),
+      zIndex: 2000,
     })
     .then(() => {
       openSystemSettings();

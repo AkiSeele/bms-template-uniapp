@@ -6,31 +6,42 @@
 
     <view class="tab-content-wrap page-body-animate">
       <!-- 蓝牙未连接时的空状态展示 -->
-      <view v-if="!isConnected" class="wot-flex wot-flex-col wot-items-center wot-justify-center wot-py-20">
-        <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-        <wd-icon css-icon="i-ri-bluetooth-connect-line" size="64px" color="var(--wot-icon-disabled)" />
-        <text class="wot-text-text-auxiliary wot-mt-4" :style="{ fontSize: '26rpx' }">
-          {{ $t("bms.battery.noData") }}
-        </text>
+      <!-- Source: uni_modules/wot-ui/components/wd-empty/wd-empty.vue -->
+      <view v-if="!isConnected" class="empty-wrap wot-flex wot-flex-col wot-items-center wot-justify-center">
+        <wd-empty icon="empty" :tip="$t('bms.battery.noData')">
+          <template #bottom>
+            <!-- Source: uni_modules/wot-ui/components/wd-button/wd-button.vue -->
+            <wd-button size="small" plain @click="toConnect" custom-class="empty-btn">
+              {{ $t("bms.ble.connect") }}
+            </wd-button>
+          </template>
+        </wd-empty>
       </view>
 
       <!-- 已连接时的状态看板 -->
       <view v-else>
         <!-- 32项保护状态平铺大卡片 -->
-        <view
-          class="wot-bg-filled-oppo alarm-grid-card wot-p-3"
-        >
+        <view class="wot-bg-filled-oppo alarm-grid-card wot-p-3">
           <!-- 标题栏，包含右侧紧凑的运行总时间 -->
           <view
             class="wot-border-solid wot-border-divider-main wot-border-t-0 wot-border-l-0 wot-border-r-0 wot-pb-2.5 wot-mb-3.5 wot-flex wot-items-center wot-justify-between"
             :style="{ borderBottomWidth: '1.5px' }"
           >
             <view class="wot-flex wot-items-center">
-              <view class="wot-rounded-full wot-mr-2" :style="{ width: '3px', height: '14px', backgroundColor: '#1c6eff' }"></view>
-              <text class="wot-font-bold wot-text-text-main" :style="{ fontSize: '28rpx' }">{{ $t("bms.protect.title") }}</text>
+              <view
+                class="wot-rounded-full wot-mr-2"
+                :style="{ width: '3px', height: '14px', backgroundColor: '#1c6eff' }"
+              ></view>
+              <text class="wot-font-bold wot-text-text-main" :style="{ fontSize: '28rpx' }">
+                {{ $t("bms.protect.title") }}
+              </text>
             </view>
             <!-- 运行时间并入标题栏右侧，节约一屏垂直空间 -->
-            <view v-if="runTimeStr" class="wot-flex wot-items-center wot-text-text-auxiliary" :style="{ fontSize: '22rpx' }">
+            <view
+              v-if="runTimeStr"
+              class="wot-flex wot-items-center wot-text-text-auxiliary"
+              :style="{ fontSize: '22rpx' }"
+            >
               <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
               <wd-icon css-icon="i-ri-time-line" size="12px" color="var(--wot-icon-auxiliary)" class="wot-mr-1" />
               <text>{{ runTimeStr }}</text>
@@ -43,7 +54,9 @@
               v-for="item in allAlarmList"
               :key="item.key"
               class="wot-flex wot-items-center wot-bg-filled-content wot-px-2 wot-py-1.5 wot-border wot-border-solid wot-transition-all"
-              :class="isAlarmActive(item.key) ? 'wot-bg-danger-surface wot-border-danger-disabled' : 'wot-border-transparent'"
+              :class="
+                isAlarmActive(item.key) ? 'wot-bg-danger-surface wot-border-danger-disabled' : 'wot-border-transparent'
+              "
               :style="{ borderRadius: '14rpx' }"
             >
               <!-- 徽标指示灯 -->
@@ -87,6 +100,13 @@ import { useBleStore } from "@/stores/ble-store";
 const bleStore = useBleStore();
 const { isBleConnected: isConnected, extendedProtocolData } = storeToRefs(bleStore);
 const { t } = useI18n();
+
+// 导航至蓝牙搜寻连接页
+const toConnect = () => {
+  uni.navigateTo({
+    url: "/pages/ble-search/index",
+  });
+};
 
 // 提取当前活动的系统警报事件
 const activeAlarms = computed(() => {
@@ -155,8 +175,19 @@ const allAlarmList = [
 <style scoped>
 /* 顶部安全区域与自定义导航栏高度自适应占位 */
 .tab-content-wrap {
-  padding-top: calc(var(--status-bar-height) + 44px + 12px);
+  padding-top: calc(var(--status-bar-height) + 44px + 16px);
   padding-bottom: env(safe-area-inset-bottom);
+}
+
+.empty-wrap {
+  min-height: 65vh;
+  box-sizing: border-box;
+}
+
+:deep(.empty-btn) {
+  margin-top: 24rpx;
+  min-width: 180rpx;
+  border-radius: 100rpx;
 }
 
 .alarm-grid-card {
