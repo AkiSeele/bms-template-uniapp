@@ -23,7 +23,11 @@ export const bleManager = {
     return new Promise((resolve, reject) => {
       // 在 H5 平台下进行防护拦截，防止直接抛出 TypeError 异常导致页面挂起
       if (typeof uni.openBluetoothAdapter !== "function") {
-        return reject(new Error("H5 platform does not support BLE module, please test in WeChat mini program or App containers on real devices."));
+        return reject(
+          new Error(
+            "H5 platform does not support BLE module, please test in WeChat mini program or App containers on real devices.",
+          ),
+        );
       }
 
       uni.openBluetoothAdapter({
@@ -59,7 +63,11 @@ export const bleManager = {
   startScan(onDeviceFound: (device: UniApp.BluetoothDeviceInfo) => void): Promise<UniApp.GeneralCallbackResult> {
     return new Promise((resolve, reject) => {
       if (typeof uni.startBluetoothDevicesDiscovery !== "function") {
-        return reject(new Error("H5 platform does not support starting Bluetooth device discovery, please test in a real device environment."));
+        return reject(
+          new Error(
+            "H5 platform does not support starting Bluetooth device discovery, please test in a real device environment.",
+          ),
+        );
       }
 
       // 先注销旧的设备发现监听回调以防止内存泄漏
@@ -91,7 +99,7 @@ export const bleManager = {
       // 启动蓝牙搜索
       console.warn("[BLE Manager] 启动低功耗蓝牙适配器设备发现扫描 (startBluetoothDevicesDiscovery)...");
       uni.startBluetoothDevicesDiscovery({
-        allowDuplicatesKey: false,
+        allowDuplicatesKey: true,
         success: (res) => resolve(res),
         fail: (err) => reject(err),
       });
@@ -108,7 +116,7 @@ export const bleManager = {
       }
 
       console.warn("[BLE Manager] 停止低功耗蓝牙设备扫描 (stopBluetoothDevicesDiscovery)...");
-      
+
       // 注销回调以防止内存泄漏
       if (typeof uni.offBluetoothDeviceFound === "function") {
         try {
@@ -149,7 +157,11 @@ export const bleManager = {
       return new Promise((resolve, reject) => {
         // H5 platform protection
         if (typeof uni.createBLEConnection !== "function") {
-          return reject(new Error("H5 platform does not support creating BLE connection, please test in a real device environment."));
+          return reject(
+            new Error(
+              "H5 platform does not support creating BLE connection, please test in a real device environment.",
+            ),
+          );
         }
 
         console.log(`[蓝牙连接] 尝试连接设备: ${deviceId}, 超时配置: ${timeout}ms, 剩余重试次数: ${remainingRetries}`);
@@ -165,7 +177,9 @@ export const bleManager = {
             if (remainingRetries > 0) {
               console.warn(`[蓝牙连接] 还有重试机会，正在进行连接重试...`);
               setTimeout(() => {
-                attemptConnect(remainingRetries - 1).then(resolve).catch(reject);
+                attemptConnect(remainingRetries - 1)
+                  .then(resolve)
+                  .catch(reject);
               }, APP_CONFIG.BLE_SCAN.RECONNECT_DELAY_MS);
             } else {
               reject(err);
@@ -184,8 +198,8 @@ export const bleManager = {
    */
   disconnect(deviceId: string): Promise<UniApp.GeneralCallbackResult> {
     return new Promise((resolve, reject) => {
-      // 每次断开连接时，强制重置本地的 MTU 协商状态缓存，退回默认的 20 字节限额
-      currentMtu = 20;
+      // 每次断开连接时，强制重置本地的 MTU 协商状态缓存，退回全局配置中默认的包大小限额
+      currentMtu = APP_CONFIG.BLE_SCAN.DEFAULT_MTU;
 
       // H5 平台防护拦截
       if (typeof uni.closeBLEConnection !== "function") {
@@ -212,7 +226,9 @@ export const bleManager = {
     return new Promise((resolve, reject) => {
       // H5 平台防护拦截
       if (typeof uni.notifyBLECharacteristicValueChange !== "function") {
-        return reject(new Error("H5 platform does not support subscribing to characteristic value change notifications."));
+        return reject(
+          new Error("H5 platform does not support subscribing to characteristic value change notifications."),
+        );
       }
 
       // 开启通知监听开关
@@ -300,14 +316,15 @@ export const bleManager = {
           mtu,
           success: (res) => {
             // 严格遵循 uni-app 规范：success 回调参数为 UniApp.GeneralCallbackResult（不包含 mtu 字段）
-            // 当 MTU 协商请求成功时，将当前最大物理载荷更新为所请求的 mtu 大小（扣除 3 字节开销，且不小于默认 20 字节）
-            currentMtu = Math.max(20, mtu - 3);
+            // 当 MTU 协商请求成功时，将当前最大物理载荷更新为所请求的 mtu 大小（扣除 3 字节开销，且不小于全局配置默认值）
+            currentMtu = Math.max(APP_CONFIG.BLE_SCAN.DEFAULT_MTU, mtu - 3);
             console.log(`[BLE Manager] MTU 协商成功，设定实际发送载荷: ${currentMtu} 字节`);
             resolve(res);
           },
           fail: (err) => {
-            console.warn("[BLE Manager] MTU 协商失败，沿用默认 20 字节限额:", err);
-            resolve({ errMsg: "setBLEMTU:fail, fallback to 20" });
+            console.warn(`[BLE Manager] MTU 协商失败，沿用全局配置默认限额 ${APP_CONFIG.BLE_SCAN.DEFAULT_MTU} 字节:`, err);
+            currentMtu = APP_CONFIG.BLE_SCAN.DEFAULT_MTU;
+            resolve({ errMsg: `setBLEMTU:fail, fallback to ${APP_CONFIG.BLE_SCAN.DEFAULT_MTU}` });
           },
         });
         return;
@@ -352,7 +369,9 @@ export const bleManager = {
             .join("");
 
           if (buffer.byteLength > mtu) {
-            console.log(`  └─ [分包发送] 偏移: ${i}/${buffer.byteLength}, 长度: ${chunk.byteLength}, 字节: ${chunkHex}`);
+            console.log(
+              `  └─ [分包发送] 偏移: ${i}/${buffer.byteLength}, 长度: ${chunk.byteLength}, 字节: ${chunkHex}`,
+            );
           }
 
           await new Promise<void>((resolveChunk, rejectChunk) => {

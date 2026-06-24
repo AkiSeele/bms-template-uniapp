@@ -1,4 +1,12 @@
 {
+  "bmsTitle": "BMS调试工具",
+  "mpWeixinLocationDesc": "您的位置信息将用于寻找并连接附近的蓝牙电池包设备",
+  "iosCameraUsageDescription": "扫描二维码以配对蓝牙设备",
+  "iosPhotoLibraryUsageDescription": "从相册中选取二维码图片以配对蓝牙设备",
+  "iosBluetoothAlwaysUsageDescription": "此应用需要开启蓝牙以搜索并连接附近的BMS电池设备，并获取实时遥测数据与发送控制指令",
+  "iosBluetoothPeripheralUsageDescription": "此应用需要使用蓝牙与附近的BMS电池设备建立通信，以同步运行状态",
+  "iosLocationWhenInUseUsageDescription": "此应用在扫描附近的低功耗蓝牙电池包设备时，需要获取您的位置信息权限",
+  "iosLocationAlwaysAndWhenInUseUsageDescription": "此应用在扫描附近的低功耗蓝牙电池包设备时，需要持续获取您的位置信息权限",
   "bms": {
     "title": "BMS调试工具",
     "ble": {
@@ -14,6 +22,7 @@
       "disconnect": "断开",
       "disconnectConfirmPrefix": "确定要断开与设备 ",
       "disconnectConfirmSuffix": " 的连接吗？",
+      "disconnectSuccess": "已断开连接",
       "disconnected": "蓝牙未连接",
       "initFailed": "蓝牙初始化失败",
       "invalidFormat": "二维码格式不合法",
@@ -30,6 +39,7 @@
       "startSearch": "搜索",
       "stopSearch": "停止",
       "clickTooFrequent": "操作过于频繁，请稍后再试",
+      "dontScanFrequently": "请勿频繁扫描",
       "unconnected": "未连接",
       "unknownProtocol": "未知协议",
       "deviceList": "设备列表",
@@ -48,6 +58,7 @@
         "locationNotAuthorized": "微信客户端未被授予位置信息权限。请在手机“系统设置 -> 权限管理”微信”中开启位置授权。",
         "permissionDeniedPrefix": "未授予应用连接所需的",
         "permissionDeniedSuffix": "权限，无法继续扫描附近的蓝牙设备。如需开启，请前往手机“系统设置 -> 权限管理”手动授权。",
+        "wechatBluetoothNotAuthorized": "微信客户端未被授予蓝牙权限。请在手机“系统设置 -> 权限管理 -> 微信”中开启蓝牙授权。",
         "wechatBluetoothRefused": "需要您的蓝牙服务授权以连接电池包，请点击“去设置”开启蓝牙权限。",
         "wechatLocationRefused": "蓝牙设备搜索需要位置信息授权，请点击“去设置”开启位置服务。"
       }

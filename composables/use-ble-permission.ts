@@ -109,7 +109,21 @@ export function useBlePermission() {
       toast.info(t("bms.ble.env.locationDisabled"));
       // #endif
     } else if (envErrorType.value === "wechatSetting") {
+      // #ifdef MP-WEIXIN
+      uni.showModal({
+        title: t("bms.common.authPrompt"),
+        content: envWarningText.value || t("bms.ble.env.wechatLocationRefused"),
+        confirmText: t("bms.common.goSettings"),
+        success: (res) => {
+          if (res.confirm) {
+            uni.openSetting();
+          }
+        }
+      });
+      // #endif
+      // #ifndef MP-WEIXIN
       uni.openSetting();
+      // #endif
     } else if (envErrorType.value === "androidPermission") {
       // #ifdef APP-PLUS
       // 直接跳转当前应用的系统应用详情权限页

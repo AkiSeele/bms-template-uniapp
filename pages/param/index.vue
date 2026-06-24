@@ -15,6 +15,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { storeToRefs } from "pinia";
+import { onLoad } from "@dcloudio/uni-app";
 import { useBleStore } from "@/stores/ble-store";
 import { resolveParamPanel } from "@/components/panel-registry";
 
@@ -23,6 +24,23 @@ import ParamDefaultPanel from "./components/default.vue";
 
 const bleStore = useBleStore();
 const { activeProtocolParser } = storeToRefs(bleStore);
+
+// 如果直接作为独立页面加载，则自动重定向至主 Shell 页面的“参数状态”标签页以防布局错乱
+onLoad(() => {
+  try {
+    const pages = getCurrentPages();
+    if (pages.length > 0) {
+      const currentPage = pages[pages.length - 1];
+      if (currentPage && currentPage.route === "pages/param/index") {
+        uni.reLaunch({
+          url: "/pages/index/index?tab=param",
+        });
+      }
+    }
+  } catch (e) {
+    console.error("检测当前页面路由失败:", e);
+  }
+});
 
 // 动态判定当前协议类型以供给微信小程序条件编译进行静态分支分流
 const currentProtocolType = computed(() => activeProtocolParser.value?.protocolType || "default");

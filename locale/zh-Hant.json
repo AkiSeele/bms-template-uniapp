@@ -1,4 +1,12 @@
 {
+  "bmsTitle": "BMS 電池管理",
+  "mpWeixinLocationDesc": "您的位置資訊將用於尋找並連接附近的藍牙電池包設備",
+  "iosCameraUsageDescription": "掃描二維碼以配對藍牙設備",
+  "iosPhotoLibraryUsageDescription": "從相冊中選取二維碼圖片以配對藍牙設備",
+  "iosBluetoothAlwaysUsageDescription": "此應用需要開啟藍牙以搜尋並連接附近的BMS電池設備，並獲取即時遙測數據與發送控制指令",
+  "iosBluetoothPeripheralUsageDescription": "此應用需要使用藍牙與附近的BMS電池設備建立通訊，以同步運行狀態",
+  "iosLocationWhenInUseUsageDescription": "此應用在掃描附近的低功耗藍牙電池包設備時，需要獲取您的位置資訊權限",
+  "iosLocationAlwaysAndWhenInUseUsageDescription": "此應用在掃描附近的低功耗藍牙電池包設備時，需要持續獲取您的位置資訊權限",
   "bms": {
     "title": "BMS 電池管理",
     "ble": {
@@ -14,6 +22,7 @@
       "disconnect": "斷開",
       "disconnectConfirmPrefix": "確定要斷開與設備 ",
       "disconnectConfirmSuffix": " 的連接嗎？",
+      "disconnectSuccess": "已斷開連接",
       "disconnected": "藍牙未連接",
       "initFailed": "藍牙初始化失敗",
       "invalidFormat": "二維碼格式不合法",
@@ -30,8 +39,10 @@
       "startSearch": "搜尋",
       "stopSearch": "停止",
       "clickTooFrequent": "操作過於頻繁，請稍後再試",
+      "dontScanFrequently": "請勿頻繁掃描",
       "unconnected": "未連接",
       "unknownProtocol": "未知協議",
+      "deviceList": "設備列表",
       "steps": {
         "physicalConnect": "物理連接失敗",
         "discoverService": "服務發現失敗",
@@ -47,6 +58,7 @@
         "locationNotAuthorized": "微信用戶端未被授予位置資訊權限。請在手機“系統設定 -> 權限管理 -> 微信”中開啟位置授權。",
         "permissionDeniedPrefix": "未授予應用連接所需的",
         "permissionDeniedSuffix": "權限，無法繼續掃描附近的藍牙設備。如需開啟，請前往手機「系統設置 -> 權限管理」手動授權。",
+        "wechatBluetoothNotAuthorized": "微信用戶端未被授予藍牙權限。請在手機“系統設定 -> 權限管理 -> 微信”中開啟藍牙授權。",
         "wechatBluetoothRefused": "需要您的藍牙服務授權以連接電池包，請點擊“去設定”開啟藍牙權限。",
         "wechatLocationRefused": "藍牙設備搜尋需要位置資訊授權，請點擊“去設定”開啟位置服務。"
       }
@@ -111,7 +123,13 @@
       "cellOverdischargeWarning": "單体過放告警",
       "packOverdischargeWarning": "總體過放告警",
       "mosOvertempWarning": "MOS過溫告警",
-      "mosOvertemp": "MOS過溫保護"
+      "mosOvertemp": "MOS過溫保護",
+      "chargeFet": "充電FET",
+      "heatingState": "加熱狀態",
+      "dischargeFet": "放電FET",
+      "preChargeFet": "預放電FET",
+      "balanceAbbr": "平衡",
+      "brokenAbbr": "斷線"
     },
     "control": {
       "charge": "充電",
@@ -250,7 +268,10 @@
       "prompt": "提示",
       "onOff": "開/關",
       "quantity": "數量",
-      "selectLanguage": "選擇語言"
+      "selectLanguage": "選擇語言",
+      "notSupported": "暫不支持該操作",
+      "enable": "開啟",
+      "disable": "關閉"
     },
     "request": {
       "loginExpired": "登錄狀態已失效，請重新登錄",

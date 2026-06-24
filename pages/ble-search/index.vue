@@ -120,6 +120,8 @@
       </template>
     </z-paging>
 
+    <!-- Source: uni_modules/wot-ui/components/wd-toast/wd-toast.vue -->
+    <wd-toast />
   </layout-provider>
 </template>
 
@@ -168,6 +170,8 @@ const hasCheckedPermission = ref(false);
 const isScanning = ref(false);
 let scanTimer: any = null;
 let throttleTimer: any = null; // 用于高频更新列表的节流定时器
+let lastScanTime = 0; // 上一次蓝牙扫描开始的物理时间戳
+const SCAN_INTERVAL_LIMIT = 5000; // 冷却间隔，限制 5 秒内只能重新扫描一次，保护微信底层 API
 
 /**
  * 根据输入框的过滤内容以及厂商在“我的”页面配置的固定匹配规则，动态更新最终展示的列表并完成 z-paging 回调
@@ -259,14 +263,23 @@ const stopScanProcess = async () => {
  * 下拉刷新或初始化加载时由 z-paging 触发的扫描主函数
  */
 const onQuery = async () => {
-  // 1. 如果当前正处于扫描状态中，先彻底关闭当前扫描
+  // 1. 频率控制，拦截高频下拉刷新/重新扫描，防止微信 10008 (scanning too frequently) 限流报错
+  const now = Date.now();
+  if (now - lastScanTime < SCAN_INTERVAL_LIMIT) {
+    console.warn(`[扫描限流] 距离上一次扫描开始仅 ${now - lastScanTime}ms，拦截重新发起`);
+    toast.warning(t("bms.ble.dontScanFrequently"));
+    paging.value?.complete(deviceList.value);
+    return;
+  }
+
+  // 2. 如果当前正处于扫描状态中，先彻底关闭当前扫描
   await stopScanProcess();
 
-  // 2. 只有在首次加载或先前未通过时，才执行耗时的完整权限状态诊断，下拉刷新则跳过原生直申
+  // 3. 只有在首次加载或先前未通过时，才执行耗时的完整权限状态诊断，下拉刷新则跳过原生直申
   if (!hasCheckedPermission.value) {
     const isReady = await checkStatus();
 
-    // 3. 校验诊断结果警告，若存在阻断级配置，则中断扫描并引导用户
+    // 4. 校验诊断结果警告，若存在阻断级配置，则中断扫描并引导用户
     if (!isReady) {
       paging.value?.complete([]);
       resolveEnvAlert(() => {
@@ -278,17 +291,17 @@ const onQuery = async () => {
     hasCheckedPermission.value = true;
   }
 
-  // 4. 诊断环境通过后，清空历史列表，开始本次设备搜索
+  // 5. 诊断环境通过后，清空历史列表，开始本次设备搜索
   allScannedDevices.value = [];
   deviceList.value = [];
   paging.value?.complete([]);
   isScanning.value = true;
 
   try {
-    // 4.1 初始化宿主蓝牙物理模块
+    // 5.1 初始化宿主蓝牙物理模块
     await bleManager.initBluetooth();
 
-    // 4.2 调用底层扫描，实时上报设备信息
+    // 5.2 调用底层扫描，实时上报设备信息
     await bleManager.startScan((device) => {
       // 针对真物理 MAC 进行去重，防止相同设备广播重复渲染导致重绘闪烁
       const mac = resolveDeviceMac(device);
@@ -311,7 +324,10 @@ const onQuery = async () => {
       }
     });
 
-    // 4.3 设定扫描超时保护，超时后自动静默停止扫描天线以防耗电，但维持界面列表数据不被清空
+    // 更新上一次扫描成功开始的时间戳
+    lastScanTime = Date.now();
+
+    // 5.3 设定扫描超时保护，超时后自动静默停止扫描天线以防耗电，但维持界面列表数据不被清空
     // 自动读取配置项 config/index.ts 里的 BLE_SCAN.SCAN_TIMEOUT_MS 设定
     scanTimer = setTimeout(async () => {
       await stopScanProcess();
@@ -321,7 +337,7 @@ const onQuery = async () => {
     await stopScanProcess();
     paging.value?.complete(deviceList.value);
     const errMsg = err.message || err.errMsg || String(err);
-    toast.error(`${t("bms.ble.connectFailed")}: ${errMsg}`);
+    toast.error(`${t("bms.ble.scanStartFailed")}: ${errMsg}`);
   }
 };
 
@@ -434,12 +450,15 @@ onShow(async () => {
   await nextTick();
 
   // 仅在首次进入页面，或明确从系统设置等页面返回时才触发扫描刷新
-  // 规避 Android 因请求已被永久拒绝的权限导致 Activity 上下文瞬时切换从而引起 onHide/onShow 无限循环卡死的 Bug
+  // 规避 Android 因请求已被永久拒绝 of 权限导致 Activity 上下文瞬时切换从而引起 onHide/onShow 无限循环卡死的 Bug
   const returnedFromSettings = uni.getStorageSync("returned_from_settings");
   if (isFirstShow || returnedFromSettings) {
     isFirstShow = false;
     uni.removeStorageSync("returned_from_settings");
-    paging.value?.reload();
+    // 增加 200ms 缓冲延时，避开小程序页面初始化渲染与蓝牙硬件适配器唤醒（openBluetoothAdapter）的 CPU 并发争抢，彻底消灭首屏瞬时卡顿
+    setTimeout(() => {
+      paging.value?.reload();
+    }, 200);
   }
 });
 </script>
@@ -463,35 +482,36 @@ onShow(async () => {
 /* Google 风格水平流光进度条 */
 .progress-bar-container {
   width: 100%;
-  height: 0px;
+  height: 3px;
   background-color: #e8f0fe;
   overflow: hidden;
-  transition: height 0.3s ease;
+  opacity: 0;
+  transition: opacity 0.25s ease;
   position: relative;
 }
 .progress-bar-container.is-active {
-  height: 3px;
+  opacity: 1;
 }
 .progress-bar-indicator {
   height: 100%;
   background-color: #1a73e8;
-  width: 50%;
+  width: 30%;
   position: absolute;
-  left: -50%;
+  left: 0;
+  top: 0;
+  will-change: transform;
   animation: google-progress 1.5s infinite linear;
   border-radius: 1.5px;
 }
 @keyframes google-progress {
   0% {
-    left: -50%;
-    width: 30%;
+    transform: translateX(-100%) scaleX(1);
   }
   50% {
-    width: 60%;
+    transform: translateX(120%) scaleX(1.8);
   }
   100% {
-    left: 100%;
-    width: 30%;
+    transform: translateX(340%) scaleX(1);
   }
 }
 

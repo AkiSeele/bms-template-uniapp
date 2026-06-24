@@ -309,14 +309,26 @@ export const permissionManager = {
           if ((systemInfo as any).bluetoothAuthorized === false) {
             uni.showModal({
               title: translate("bms.common.authPrompt"),
-              content: translate("bms.ble.env.locationNotAuthorized"),
+              content: translate("bms.ble.env.wechatBluetoothNotAuthorized"),
               showCancel: false,
             });
             return resolve(false);
           } else {
-            uni.openSetting({
-              success: (res) => {
-                resolve(!!(res.authSetting as any)["scope.bluetooth"]);
+            uni.showModal({
+              title: translate("bms.common.authPrompt"),
+              content: translate("bms.ble.env.wechatBluetoothRefused"),
+              confirmText: translate("bms.common.goSettings"),
+              success: (modalRes) => {
+                if (modalRes.confirm) {
+                  uni.openSetting({
+                    success: (res) => {
+                      resolve(!!(res.authSetting as any)["scope.bluetooth"]);
+                    },
+                    fail: () => resolve(false),
+                  });
+                } else {
+                  resolve(false);
+                }
               },
               fail: () => resolve(false),
             });
@@ -393,9 +405,21 @@ export const permissionManager = {
             });
             return resolve(false);
           } else {
-            uni.openSetting({
-              success: (res) => {
-                resolve(!!res.authSetting["scope.userLocation"]);
+            uni.showModal({
+              title: translate("bms.common.authPrompt"),
+              content: translate("bms.ble.env.wechatLocationRefused"),
+              confirmText: translate("bms.common.goSettings"),
+              success: (modalRes) => {
+                if (modalRes.confirm) {
+                  uni.openSetting({
+                    success: (res) => {
+                      resolve(!!res.authSetting["scope.userLocation"]);
+                    },
+                    fail: () => resolve(false),
+                  });
+                } else {
+                  resolve(false);
+                }
               },
               fail: () => resolve(false),
             });

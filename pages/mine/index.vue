@@ -5,7 +5,7 @@
     <wd-navbar :title="$t('bms.mine.title')" fixed safe-area-inset-top />
 
     <!-- 用户个人中心头部卡片 -->
-    <view class="tab-content-wrap wot-px-3 wot-py-4 page-body-animate">
+    <view class="tab-content-wrap wot-px-3 wot-py-4 page-body-animate" :style="{ 'padding-top': (navbarHeight + 16) + 'px' }">
       <view
         class="user-card wot-bg-filled-oppo wot-rounded-2xl wot-p-3.5 wot-shadow-sm wot-mb-4 wot-flex wot-items-center wot-justify-between"
         @click="handleUserCardClick"
@@ -221,6 +221,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import { useDeviceInfo } from "@/uni_modules/wot-ui/composables/useDeviceInfo";
 import { useToast, useDialog } from "@/uni_modules/wot-ui";
 import { useAppStore } from "@/stores/app";
 import { useUserStore } from "@/stores/user";
@@ -236,6 +237,18 @@ const userStore = useUserStore();
 const logStore = useLogStore();
 const toast = useToast();
 const dialog = useDialog();
+
+// 引入 wot-ui 底层设备信息适配，以彻底破除微信小程序 v-show 保活机制下 placeholder 测量塌陷的 bug
+const { statusBarHeight, navBarTotalHeight } = useDeviceInfo();
+
+// 动态计算系统的导航栏高度以彻底保障安全区高度自适应
+const navbarHeight = computed(() => {
+  const minHeight = (statusBarHeight.value || 0) + 44;
+  if (navBarTotalHeight.value && navBarTotalHeight.value >= minHeight) {
+    return navBarTotalHeight.value;
+  }
+  return minHeight;
+});
 
 // 如果直接作为独立页面加载（比如外部回跳），则自动重定向至主 Shell 页面的“我的”标签页以防布局错乱
 onLoad(() => {
@@ -614,7 +627,7 @@ const handleLogout = () => {
 
 /* 顶部安全区域与自定义导航栏高度自适应占位 */
 .tab-content-wrap {
-  padding-top: calc(var(--status-bar-height) + 44px + 16px) !important;
+  box-sizing: border-box;
 }
 
 /* 底部 Footer 备案区与版本样式 */

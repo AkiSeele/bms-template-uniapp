@@ -1,4 +1,12 @@
 {
+  "bmsTitle": "BMS Debugging Tool",
+  "mpWeixinLocationDesc": "Your location information will be used to scan and connect to nearby Bluetooth battery pack devices.",
+  "iosCameraUsageDescription": "Scan QR code to pair with Bluetooth devices",
+  "iosPhotoLibraryUsageDescription": "Select QR code images from photo library to pair with Bluetooth devices",
+  "iosBluetoothAlwaysUsageDescription": "This application requires Bluetooth access to discover, connect and sync real-time telemetry and control commands with nearby BMS battery devices.",
+  "iosBluetoothPeripheralUsageDescription": "This application requires Bluetooth communication capability to discover and connect nearby BMS battery devices for status synchronization.",
+  "iosLocationWhenInUseUsageDescription": "This application requires location access to discover and list nearby Low Energy Bluetooth battery pack devices while active.",
+  "iosLocationAlwaysAndWhenInUseUsageDescription": "This application requires background location access to reliably scan and list nearby Low Energy Bluetooth battery pack devices.",
   "bms": {
     "title": "BMS Battery Management",
     "ble": {
@@ -14,6 +22,7 @@
       "disconnect": "Disconnect",
       "disconnectConfirmPrefix": "Are you sure to disconnect from ",
       "disconnectConfirmSuffix": "?",
+      "disconnectSuccess": "Disconnected",
       "disconnected": "Bluetooth Disconnected",
       "initFailed": "Bluetooth initialization failed",
       "invalidFormat": "Invalid QR code format",
@@ -30,6 +39,7 @@
       "startSearch": "Search",
       "stopSearch": "Stop",
       "clickTooFrequent": "Operation too frequent, please try again later",
+      "dontScanFrequently": "Please do not scan frequently",
       "unconnected": "Disconnected",
       "unknownProtocol": "Unknown Protocol",
       "deviceList": "Devices",
@@ -48,6 +58,7 @@
         "locationNotAuthorized": "WeChat has no location permission. Please grant WeChat location permission in system settings.",
         "permissionDeniedPrefix": "Missing required permissions for connection: ",
         "permissionDeniedSuffix": ". Cannot scan for nearby Bluetooth devices. Please go to system settings to authorize manually.",
+        "wechatBluetoothNotAuthorized": "WeChat has no Bluetooth permission. Please grant WeChat Bluetooth permission in system settings.",
         "wechatBluetoothRefused": "Bluetooth permission is required. Click 'Settings' to enable Bluetooth permission.",
         "wechatLocationRefused": "Location permission is required. Click 'Settings' to enable location permission."
       }

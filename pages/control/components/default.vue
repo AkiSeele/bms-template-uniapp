@@ -4,7 +4,7 @@
     <!-- Source: uni_modules/wot-ui/components/wd-navbar/wd-navbar.vue -->
     <wd-navbar :title="$t('bms.tab.control')" fixed safe-area-inset-top />
 
-    <view class="tab-content-wrap page-body-animate">
+    <view class="tab-content-wrap page-body-animate" :style="{ 'padding-top': (navbarHeight + 16) + 'px' }">
       <!-- 蓝牙未连接时的空状态 -->
       <!-- Source: uni_modules/wot-ui/components/wd-empty/wd-empty.vue -->
       <view v-if="!isConnected" class="empty-wrap wot-flex wot-flex-col wot-items-center wot-justify-center">
@@ -234,11 +234,24 @@ import { useI18n } from "vue-i18n";
 import { useToast, useDialog } from "@/uni_modules/wot-ui";
 import { useBleStore } from "@/stores/ble-store";
 import { useUserStore } from "@/stores/user";
+import { useDeviceInfo } from "@/uni_modules/wot-ui/composables/useDeviceInfo";
 
 // 初始化 UI 交互反馈与翻译
 const toast = useToast();
 const dialog = useDialog();
 const { t } = useI18n();
+
+// 引入 wot-ui 底层设备信息适配，以彻底破除微信小程序 v-show 保活机制下 placeholder 测量塌陷的 bug
+const { statusBarHeight, navBarTotalHeight } = useDeviceInfo();
+
+// 动态计算系统的导航栏高度以彻底保障安全区高度自适应
+const navbarHeight = computed(() => {
+  const minHeight = (statusBarHeight.value || 0) + 44;
+  if (navBarTotalHeight.value && navBarTotalHeight.value >= minHeight) {
+    return navBarTotalHeight.value;
+  }
+  return minHeight;
+});
 
 // 获取状态存储层数据
 const userStore = useUserStore();
@@ -401,7 +414,6 @@ const confirmAction = (action: "clear" | "sleep" | "start" | "clearParam") => {
 
 /* 顶部安全区域与自定义导航栏高度自适应占位 */
 .tab-content-wrap {
-  padding-top: calc(var(--status-bar-height) + 44px + 16px);
   padding-bottom: env(safe-area-inset-bottom);
 }
 

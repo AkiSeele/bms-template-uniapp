@@ -789,7 +789,7 @@ const toggleConnection = () => {
       .then(async () => {
         try {
           await bleStore.disconnectDevice();
-          toast.show({ msg: t("bms.ble.disconnected") });
+          toast.show({ msg: t("bms.ble.disconnectSuccess") });
         } catch (e) {
           console.error("断开蓝牙连接出现异常:", e);
         }

@@ -1,5 +1,5 @@
 {
-    "name" : "%bms.title%",
+    "name" : "%bmsTitle%",
     "appid" : "__UNI__F1BFD71",
     "description" : "",
     "versionName" : "1.0.0",
@@ -56,9 +56,14 @@
             "ios" : {
                 "idfa" : false,
                 "dSYMs" : false,
-                /* iOS 必须声明相机与相册使用用途，否则 App Store 审核会被拒 */
-                "NSCameraUsageDescription" : "扫描二维码以配对蓝牙设备",
-                "NSPhotoLibraryUsageDescription" : "从相册中选取二维码图片以配对蓝牙设备"
+                "privacyDescription" : {
+                    "NSCameraUsageDescription" : "%iosCameraUsageDescription%",
+                    "NSPhotoLibraryUsageDescription" : "%iosPhotoLibraryUsageDescription%",
+                    "NSBluetoothAlwaysUsageDescription" : "%iosBluetoothAlwaysUsageDescription%",
+                    "NSBluetoothPeripheralUsageDescription" : "%iosBluetoothPeripheralUsageDescription%",
+                    "NSLocationWhenInUseUsageDescription" : "%iosLocationWhenInUseUsageDescription%",
+                    "NSLocationAlwaysAndWhenInUseUsageDescription" : "%iosLocationAlwaysAndWhenInUseUsageDescription%"
+                }
             },
             /* SDK配置 */
             "sdkConfigs" : {},
@@ -134,7 +139,11 @@
             "postcss" : true
         },
         "usingComponents" : true,
-        "permission" : {}
+        "permission" : {
+            "scope.userLocation" : {
+                "desc" : "%mpWeixinLocationDesc%"
+            }
+        }
     },
     "mp-alipay" : {
         "usingComponents" : true
