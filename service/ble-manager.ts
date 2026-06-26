@@ -98,8 +98,20 @@ export const bleManager = {
 
       // 启动蓝牙搜索
       console.warn("[BLE Manager] 启动低功耗蓝牙适配器设备发现扫描 (startBluetoothDevicesDiscovery)...");
-      uni.startBluetoothDevicesDiscovery({
+      
+      const scanParams: UniApp.StartBluetoothDevicesDiscoveryOptions = {
         allowDuplicatesKey: true,
+      };
+
+      // 动态注入过滤主服务 UUID 列表，避开微信小程序传入空数组 [] 导致扫描列表全空的问题
+      const filterServices = APP_CONFIG.BLE_SCAN.SCAN_SERVICES;
+      if (filterServices && filterServices.length > 0) {
+        scanParams.services = filterServices;
+        console.log("[BLE Manager] 开启蓝牙扫描过滤，目标服务 UUID:", filterServices);
+      }
+
+      uni.startBluetoothDevicesDiscovery({
+        ...scanParams,
         success: (res) => resolve(res),
         fail: (err) => reject(err),
       });

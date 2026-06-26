@@ -40,7 +40,23 @@ bms-jlw-uniapp/
 
 ---
 
-## 📖 简易使用手册
+## 📖 技术架构与详细开发文档
+
+为了帮助开发与维护人员快速上手并理解全局数据流向，`docs` 目录下提供了完整的技术设计文档：
+
+1. **[系统整体架构与职责划分](docs/1.architecture.md)**：物理目录职责边界、解耦数据流（页面 - Composables - Store - Parser - Utils）。
+2. **[蓝牙物理连接生命周期](docs/2.connection_lifecycle.md)**：9步物理连接时序、GATT 缓存就绪防 10008/10004 机制。
+3. **[指令收发与队列调度机制](docs/3.transceiver_queue.md)**：单一通道指令队列调度器、控制指令插队、轮询指令去重去噪防堵塞及分包下发。
+4. **[多协议热兼容与策略模式](docs/4.multi_protocol.md)**：数据层与 UI 面板层的“双注册表自适应架构”、Vite Glob 编译期自动加载原理。
+5. **[核心业务页面功能使用指南](docs/5.page_guide.md)**：模糊搜索、温度传感器智能过滤、多语言重载、色彩色板热重绘及固件升级 OTA 写入锁。
+6. **[系统安全授权与激活校验](docs/6.auth_activation.md)**：特征设备识别码离线生成、离线激活码双向演算比对、到期状态熔断保护及防重放重刷机制。
+7. **[系统权限诊断与自适应修复](docs/7.permission_diagnostics.md)**：手机蓝牙、GPS 硬件开关及应用位置/附近设备权限诊断，Android 12+ 混合直申与 Manifest neverForLocation 消除定位授权摩擦。
+8. **[常见问题排查与避坑指南](docs/8.troubleshooting.md)**：10003 连接失败、10008 no descriptor、大包丢包串口堵塞、小程序 services 传空数组 Bug 等经典故障定位。
+9. **[UI 视觉设计美学与 GSAP 动画体系](docs/9.animations_aesthetics.md)**：莫兰迪色系应用、Vue 3 状态驱动 GSAP 补间机制、GPU 硬件加速与 destroy 强制释放防溢出红线。
+
+---
+
+## ⚙️ 简易使用手册
 
 ### 1. 开发环境准备
 
@@ -48,26 +64,28 @@ bms-jlw-uniapp/
    ```bash
    pnpm install
    ```
-2. **启动项目**：可使用 HBuilderX 打开项目根目录，选择对应的端（如 "运行到内置浏览器"、"运行到微信开发者工具"、"运行到 Android App 基座"）进行编译运行。
+2. **启动项目**：使用 HBuilderX 打开项目根目录，在上方运行菜单中选择对应的端（如“运行到内置浏览器”、“运行到微信开发者工具”、“运行到 Android App 基座”）进行编译调试。
 
-### 2. 开发规范准则 (核心)
+### 2. 多协议接入与命名规范 (核心红线)
 
-本项目遵循严格的开发规范（详细见 `.cursorrules` 或全局开发文档）：
-- **组件库优先**：界面构建优先使用 `wot-ui` (`wd-*`) 组件，禁止直接写原生或重写已有组件。
-- **UnoCSS 样式**：通用排版使用 UnoCSS 类名（带 `wot-` 前缀，如 `wot-flex`），图标统一采用 `<wd-icon>`。
-- **多端兼容**：涉及平台特异性 API 或样式时，必须使用 uni-app 的条件编译（`#ifdef` / `#endif`）。
-- **完全国际化 (i18n)**：禁止在代码中出现硬编码中文（日志除外）。模板使用 `$t('key')`，脚本使用 `t('key')`。
-- **严格 TS 类型**：新文件优先使用 TypeScript，必须解决所有类型报错，官方库 Bug 允许使用 `as any` 兜底。
+项目采用了开闭原则与自动装载设计，**命名硬对齐规范是确保新协议生效的红线**：
+1. **配置 Key 名**：在 [config/index.ts](config/index.ts) 的 `BLE_SERVICES` 中配置协议的键名（Key）（如 `"protocol-c"`）。
+2. **策略文件名**：在 `service/protocol/` 目录下创建该策略文件，文件名必须与 Key 一致（即 `protocol-c.ts`）。
+3. **UI 面板文件名**：在对应业务页面（如 `pages/index/components/`）下创建专属面板，文件名必须与 Key 一致（即 `protocol-c.vue`）。
+*若三者名称不一致，系统会在运行时控制台抛出明确的 `console.error`（未找到策略文件）或 `console.warn`（未找到专属面板）引导您纠正。*
 
-### 3. 核心功能接入说明
+### 3. 开发规范准则 (Ruler)
 
-- **蓝牙与权限**：涉及到蓝牙状态查询、系统定位开关检查、App/小程序动态权限获取等环境核验，统一通过 `service/permission.ts` 发起。UI 交互层的提示由 `composables/use-ble-permission.ts` 结合弹窗组件处理。
-- **蓝牙设备连接**：底层通讯统一交给 `service/ble-manager.ts` 管理生命周期（自动处理重连、分包 MTU 写入及资源释放），禁止在页面中直接调用 `uni.openBluetoothAdapter` 等原生 API。
+详细规范请严格遵循 [.agents/rules/cursorruler.md](.agents/rules/cursorruler.md)，核心摘要如下：
+- **组件库优先**：界面构建优先使用 `wot-ui` (`wd-*`) 组件，禁止裸写原生标签或重复封装已有组件。
+- **UI 动效规范**：GSAP 补间动画禁止直接操作 DOM，必须由 Vue Ref 响应式状态驱动，且组件卸载时必须显式调用 `tween.kill()` 或 `gsap.killTweensOf()` 彻底销毁释放，防止内存溢出。
+- **完全国际化 (i18n)**：代码中禁止硬编码任何中文字符（`console` 除外）。模板中采用 `{{ $t('key') }}`，脚本中采用 `t('key')`。
+- **TS 类型与 Prettier**：修改代码后应主动执行 `npx tsc --noEmit` 核验。每行结尾必补分号，字符串必用双引号，使用 2 个空格缩进。
 
 ---
 
-## 🤝 常见问题排查
+## 🤝 常见问题排查与避坑
 
-- **蓝牙无法搜索/报错**：检查手机系统蓝牙开关、系统定位 (GPS) 开关是否开启，以及 Android 12+ 手机的“附近设备”与“位置信息”权限是否授予（Android 必须为“使用时允许”）。
-- **组件样式不生效**：检查是否错误地使用了深层穿透选择器去覆盖组件库类名；如果是小程序背景图，确认是否使用了不支持的本地相对路径。
-- **i18n 文本为空白**：检查对应语言包（如 `locale/en.json`）中该 key 是否存在且拼写一致。
+- **微信小程序蓝牙搜索全空**：检查是否在底层 `startBluetoothDevicesDiscovery` 接口的 `services` 参数中传了空数组 `[]`。在部分机型和微信版本下，传递空数组会被过滤为空导致扫描搜不到任何设备，项目已在底层做了动态容错隔离。
+- **蓝牙设备搜索失败 (10003)**：确认手机系统蓝牙开关与 GPS 定位服务是否均已开启。Android 12+ 需检查是否已授予“附近设备”与“位置信息”权限。
+- **Android GATT 订阅失败 (10008)**：在特征值发现成功后，需给与底层 Gatt 同步微量缓存就绪时间，项目已在连接时序中默认加入 `PRE_SUBSCRIBE_DELAY_MS` (300ms) 缓冲，避免过早订阅导致无描述符报错。
