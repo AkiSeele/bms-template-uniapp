@@ -354,11 +354,9 @@
       "permMsg": "Storage permission is required to read local files. Please grant it in system settings.",
       "permTitle": "Storage Permission Denied",
       "phaseComplete": "Flash complete, rebooting...",
-      "phaseFinalize": "Finalizing and verifying...",
-      "phaseFinalizing": "Finalizing and verifying...",
-      "phaseFlash": "Writing firmware data...",
-      "phaseInit": "Initializing channel...",
-      "phaseVerify": "Verifying file integrity...",
+      "phaseF0": "Preparing upgrade...",
+      "phaseF1": "Writing firmware data...",
+      "phaseF2": "Finalizing upgrade...",
       "processing": "Processing...",
       "reset": "Done, Select Again",
       "selectFile": "Select Firmware File",
@@ -378,7 +376,12 @@
       "updating": "Flashing...",
       "updatingNoSelect": "Flashing in progress, please wait",
       "updatingNoBack": "Firmware flashing in progress, returning or closing page is prohibited",
-      "updatingNoCancel": "Firmware flashing in progress, cancelling is prohibited"
+      "updatingNoCancel": "Firmware flashing in progress, cancelling is prohibited",
+      "startUpdateConfirm": "Are you sure you want to start writing the firmware? Please ensure the phone stays close to the protection board during the update.",
+      "deviceNotReady": "BMS board is not ready or refused to upgrade.",
+      "fileEmpty": "The read firmware file is empty. Please select again.",
+      "updateFailedTitle": "Upgrade Failed",
+      "readFailed": "Failed to read firmware file. Please select again."
     }
   }
 }

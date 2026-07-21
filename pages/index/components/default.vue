@@ -765,12 +765,15 @@ const cellVoltageList = computed(() => {
   const firstMaxIdx = rawVolts.indexOf(maxVolt);
   const firstMinIdx = rawVolts.indexOf(minVolt);
 
-  return rawVolts.map((volt, idx) => ({
-    name: `#${String(idx + 1).padStart(2, "0")}`,
-    value: volt > 0 ? volt + " mV" : "--",
-    isMax: hasDiff && idx === firstMaxIdx && volt > 0,
-    isMin: hasDiff && idx === firstMinIdx && volt > 0,
-  }));
+  return rawVolts
+    .map((volt, idx) => ({
+      name: `#${String(idx + 1).padStart(2, "0")}`,
+      value: volt > 0 ? volt + " mV" : "--",
+      isMax: hasDiff && idx === firstMaxIdx && volt > 0,
+      isMin: hasDiff && idx === firstMinIdx && volt > 0,
+      volt,
+    }))
+    .filter((item) => item.volt > 0);
 });
 
 // 处理连接/断开蓝牙按钮点击事件

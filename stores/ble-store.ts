@@ -100,6 +100,9 @@ export const useBleStore = defineStore("ble", () => {
   /** 是否正处于固件升级锁定中 */
   const isOtaUpdating = ref(false);
 
+  /** 固件升级数据应答拦截回调 */
+  const otaCallback = ref<((bytes: Uint8Array) => void) | null>(null);
+
   // 是否有活跃页面需要轮询遥测数据
   const isPollingActive = ref(false);
 
@@ -438,6 +441,21 @@ export const useBleStore = defineStore("ble", () => {
    * @param bytes 拼接好的完整字节数组
    */
   const processFullFrame = (bytes: Uint8Array) => {
+    // 优先分发给固件升级的监听回调，拦截常规状态解析
+    if (otaCallback.value) {
+      const hex = uint8ArrayToHexString(bytes);
+      console.warn("[BLE Store] 收到 OTA 应答指令 (HEX):", hex);
+      try {
+        useLogStore().addCommandLog("RX", hex);
+      } catch (e) {}
+      try {
+        otaCallback.value(bytes);
+      } catch (e) {
+        console.error("[BLE Store] OTA 升级回调处理异常:", e);
+      }
+      return;
+    }
+
     const hex = uint8ArrayToHexString(bytes);
     console.warn("[BLE Store] 收到指令 (HEX):", hex);
 
@@ -1028,6 +1046,54 @@ export const useBleStore = defineStore("ble", () => {
     isAutoConnectingCancelable.value = false;
   };
 
+  /**
+   * 发送 OTA 固件升级专用帧并等待特定命令字应答
+   * @param commandHex 十六进制指令字节串
+   * @param responseCmdId 期待接收响应帧的命令字
+   * @param timeout 超时限制时间（毫秒）
+   */
+  const sendOtaFrame = (commandHex: string, responseCmdId: number, timeout = 5000): Promise<Uint8Array> => {
+    return new Promise(async (resolve, reject) => {
+      if (!isBleConnected.value || !connectedDeviceId.value) {
+        return reject(new Error("Bluetooth device not connected"));
+      }
+
+      let timer: ReturnType<typeof setTimeout> | null = null;
+
+      const callback = (bytes: Uint8Array) => {
+        const cmdId = bytes[1];
+        if (cmdId === responseCmdId) {
+          if (timer) {
+            clearTimeout(timer);
+            timer = null;
+          }
+          otaCallback.value = null;
+          resolve(bytes);
+        }
+      };
+
+      otaCallback.value = callback;
+
+      timer = setTimeout(() => {
+        otaCallback.value = null;
+        reject(new Error("Timeout waiting for OTA response"));
+      }, timeout);
+
+      try {
+        const serviceId = activeServiceConfig.value.serviceId;
+        const writeCharId = activeServiceConfig.value.writeCharacteristicId;
+        await bleManager.writeCommand(connectedDeviceId.value, commandHex, serviceId, writeCharId);
+      } catch (err) {
+        if (timer) {
+          clearTimeout(timer);
+          timer = null;
+        }
+        otaCallback.value = null;
+        reject(err);
+      }
+    });
+  };
+
   // 监听固件升级状态，一旦开启，立即清空普通指令队列并停止遥测轮询
   watch(isOtaUpdating, (newVal) => {
     if (newVal) {
@@ -1068,5 +1134,6 @@ export const useBleStore = defineStore("ble", () => {
     stopQueryTimer,
     isPollingActive,
     setPollingActive,
+    sendOtaFrame,
   };
 });

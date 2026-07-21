@@ -354,11 +354,9 @@
       "permMsg": "写入本地文件需要存储读取权限，请前往系统设置手动开启。",
       "permTitle": "存储权限未开启",
       "phaseComplete": "写入完成，重启中...",
-      "phaseFinalize": "正在执行收尾校验...",
-      "phaseFinalizing": "正在执行收尾校验...",
-      "phaseFlash": "正在写入固件数据...",
-      "phaseInit": "正在初始化通道...",
-      "phaseVerify": "正在校验文件完整性...",
+      "phaseF0": "正在预备升级...",
+      "phaseF1": "正在写入固件数据...",
+      "phaseF2": "正在结束升级...",
       "processing": "处理中...",
       "reset": "完成，重新选择",
       "selectFile": "选择固件文件",
@@ -378,7 +376,12 @@
       "updating": "写入中...",
       "updatingNoSelect": "固件写入中，请勿重新选择文件",
       "updatingNoBack": "固件写入中，禁止返回或关闭页面",
-      "updatingNoCancel": "固件写入中，禁止取消更新"
+      "updatingNoCancel": "固件写入中，禁止取消更新",
+      "startUpdateConfirm": "确定要开始写入固件吗？请确保升级期间手机不要远离保护板",
+      "deviceNotReady": "保护板未就绪或拒绝升级",
+      "fileEmpty": "读取的固件文件为空，请重新选择",
+      "updateFailedTitle": "升级失败",
+      "readFailed": "读取固件文件失败，请重新选择"
     }
   }
 }

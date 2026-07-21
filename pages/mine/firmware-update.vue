@@ -4,20 +4,20 @@
     <wd-navbar
       :title="$t('bms.firmware.title')"
       fixed
-      placeholder
       left-arrow
       safe-area-inset-top
+      custom-style="background-color: transparent !important; border-bottom: none !important;"
       @click-left="handleBack"
     />
 
     <!-- 顶部渐变装饰背景层（绝对定位，不影响文档流） -->
-    <view class="fw-header-bg">
+    <view class="fw-header-bg" :style="headerBgStyle">
       <!-- 浮动圆圈由 GSAP 补间驱动 translateY，will-change 已在 CSS 中声明 -->
       <view class="fw-circle fw-circle--a" :style="circleAStyle" />
       <view class="fw-circle fw-circle--b" :style="circleBStyle" />
     </view>
 
-    <view class="wot-px-3 wot-py-4 wot-relative wot-z-1">
+    <view class="fw-container wot-px-3 wot-pb-4 wot-relative wot-z-1">
 
       <!-- ① 设备状态英雄卡片 -->
       <view class="fw-hero wot-flex wot-items-center wot-mb-4 wot-rounded-3xl wot-p-4 page-body-animate">
@@ -180,10 +180,20 @@ import { onUnload, onBackPress } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import { useFirmwareAnimation } from "@/composables/use-firmware-animation";
 import { useToast, useDialog } from "@/uni_modules/wot-ui";
+import { useBleStore } from "@/stores/ble-store";
+import { useAppStore } from "@/stores/app";
+import { calcChecksum16LE, uint8ArrayToHexString } from "@/utils/bms-helper";
+import { storeToRefs } from "pinia";
 
 const { t } = useI18n();
 const toast = useToast();
 const dialog = useDialog();
+
+// 初始化 Pinia 全局蓝牙与应用状态仓
+const bleStore = useBleStore();
+const appStore = useAppStore();
+const { isBleConnected } = storeToRefs(bleStore);
+const { activeThemeColor } = storeToRefs(appStore);
 
 // ---------------------------------------------------------------------------
 // 业务状态
@@ -192,11 +202,17 @@ const dialog = useDialog();
 /** 步骤条当前激活索引（0:选择 1:校验 2:写入 3:完成） */
 const currentStep = ref(0);
 
+/** 固件升级协议阶段（空闲、预备升级、数据写入、结束升级、成功） */
+const otaProtocolPhase = ref<"idle" | "f0" | "f1" | "f2" | "success">("idle");
+
 /** 已选文件名 */
 const selectedFileName = ref("");
 
 /** 已选文件大小（字节） */
 const selectedFileSize = ref(0);
+
+/** 已选文件的真实物理/临时路径 */
+const selectedFilePath = ref("");
 
 /** 是否正在固件写入中 */
 const isUpdating = ref(false);
@@ -252,6 +268,14 @@ let simulateTimer: ReturnType<typeof setInterval> | null = null;
 // 计算属性区（模板中所有复杂逻辑必须收拢至此，禁止模板内嵌套三目运算符）
 // ---------------------------------------------------------------------------
 
+/** 顶部渐变背景装饰层样式，与当前品牌主题色进行物理联动 */
+const headerBgStyle = computed(() => {
+  const themeColor = activeThemeColor.value;
+  return {
+    background: `linear-gradient(135deg, #1a2f5a 0%, ${themeColor} 50%, #7c3aed 100%)`,
+  };
+});
+
 /** 是否已选中文件 */
 const hasFileSelected = computed(() => !!selectedFileName.value);
 
@@ -298,11 +322,18 @@ const progressBarColor = computed(() => (updateSuccess.value ? "#22c55e" : "#3b8
 
 /** 进度阶段说明文案 */
 const progressPhaseText = computed(() => {
-  if (updateSuccess.value) return t("bms.firmware.phaseComplete");
-  if (displayProgressValue.value < 10) return t("bms.firmware.phaseInit");
-  if (displayProgressValue.value < 50) return t("bms.firmware.phaseVerify");
-  if (displayProgressValue.value < 95) return t("bms.firmware.phaseFlash");
-  return t("bms.firmware.phaseFinalizing");
+  switch (otaProtocolPhase.value) {
+    case "f0":
+      return t("bms.firmware.phaseF0");
+    case "f1":
+      return t("bms.firmware.phaseF1");
+    case "f2":
+      return t("bms.firmware.phaseF2");
+    case "success":
+      return t("bms.firmware.phaseComplete");
+    default:
+      return t("bms.firmware.statusIdle");
+  }
 });
 
 /** 主按钮类型（wd-button 的 type 属性） */
@@ -314,7 +345,7 @@ const mainBtnType = computed(() => {
 /** 主按钮是否禁用 */
 const mainBtnDisabled = computed(() => {
   if (isUpdating.value || updateSuccess.value) return true;
-  return !hasFileSelected.value;
+  return !hasFileSelected.value || !fileArrayBuffer.value;
 });
 
 /** 主按钮文案 */
@@ -376,7 +407,7 @@ const handleSelectFile = () => {
     type: "all",
     success(res: any) {
       const file = res.tempFiles[0];
-      onFileSelected(file.name, file.size || 0);
+      onFileSelected(file.name, file.size || 0, file.path || "");
     },
   });
   // #endif
@@ -404,7 +435,7 @@ const handleSelectFile = () => {
       const file = result.files[0];
       // lemonjk-FileSelect 回调不返回文件大小，使用模拟值
       const mockSize = Math.floor(Math.random() * 512 * 1024) + 64 * 1024;
-      onFileSelected(file.fileName || "", mockSize);
+      onFileSelected(file.fileName || "", mockSize, file.path || file.filePath || "");
     }
   };
 
@@ -423,94 +454,318 @@ const handleSelectFile = () => {
 };
 
 /**
+ * 将本地文件路径读取并转换为 base64 DataURL (符合 HTML5+ / 微信小程序规范)
+ * @param path 文件本地路径
+ */
+const pathToBase64 = (path: string): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    // #ifdef APP-PLUS
+    plus.io.resolveLocalFileSystemURL(
+      path,
+      (entry) => {
+        (entry as any).file(
+          (file: any) => {
+            const fileReader = new plus.io.FileReader();
+            fileReader.onload = (evt: any) => {
+              resolve(evt.target.result);
+            };
+            fileReader.onerror = (error: any) => {
+              reject(error);
+            };
+            fileReader.readAsDataURL(file);
+          },
+          (error: any) => {
+            reject(error);
+          }
+        );
+      },
+      (error) => {
+        reject(error);
+      }
+    );
+    // #endif
+
+    // #ifdef MP-WEIXIN
+    wx.getFileSystemManager().readFile({
+      filePath: path,
+      encoding: "base64",
+      success: (res) => {
+        resolve("data:image/png;base64," + res.data);
+      },
+      fail: (error) => {
+        reject(error);
+      },
+    });
+    // #endif
+  });
+};
+
+/** 内存中缓存的固件文件二进制字节流，以彻底防范在通道锁定和清空时发生文件系统 IO 挂起 */
+const fileArrayBuffer = ref<ArrayBuffer | null>(null);
+
+/**
+ * 提前读取所选的物理文件内容并存入内存 ArrayBuffer 中，以防升级锁通道后发生文件系统 IO 挂起卡死
+ * @param path 文件路径
+ */
+const readFileContentToArrayBuffer = (path: string) => {
+  if (!path) return;
+
+  pathToBase64(path)
+    .then((base64) => {
+      const base64Data = base64.split("base64,")[1];
+      if (!base64Data) {
+        throw new Error("Invalid base64 format");
+      }
+      const arrayBuffer = uni.base64ToArrayBuffer(base64Data);
+      fileArrayBuffer.value = arrayBuffer;
+      selectedFileSize.value = arrayBuffer.byteLength;
+      console.log("[OTA] 文件读取并转换为 ArrayBuffer 成功，大小:", arrayBuffer.byteLength);
+    })
+    .catch((err) => {
+      console.error("[OTA] 文件转换 base64/ArrayBuffer 异常:", err);
+      toast.error(t("bms.firmware.readFailed"));
+    });
+};
+
+/**
  * 文件选中后统一状态重置（各平台回调汇聚至此）
  * @param name 文件名
  * @param size 文件大小（字节）
+ * @param path 物理路径
  */
-const onFileSelected = (name: string, size: number) => {
+const onFileSelected = (name: string, size: number, path: string) => {
   selectedFileName.value = name;
   selectedFileSize.value = size;
+  selectedFilePath.value = path;
   currentStep.value = 0;
+  otaProtocolPhase.value = "idle";
   updateSuccess.value = false;
   showProgressCard.value = false;
   progressValue.value = 0;
   displayProgressValue.value = 0;
+  fileArrayBuffer.value = null; // 重置之前已读的缓存
+
+  // 立即发起后台文件加载，提前在内存中准备好数据
+  readFileContentToArrayBuffer(path);
 };
 
 /**
- * 点击开始写入固件
- * 未对接协议前先进行三段式模拟进度推进，验证 UI 流程完整性
+ * 组装分包升级写入所需的 0xF1 物理帧
+ * 格式：0xAA + 0xF1 + 0x42 + 地址(2字节小端) + 数据(64字节) + 校验和(2字节小端)
  */
-const handleStartUpdate = () => {
-  if (isUpdating.value || updateSuccess.value) return;
-  if (!hasFileSelected.value) {
-    toast.show({ msg: t("bms.firmware.noFileSelected") });
-    return;
+const buildF1Frame = (addr: number, chunk: Uint8Array): string => {
+  const frame = new Uint8Array(71);
+  frame[0] = 0xaa;
+  frame[1] = 0xf1;
+  frame[2] = 0x42; // 66 字节数据段长度
+  
+  // 地址 2 字节小端
+  frame[3] = addr & 0xff;
+  frame[4] = (addr >> 8) & 0xff;
+  
+  // 数据：64字节。不足 64 字节的部分用 0xff 填充
+  frame.set(chunk, 5);
+  if (chunk.length < 64) {
+    for (let i = 5 + chunk.length; i < 69; i++) {
+      frame[i] = 0xff;
+    }
   }
 
+  // 累加校验和（从 CMD 到数据段末尾）
+  const { sumL, sumH } = calcChecksum16LE(frame, 1, 69);
+  frame[69] = sumL;
+  frame[70] = sumH;
+
+  return uint8ArrayToHexString(frame, "");
+};
+
+/**
+ * 物理执行固件升级状态机
+ */
+const executeFirmwareFlash = () => {
   isUpdating.value = true;
+  showProgressCard.value = true;
+  progressValue.value = 0;
+  displayProgressValue.value = 0;
+  currentStep.value = 1; // 校验/初始化阶段
+  otaProtocolPhase.value = "f0";
+
   // #ifdef MP-WEIXIN
   wx.enableAlertBeforeUnload({
     message: t("bms.firmware.updatingNoBack"),
   });
   // #endif
 
-  progressValue.value = 0;
-  displayProgressValue.value = 0;
-  currentStep.value = 1;
-  showProgressCard.value = true;
+  // 挂起其它遥测轮询，锁定升级通道
+  bleStore.isOtaUpdating = true;
 
-  // 模拟三段进度推进：校验（0→20%），写入（20→95%），收尾（95→100%）
-  let phase = 0;
-  let targetProgress = 20;
-
-  simulateTimer = setInterval(() => {
-    if (progressValue.value < targetProgress) {
-      const step = phase === 1 ? 1.5 : phase === 2 ? 0.4 : 0.6;
-      progressValue.value = Math.min(progressValue.value + step, targetProgress);
-      displayProgressValue.value = Math.round(progressValue.value);
-
-      // 随进度推进步骤条
-      if (progressValue.value >= 10 && currentStep.value < 1) {
-        currentStep.value = 1;
-      }
-      if (progressValue.value >= 20 && currentStep.value < 2) {
-        currentStep.value = 2;
-      }
-    } else {
-      if (phase === 0) {
-        phase = 1;
-        targetProgress = 95;
-      } else if (phase === 1) {
-        phase = 2;
-        targetProgress = 100;
-      } else {
-        // 写入完成
-        clearInterval(simulateTimer as ReturnType<typeof setInterval>);
-        simulateTimer = null;
-        displayProgressValue.value = 100;
-        progressValue.value = 100;
-        currentStep.value = 3;
-        isUpdating.value = false;
-        // #ifdef MP-WEIXIN
-        wx.disableAlertBeforeUnload();
-        // #endif
-        updateSuccess.value = true;
-        toast.success({ msg: t("bms.firmware.updateSuccess") });
-      }
+  // 读取文件 ArrayBuffer 并执行写入分发
+  const onFileReadSuccess = async (arrayBuffer: ArrayBuffer) => {
+    if (!arrayBuffer || arrayBuffer.byteLength === 0) {
+      handleFlashError(new Error(t("bms.firmware.fileEmpty")));
+      return;
     }
-  }, 80);
+
+    // 更新真实大小
+    selectedFileSize.value = arrayBuffer.byteLength;
+
+    try {
+      // ① 预备升级 (0xF0)
+      progressValue.value = 5;
+      displayProgressValue.value = 5;
+      console.log("[OTA] 发送预备升级帧 F0");
+      // 发送：AA F0 00 F0 00，等待应答 CMD=0xF0
+      const resF0 = await bleStore.sendOtaFrame("AAF000F000", 0xf0, 5000);
+      
+      // 应答：AA F0 01 [status] [sumL] [sumH]，判断第四字节是否为 0x01
+      if (resF0.length < 4 || resF0[3] !== 0x01) {
+        throw new Error(t("bms.firmware.deviceNotReady"));
+      }
+
+      // 进入写入包步骤
+      currentStep.value = 2; // 写入阶段
+      otaProtocolPhase.value = "f1";
+      progressValue.value = 10;
+      displayProgressValue.value = 10;
+
+      // ② 循环发送数据包片
+      const fileData = new Uint8Array(arrayBuffer);
+      const totalSize = fileData.length;
+      const chunkSize = 64;
+      const totalChunks = Math.ceil(totalSize / chunkSize);
+
+      console.log(`[OTA] 文件加载成功，共 ${totalSize} 字节，切分为 ${totalChunks} 个分片进行传输`);
+
+      for (let chunkIdx = 0; chunkIdx < totalChunks; chunkIdx++) {
+        // 安全防护：在发送分包前检查蓝牙是否突然掉线
+        if (!isBleConnected.value) {
+          throw new Error(t("bms.ble.connectionLost"));
+        }
+
+        const startOffset = chunkIdx * chunkSize;
+        const endOffset = Math.min(startOffset + chunkSize, totalSize);
+        const chunk = fileData.slice(startOffset, endOffset);
+
+        const addr = startOffset;
+        const commandHex = buildF1Frame(addr, chunk);
+
+        // 单个分片包最大重试发送 3 次
+        let success = false;
+        let retryCount = 0;
+        const maxRetry = 3;
+
+        while (!success && retryCount < maxRetry) {
+          try {
+            // 发送数据，等待 0xF1 成功应答 (应答：AA F1 00 xx xx)
+            await bleStore.sendOtaFrame(commandHex, 0xf1, 3000);
+            success = true;
+          } catch (err) {
+            retryCount++;
+            console.warn(`[OTA] 分片 [${chunkIdx + 1}/${totalChunks}] 第 ${retryCount} 次发送失败/超时:`, err);
+            if (retryCount >= maxRetry) {
+              throw err; // 重试用尽，抛出错误打断整个升级
+            }
+            // 每次重试前增加 100ms 物理避让延迟
+            await new Promise((r) => setTimeout(r, 100));
+          }
+        }
+
+        // 更新进度百分比 (范围 10% - 95%)
+        const pct = 10 + Math.round((chunkIdx + 1) / totalChunks * 85);
+        progressValue.value = pct;
+        displayProgressValue.value = pct;
+
+        // 每次物理分包下发后强制等待 50ms 冷却，防板端接收芯片写 Flash 缓存溢出
+        await new Promise((r) => setTimeout(r, 50));
+      }
+
+      // ③ 升级结束 (0xF2)
+      console.log("[OTA] 固件包全部传送完毕，发送升级结束帧 F2");
+      progressValue.value = 98;
+      displayProgressValue.value = 98;
+      otaProtocolPhase.value = "f2";
+
+      // 发送：AA F2 00 F2 00，等待应答 CMD=0xF2 (应答：AA F2 00 F2 00)
+      await bleStore.sendOtaFrame("AAF200F200", 0xf2, 5000);
+
+      // 固件升级完美收网
+      displayProgressValue.value = 100;
+      progressValue.value = 100;
+      currentStep.value = 3;
+      otaProtocolPhase.value = "success";
+      isUpdating.value = false;
+      updateSuccess.value = true;
+      bleStore.isOtaUpdating = false;
+
+      // #ifdef MP-WEIXIN
+      wx.disableAlertBeforeUnload();
+      // #endif
+
+      toast.success({ msg: t("bms.firmware.updateSuccess") });
+
+    } catch (flashErr: any) {
+      handleFlashError(flashErr);
+    }
+  };
+
+  if (!fileArrayBuffer.value || fileArrayBuffer.value.byteLength === 0) {
+    handleFlashError(new Error(t("bms.firmware.readFailed")));
+    return;
+  }
+
+  // 此时已经准备好，直接在内存中触发升级包发送状态机
+  onFileReadSuccess(fileArrayBuffer.value);
 };
 
 /**
- * 停止模拟写入（返回或取消时调用）
+ * 升级异常报错通用出口
  */
-const 停止模拟写入 = () => {
-  if (simulateTimer) {
-    clearInterval(simulateTimer);
-    simulateTimer = null;
-  }
+const handleFlashError = (err: Error) => {
+  console.error("[OTA] 固件升级执行异常被捕获:", err);
+  
   isUpdating.value = false;
+  bleStore.isOtaUpdating = false;
+  otaProtocolPhase.value = "idle";
+
+  // #ifdef MP-WEIXIN
+  wx.disableAlertBeforeUnload();
+  // #endif
+
+  const errMsg = err.message || String(err);
+  dialog.alert({
+    title: t("bms.firmware.updateFailedTitle"),
+    msg: errMsg,
+    zIndex: 2000,
+  });
+};
+
+/**
+ * 点击开始写入固件
+ */
+const handleStartUpdate = () => {
+  if (isUpdating.value || updateSuccess.value) return;
+  if (!hasFileSelected.value || !selectedFilePath.value) {
+    toast.show({ msg: t("bms.firmware.noFileSelected") });
+    return;
+  }
+
+  // 检查蓝牙连接状态
+  if (!isBleConnected.value) {
+    toast.error(t("bms.ble.disconnected"));
+    return;
+  }
+
+  // 二次确认是否开始升级
+  dialog
+    .confirm({
+      title: t("bms.common.prompt"),
+      msg: t("bms.firmware.startUpdateConfirm"),
+      zIndex: 2000,
+    })
+    .then(() => {
+      executeFirmwareFlash();
+    })
+    .catch(() => {});
 };
 
 /**
@@ -526,10 +781,13 @@ const handleCancelOrReset = () => {
     updateSuccess.value = false;
     selectedFileName.value = "";
     selectedFileSize.value = 0;
+    selectedFilePath.value = "";
     currentStep.value = 0;
+    otaProtocolPhase.value = "idle";
     progressValue.value = 0;
     displayProgressValue.value = 0;
     showProgressCard.value = false;
+    fileArrayBuffer.value = null;
     return;
   }
 
@@ -541,8 +799,10 @@ const handleCancelOrReset = () => {
       zIndex: 2000,
     })
     .then(() => {
-      停止模拟写入();
+      isUpdating.value = false;
+      bleStore.isOtaUpdating = false;
       currentStep.value = 0;
+      otaProtocolPhase.value = "idle";
       progressValue.value = 0;
       displayProgressValue.value = 0;
       showProgressCard.value = false;
@@ -693,5 +953,56 @@ const handleCancelOrReset = () => {
 :deep(.wd-card) {
   margin-left: 0 !important;
   margin-right: 0 !important;
+}
+
+/* 样式穿透：定制透明导航栏的标题和返回箭头为白色 */
+:deep(.wd-navbar) {
+  background-color: transparent !important;
+}
+
+:deep(.wd-navbar__title) {
+  color: #ffffff !important;
+}
+
+:deep(.wd-navbar__arrow) {
+  color: #ffffff !important;
+}
+
+/* 主内容容器顶部预留出状态栏加导航栏的安全高度，防止被透明导航栏遮挡 */
+.fw-container {
+  padding-top: calc(var(--status-bar-height) + 44px + 16px);
+}
+
+/* ==========================================================================
+   暗黑模式 (Dark Mode) 适配
+   ========================================================================== */
+:deep(.wot-theme-dark) {
+  /* 顶部装饰渐变背景底层淡出遮罩：淡出到暗黑大背景 #121212 */
+  .fw-header-bg {
+    &::after {
+      background: linear-gradient(to bottom, rgba(18, 18, 18, 0) 0%, #121212 86%) !important;
+    }
+  }
+
+  /* 文件选择触发区暗色适配 */
+  .fw-file-zone {
+    background: #1e1e1e !important;
+    border-color: #333333 !important;
+
+    &--active {
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.5) 0%, rgba(20, 83, 45, 0.25) 100%) !important;
+      border-color: rgba(59, 130, 246, 0.3) !important;
+    }
+  }
+
+  /* 文件图标容器暗色适配 */
+  .fw-file-icon {
+    background: #2a2a2a !important;
+    box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.3) !important;
+
+    &--active {
+      background: linear-gradient(135deg, #1e293b, #14532d) !important;
+    }
+  }
 }
 </style>

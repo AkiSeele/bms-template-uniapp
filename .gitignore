@@ -3,7 +3,10 @@ node_modules/
 
 # 编译与打包产物
 dist/
-unpackage/
+unpackage/*
+!unpackage/res/
+unpackage/res/*
+!unpackage/res/icons/
 bin/
 
 # HBuilderX 局部配置及缓存

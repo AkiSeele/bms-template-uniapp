@@ -5,48 +5,48 @@
     <!-- 实时数据 Tab 选项项 -->
     <!-- Source: uni_modules/wot-ui/components/wd-tabbar-item/wd-tabbar-item.vue -->
     <wd-tabbar-item name="realtime" :title="$t('bms.tab.realtime')">
-      <template #icon="{ active }">
+      <template #icon>
         <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
         <wd-icon 
           css-icon="i-lucide-activity" 
           size="22px" 
-          :color="active ? activeThemeColor : '#858585'" 
+          :color="activeTab === 'realtime' ? activeThemeColor : '#858585'" 
         />
       </template>
     </wd-tabbar-item>
     <!-- 参数设置 Tab 选项项 -->
     <!-- Source: uni_modules/wot-ui/components/wd-tabbar-item/wd-tabbar-item.vue -->
     <wd-tabbar-item name="param" :title="$t('bms.tab.params')">
-      <template #icon="{ active }">
+      <template #icon>
         <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
         <wd-icon 
           css-icon="i-lucide-sliders" 
           size="22px" 
-          :color="active ? activeThemeColor : '#858585'" 
+          :color="activeTab === 'param' ? activeThemeColor : '#858585'" 
         />
       </template>
     </wd-tabbar-item>
     <!-- 控制开关 Tab 选项项 -->
     <!-- Source: uni_modules/wot-ui/components/wd-tabbar-item/wd-tabbar-item.vue -->
     <wd-tabbar-item name="control" :title="$t('bms.tab.control')">
-      <template #icon="{ active }">
+      <template #icon>
         <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
         <wd-icon 
           css-icon="i-lucide-settings" 
           size="22px" 
-          :color="active ? activeThemeColor : '#858585'" 
+          :color="activeTab === 'control' ? activeThemeColor : '#858585'" 
         />
       </template>
     </wd-tabbar-item>
     <!-- 个人中心 Tab 选项项 -->
     <!-- Source: uni_modules/wot-ui/components/wd-tabbar-item/wd-tabbar-item.vue -->
     <wd-tabbar-item name="mine" :title="$t('bms.tab.mine')" @click="handleMineClick">
-      <template #icon="{ active }">
+      <template #icon>
         <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
         <wd-icon 
           css-icon="i-lucide-user" 
           size="22px" 
-          :color="active ? activeThemeColor : '#858585'" 
+          :color="activeTab === 'mine' ? activeThemeColor : '#858585'" 
         />
       </template>
     </wd-tabbar-item>
