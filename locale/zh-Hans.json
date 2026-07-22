@@ -61,6 +61,15 @@
         "wechatBluetoothNotAuthorized": "微信客户端未被授予蓝牙权限。请在手机“系统设置 -> 权限管理 -> 微信”中开启蓝牙授权。",
         "wechatBluetoothRefused": "需要您的蓝牙服务授权以连接电池包，请点击“去设置”开启蓝牙权限。",
         "wechatLocationRefused": "蓝牙设备搜索需要位置信息授权，请点击“去设置”开启位置服务。"
+      },
+      "reconnect": {
+        "title": "蓝牙已断开",
+        "content": "蓝牙连接非正常断开，是否尝试重新连接？",
+        "confirm": "重新连接",
+        "cancel": "取消",
+        "loading": "正在重新连接...",
+        "success": "重连成功",
+        "failed": "重连失败"
       }
     },
     "battery": {

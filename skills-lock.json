@@ -43,6 +43,12 @@
       "skillPath": "skills/uniapp-skills/uniapp-project/SKILL.md",
       "computedHash": "e7c1ebeda47b3efba5270d2c7e84ae132aa00865af174837709183f9dda3d093"
     },
+    "wot-ui-cli": {
+      "source": "wot-ui/open-wot",
+      "sourceType": "github",
+      "skillPath": "skills/wot-ui-cli/SKILL.md",
+      "computedHash": "327ef59dd916cc2444f27819372d12c59610537930b98d0716a0329f509d1dd1"
+    },
     "wot-ui-unocss-preset-guide": {
       "source": "wot-ui/open-wot",
       "sourceType": "github",

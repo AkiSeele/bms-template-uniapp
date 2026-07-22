@@ -61,6 +61,15 @@
         "wechatBluetoothNotAuthorized": "WeChat has no Bluetooth permission. Please grant WeChat Bluetooth permission in system settings.",
         "wechatBluetoothRefused": "Bluetooth permission is required. Click 'Settings' to enable Bluetooth permission.",
         "wechatLocationRefused": "Location permission is required. Click 'Settings' to enable location permission."
+      },
+      "reconnect": {
+        "title": "Bluetooth Disconnected",
+        "content": "Bluetooth connection was lost unexpectedly. Would you like to reconnect?",
+        "confirm": "Reconnect",
+        "cancel": "Cancel",
+        "loading": "Reconnecting...",
+        "success": "Reconnected Successfully",
+        "failed": "Reconnection Failed"
       }
     },
     "battery": {

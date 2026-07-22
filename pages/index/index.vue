@@ -46,6 +46,7 @@ import { useAppStore } from "@/stores/app";
 import { resolveHomePanel, resolveParamPanel, resolveControlPanel } from "@/components/panel-registry";
 import MinePanel from "@/pages/mine/index.vue";
 import CustomTabbar from "@/components/custom-tabbar/custom-tabbar.vue";
+import { useBleReconnect } from "@/composables/use-ble-reconnect";
 
 // 静态导入默认通用面板组件以支持微信小程序端条件编译
 import RealtimeDefaultPanel from "./components/default.vue";
@@ -55,6 +56,9 @@ import ControlDefaultPanel from "../control/components/default.vue";
 // 获取全局 App 状态仓
 const appStore = useAppStore();
 const { activeTab } = storeToRefs(appStore);
+
+// 初始化全局蓝牙断开重连逻辑
+useBleReconnect();
 
 // 接收外部传参（如重载/重定向），实现精确激活 Tab 分发
 onLoad((options) => {

@@ -47,6 +47,15 @@ export const useBleStore = defineStore("ble", () => {
   // 全局响应式状态：当前已连接设备的蓝牙广播名称
   const connectedDeviceName = ref("");
 
+  // 标记是否为用户主动发起的断开物理连接，用于判定是否触发意外断开提示
+  const activeDisconnect = ref(false);
+
+  // 标记当前连接是否由于非正常因素被动断开
+  const isUnexpectedDisconnected = ref(false);
+
+  // 缓存意外断开前已连接的设备信息，用于执行重连
+  const lastConnectedDeviceInfo = ref<{ deviceId: string; name: string; macAddress?: string } | null>(null);
+
   // 当前匹配成功并处于活跃状态的蓝牙服务特征值配置对象
   const activeServiceConfig = ref<BleServiceConfig>(APP_CONFIG.BLE_SERVICES.default[0]);
 
@@ -356,6 +365,10 @@ export const useBleStore = defineStore("ble", () => {
       console.log(`[BLE Store] 收到全局连接状态变更通知: id=${res.deviceId}, connected=${res.connected}`);
       if (res.deviceId === connectedDeviceId.value && !res.connected) {
         console.warn("[BLE Store] 监听到当前活跃设备连接断开，重置状态并清理定时器");
+        if (!activeDisconnect.value) {
+          console.error("[BLE Store] 检测到意外断开连接，激活重连提示信号");
+          isUnexpectedDisconnected.value = true;
+        }
         clearBleState();
       }
     });
@@ -784,6 +797,10 @@ export const useBleStore = defineStore("ble", () => {
     connectionError.value = "";
     isConnectionErrorVisible.value = false;
 
+    // 重置重连相关的状态
+    activeDisconnect.value = false;
+    isUnexpectedDisconnected.value = false;
+
     const logStore = useLogStore();
     logStore.addConnectionLog("uni.createBLEConnection:start", { deviceId, name, macAddress });
 
@@ -829,6 +846,8 @@ export const useBleStore = defineStore("ble", () => {
       connectedDeviceId.value = deviceId;
       connectedDeviceMac.value = macAddress || deviceId;
       connectedDeviceName.value = name || "Unknown Device";
+      // 缓存设备连接数据，用于后续重连
+      lastConnectedDeviceInfo.value = { deviceId, name, macAddress };
 
       // 步骤 4：服务发现（iOS / 鸿蒙必须显式调用，否则后续操作抛 10004）
       try {
@@ -1018,6 +1037,9 @@ export const useBleStore = defineStore("ble", () => {
   const disconnectDevice = async () => {
     if (!connectedDeviceId.value) return;
     const deviceId = connectedDeviceId.value;
+    activeDisconnect.value = true;
+    isUnexpectedDisconnected.value = false;
+    lastConnectedDeviceInfo.value = null;
     try {
       useLogStore().addConnectionLog("uni.closeBLEConnection:start", { deviceId });
       const res = await bleManager.disconnect(deviceId);
@@ -1103,6 +1125,34 @@ export const useBleStore = defineStore("ble", () => {
     }
   });
 
+  /**
+   * 尝试对最后一次异常断开的设备重新发起连接
+   */
+  const reconnect = async () => {
+    if (!lastConnectedDeviceInfo.value) {
+      throw new Error("No connected device info found for reconnection");
+    }
+    isUnexpectedDisconnected.value = false;
+    const { deviceId, name, macAddress } = lastConnectedDeviceInfo.value;
+    console.warn(`[BLE Store] 触发重新连接意外断开的设备: id=${deviceId}, name=${name}`);
+    try {
+      await connectDevice(deviceId, name, macAddress);
+    } catch (err) {
+      console.error("[BLE Store] 重连设备失败:", err);
+      // 如果连接报错，再次恢复异常断开标志，从而允许再次询问或重试
+      isUnexpectedDisconnected.value = true;
+      throw err;
+    }
+  };
+
+  /**
+   * 手动关闭或取消异常断开的提示状态
+   */
+  const clearUnexpectedDisconnectState = () => {
+    isUnexpectedDisconnected.value = false;
+    lastConnectedDeviceInfo.value = null;
+  };
+
   return {
     isBleConnected,
     connectedDeviceId,
@@ -1135,5 +1185,10 @@ export const useBleStore = defineStore("ble", () => {
     isPollingActive,
     setPollingActive,
     sendOtaFrame,
+    activeDisconnect,
+    isUnexpectedDisconnected,
+    lastConnectedDeviceInfo,
+    reconnect,
+    clearUnexpectedDisconnectState,
   };
 });
