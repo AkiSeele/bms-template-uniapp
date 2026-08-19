@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "wot-ui": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@wot-ui/cli",
+        "mcp"
+      ]
+    }
+  }
+}

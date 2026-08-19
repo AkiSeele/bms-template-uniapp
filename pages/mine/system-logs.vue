@@ -1,9 +1,7 @@
 <template>
   <layout-provider>
     <view class="wot-flex wot-flex-col wot-h-screen wot-overflow-hidden">
-      <!-- 自定义顶部导航栏 -->
-      <!-- Source: uni_modules/wot-ui/components/wd-navbar/wd-navbar.vue -->
-      <wd-navbar 
+      <!-- 自定义顶部导航栏 -->      <wd-navbar 
         :title="$t('bms.logs.title')" 
         left-arrow 
         fixed 
@@ -12,16 +10,10 @@
         @click-left="navigateBack" 
       />
 
-      <!-- 日志分类 Tabs -->
-      <!-- Source: uni_modules/wot-ui/components/wd-tabs/wd-tabs.vue -->
-      <wd-tabs v-model:value="activeTab" class="wot-flex-1 wot-flex wot-flex-col wot-overflow-hidden">
-        <!-- 连接日志 Tab -->
-        <!-- Source: uni_modules/wot-ui/components/wd-tab/wd-tab.vue -->
-        <wd-tab name="connection" :title="$t('bms.logs.tabConnection')">
+      <!-- 日志分类 Tabs -->      <wd-tabs v-model="activeTab" class="wot-flex-1 wot-flex wot-flex-col wot-overflow-hidden">
+        <!-- 连接日志 Tab -->        <wd-tab name="connection" :title="$t('bms.logs.tabConnection')">
           <scroll-view scroll-y class="scroll-container wot-p-2.5 wot-box-border wot-h-full">
-            <view v-if="connectionLogs.length === 0" class="wot-py-12">
-              <!-- Source: uni_modules/wot-ui/components/wd-empty/wd-empty.vue -->
-              <wd-empty :description="$t('bms.logs.empty')" />
+            <view v-if="connectionLogs.length === 0" class="wot-py-12">              <wd-empty icon="empty" :tip="$t('bms.logs.empty')" />
             </view>
             <view v-else class="wot-flex wot-flex-col wot-gap-1">
               <view 
@@ -35,9 +27,7 @@
                   :class="{ 'has-divider': log.params || log.result }"
                 >
                   <view class="wot-flex wot-items-center wot-gap-1.5 wot-flex-1 wot-min-w-0">
-                    <view class="wot-flex wot-items-center wot-justify-center wot-flex-shrink-0">
-                      <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-                      <wd-icon name="link" size="13px" color="#858585" />
+                    <view class="wot-flex wot-items-center wot-justify-center wot-flex-shrink-0">                      <wd-icon name="link" size="13px" color="#858585" />
                     </view>
                     <text class="wot-text-[11px] wot-text-text-main wot-truncate wot-flex-1 monospace">{{ log.apiName }}</text>
                   </view>
@@ -63,13 +53,9 @@
           </scroll-view>
         </wd-tab>
 
-        <!-- 指令日志 Tab -->
-        <!-- Source: uni_modules/wot-ui/components/wd-tab/wd-tab.vue -->
-        <wd-tab name="command" :title="$t('bms.logs.tabCommand')">
+        <!-- 指令日志 Tab -->        <wd-tab name="command" :title="$t('bms.logs.tabCommand')">
           <scroll-view scroll-y class="scroll-container wot-p-2.5 wot-box-border wot-h-full">
-            <view v-if="commandGroups.length === 0" class="wot-py-12">
-              <!-- Source: uni_modules/wot-ui/components/wd-empty/wd-empty.vue -->
-              <wd-empty :description="$t('bms.logs.empty')" />
+            <view v-if="commandGroups.length === 0" class="wot-py-12">              <wd-empty icon="empty" :tip="$t('bms.logs.empty')" />
             </view>
             <view v-else class="wot-flex wot-flex-col wot-gap-1">
               <view 
@@ -80,9 +66,7 @@
                 <!-- 组标题：时间戳 -->
                 <view class="log-title-header has-divider">
                   <view class="wot-flex wot-items-center wot-gap-1.5 wot-flex-1 wot-min-w-0">
-                    <view class="wot-flex wot-items-center wot-justify-center wot-flex-shrink-0">
-                      <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-                      <wd-icon name="swap" size="13px" color="#858585" />
+                    <view class="wot-flex wot-items-center wot-justify-center wot-flex-shrink-0">                      <wd-icon name="swap" size="13px" color="#858585" />
                     </view>
                     <text class="wot-text-[11px] wot-font-bold wot-text-text-secondary wot-truncate">{{ $t('bms.logs.cmdInteractionFrame') }}</text>
                   </view>
@@ -118,13 +102,9 @@
           </scroll-view>
         </wd-tab>
 
-        <!-- 接口日志 Tab -->
-        <!-- Source: uni_modules/wot-ui/components/wd-tab/wd-tab.vue -->
-        <wd-tab name="api" :title="$t('bms.logs.tabApi')">
+        <!-- 接口日志 Tab -->        <wd-tab name="api" :title="$t('bms.logs.tabApi')">
           <scroll-view scroll-y class="scroll-container wot-p-2.5 wot-box-border wot-h-full">
-            <view v-if="apiLogs.length === 0" class="wot-py-12">
-              <!-- Source: uni_modules/wot-ui/components/wd-empty/wd-empty.vue -->
-              <wd-empty :description="$t('bms.logs.empty')" />
+            <view v-if="apiLogs.length === 0" class="wot-py-12">              <wd-empty icon="empty" :tip="$t('bms.logs.empty')" />
             </view>
             <view v-else class="wot-flex wot-flex-col wot-gap-1">
               <view 
@@ -138,9 +118,7 @@
                   :class="{ 'has-divider': log.params || log.response || log.error }"
                 >
                   <view class="wot-flex wot-items-center wot-gap-1.5 wot-flex-1 wot-min-w-0">
-                    <view class="wot-flex wot-items-center wot-justify-center wot-flex-shrink-0">
-                      <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-                      <wd-icon name="cloud" size="13px" color="#858585" />
+                    <view class="wot-flex wot-items-center wot-justify-center wot-flex-shrink-0">                      <wd-icon name="cloud" size="13px" color="#858585" />
                     </view>
                     <text class="wot-text-[10px] wot-font-bold wot-px-1.5 wot-py-0.5 wot-rounded wot-bg-purple-50 dark:wot-bg-purple-950/30 wot-text-purple-600 dark:wot-text-purple-400">{{ log.method }}</text>
                     <text class="wot-text-[11px] wot-text-text-main wot-truncate wot-flex-1 monospace">{{ cleanUrl(log.url) }}</text>
@@ -176,13 +154,9 @@
       </wd-tabs>
 
       <!-- 底部控制按钮栏 -->
-      <view class="control-bar wot-p-3 wot-bg-filled-oppo wot-flex wot-gap-3 wot-shadow-md">
-        <!-- Source: uni_modules/wot-ui/components/wd-button/wd-button.vue -->
-        <wd-button type="danger" plain block class="wot-flex-1" @click="handleClearLogs">
+      <view class="control-bar wot-p-3 wot-bg-filled-oppo wot-flex wot-gap-3 wot-shadow-md">        <wd-button type="danger" plain block class="wot-flex-1" @click="handleClearLogs">
           {{ $t('bms.logs.clearBtn') }}
-        </wd-button>
-        <!-- Source: uni_modules/wot-ui/components/wd-button/wd-button.vue -->
-        <wd-button type="primary" block class="wot-flex-1" @click="handleCopyLogs">
+        </wd-button>        <wd-button type="primary" block class="wot-flex-1" @click="handleCopyLogs">
           {{ $t('bms.logs.copyBtn') }}
         </wd-button>
       </view>
@@ -194,7 +168,7 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { useToast, useDialog } from "@/uni_modules/wot-ui";
+import { useToast, useDialog } from "@wot-ui/ui";
 import { useLogStore } from "@/stores/log-store";
 import { storeToRefs } from "pinia";
 
@@ -338,7 +312,7 @@ const handleCopyLogs = () => {
     },
     fail: () => {
       toast.error(t("bms.auth.clipboardPermissionMsg"));
-    }
+    },
   });
 };
 </script>
@@ -477,21 +451,6 @@ const handleCopyLogs = () => {
   
   &.has-divider {
     border-bottom: 1px dashed rgba(241, 245, 249, 1);
-  }
-  
-  wd-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    line-height: 1;
-  }
-  
-  :deep(.wd-icon) {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    line-height: 1;
-    vertical-align: middle;
   }
 
   text, .time-stamp {

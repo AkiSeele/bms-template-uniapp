@@ -1,7 +1,0 @@
-@use '../../styles/mixin/mixin.scss' as *;
-
-@include b(steps) {
-  @include when(vertical) {
-    display: block;
-  }
-}

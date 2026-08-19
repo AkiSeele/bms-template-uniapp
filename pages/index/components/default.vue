@@ -11,25 +11,19 @@
         right: 0,
         zIndex: 199,
         pointerEvents: 'none',
-        backgroundColor: actualTheme === 'dark' ? 'rgba(15, 23, 42, 0)' : 'rgba(246, 248, 252, 0)',
+        backgroundColor: 'transparent',
       }"
     />
 
-    <!-- 顶部固定定位导航栏（背景始终保持透明） -->
-    <!-- Source: uni_modules/wot-ui/components/wd-navbar/wd-navbar.vue -->
-    <wd-navbar
+    <!-- 顶部固定定位导航栏（背景始终保持透明） -->    <wd-navbar
       fixed
       safe-area-inset-top
       custom-style="background-color: transparent !important; border-bottom: none !important; z-index: 200 !important; box-shadow: none !important; transition: none !important;"
       @click-left="handleScanConnect"
     >
       <template #left>
-        <view class="wot-flex wot-items-center wot-gap-2">
-          <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-          <wd-icon name="scan" size="20px" :color="navbarContentColor" />
-          <view v-if="!isOfflineMode" class="wot-flex wot-items-center wot-gap-1">
-            <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-            <wd-icon css-icon="i-lucide-cloud" size="14px" :color="navbarContentColor" />
+        <view class="wot-flex wot-items-center wot-gap-2">          <wd-icon name="scan" size="20px" :color="navbarContentColor" />
+          <view v-if="!isOfflineMode" class="wot-flex wot-items-center wot-gap-1">            <wd-icon css-icon="i-lucide-cloud" size="14px" :color="navbarContentColor" />
             <text class="wot-font-bold wot-text-caption wot-scale-90" :style="{ color: navbarContentColor }">
               {{ $t("bms.mine.cloudOnline") }}
             </text>
@@ -83,9 +77,7 @@
               <view class="telemetry-panel wot-flex wot-items-center wot-justify-between wot-py-4">
                 <!-- 电流展示项 -->
                 <view class="telemetry-item wot-flex wot-items-center wot-justify-center wot-flex-1">
-                  <view class="telemetry-icon-wrapper wot-flex wot-items-center wot-justify-center wot-mr-3">
-                    <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-                    <wd-icon
+                  <view class="telemetry-icon-wrapper wot-flex wot-items-center wot-justify-center wot-mr-3">                    <wd-icon
                       css-icon="i-ri-pulse-line"
                       size="18px"
                       :color="actualTheme === 'dark' ? '#ffffff' : activeThemeColor"
@@ -107,9 +99,7 @@
 
                 <!-- 电压展示项 -->
                 <view class="telemetry-item wot-flex wot-items-center wot-justify-center wot-flex-1">
-                  <view class="telemetry-icon-wrapper wot-flex wot-items-center wot-justify-center wot-mr-3">
-                    <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-                    <wd-icon
+                  <view class="telemetry-icon-wrapper wot-flex wot-items-center wot-justify-center wot-mr-3">                    <wd-icon
                       css-icon="i-ri-flashlight-line"
                       size="18px"
                       :color="actualTheme === 'dark' ? '#ffffff' : activeThemeColor"
@@ -135,7 +125,7 @@
           class="scroll-header-mask header-mask-target"
           :style="{
             opacity: 0,
-            backgroundColor: actualTheme === 'dark' ? '#0f172a' : '#f6f8fc',
+            backgroundColor: 'var(--wot-filled-bottom)',
           }"
         />
       </view>
@@ -145,7 +135,7 @@
         class="sticky-bluetooth-wrapper bluetooth-sticky-target"
         :style="{
           top: navbarHeight + 'px',
-          backgroundColor: actualTheme === 'dark' ? '#0f172a' : '#f6f8fc',
+          backgroundColor: 'var(--wot-filled-bottom)',
           borderRadius: '16px 16px 0 0',
           padding: '12px 16px 8px',
         }"
@@ -158,9 +148,7 @@
               class="status-icon-wrapper wot-flex wot-items-center wot-justify-center wot-mr-3 wot-flex-shrink-0"
               :class="isConnected ? 'bg-primary-light' : 'bg-neutral-light'"
               :style="isConnected ? pulseStyle : undefined"
-            >
-              <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-              <wd-icon
+            >              <wd-icon
                 :css-icon="isConnected ? 'i-ri-bluetooth-fill' : 'i-ri-bluetooth-line'"
                 size="20px"
                 :color="isConnected ? activeThemeColor : '#858585'"
@@ -176,25 +164,21 @@
             </view>
           </view>
 
-          <!-- 快速连接/断开按钮 -->
-          <!-- Source: uni_modules/wot-ui/components/wd-button/wd-button.vue -->
-          <wd-button size="small" :type="isConnected ? 'danger' : 'primary'" @click="toggleConnection" plain>
+          <!-- 快速连接/断开按钮 -->          <wd-button size="small" :type="isConnected ? 'danger' : 'primary'" @click="toggleConnection" plain>
             {{ isConnected ? $t("bms.ble.disconnect") : $t("bms.ble.connect") }}
           </wd-button>
         </view>
       </view>
 
       <!-- 下半部分卡片容器 -->
-      <view class="scroll-bottom-container" :style="scrollBottomContainerStyle">
+      <view class="scroll-bottom-container wot-bg-filled-bottom">
         <!-- 下半部分主要数据面板（普通文档流跟随滚动） -->
         <view class="scroll-body-content wot-px-4 wot-pb-24">
           <!-- 4 个核心参数 Google MD3 规格卡片网格 -->
           <view class="wot-grid wot-grid-cols-4 wot-gap-3 wot-pt-2">
             <!-- 剩余容量卡片 -->
             <view class="md3-metric-card">
-              <view class="card-icon-wrapper bg-primary-light wot-flex wot-items-center wot-justify-center">
-                <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-                <wd-icon css-icon="i-ri-battery-2-charge-line" size="18px" :color="activeThemeColor" />
+              <view class="card-icon-wrapper bg-primary-light wot-flex wot-items-center wot-justify-center">                <wd-icon css-icon="i-ri-battery-2-charge-line" size="18px" :color="activeThemeColor" />
               </view>
               <text class="metric-label wot-text-text-secondary wot-font-semibold wot-text-center wot-mt-2">
                 {{ $t("bms.battery.remainingCapacity") }}
@@ -208,9 +192,7 @@
 
             <!-- 健康度 SOH 卡片 -->
             <view class="md3-metric-card">
-              <view class="card-icon-wrapper bg-success-light wot-flex wot-items-center wot-justify-center">
-                <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-                <wd-icon css-icon="i-ri-heart-pulse-line" size="18px" color="#10b981" />
+              <view class="card-icon-wrapper bg-success-light wot-flex wot-items-center wot-justify-center">                <wd-icon css-icon="i-ri-heart-pulse-line" size="18px" color="#10b981" />
               </view>
               <text class="metric-label wot-text-text-secondary wot-font-semibold wot-text-center wot-mt-2">
                 {{ $t("bms.params.soh") }}
@@ -222,9 +204,7 @@
 
             <!-- 循环次数卡片 -->
             <view class="md3-metric-card">
-              <view class="card-icon-wrapper bg-warning-light wot-flex wot-items-center wot-justify-center">
-                <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-                <wd-icon css-icon="i-ri-loop-left-line" size="18px" color="#f59e0b" />
+              <view class="card-icon-wrapper bg-warning-light wot-flex wot-items-center wot-justify-center">                <wd-icon css-icon="i-ri-loop-left-line" size="18px" color="#f59e0b" />
               </view>
               <text class="metric-label wot-text-text-secondary wot-font-semibold wot-text-center wot-mt-2">
                 {{ $t("bms.params.cycleCount") }}
@@ -236,9 +216,7 @@
 
             <!-- 运行总时长卡片 -->
             <view class="md3-metric-card">
-              <view class="card-icon-wrapper bg-info-light wot-flex wot-items-center wot-justify-center">
-                <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-                <wd-icon css-icon="i-ri-time-line" size="18px" color="#06b6d4" />
+              <view class="card-icon-wrapper bg-info-light wot-flex wot-items-center wot-justify-center">                <wd-icon css-icon="i-ri-time-line" size="18px" color="#06b6d4" />
               </view>
               <text class="metric-label wot-text-text-secondary wot-font-semibold wot-text-center wot-mt-2">
                 {{ $t("bms.params.runTime") }}
@@ -261,9 +239,7 @@
               <view class="wot-flex wot-items-center wot-min-w-0 wot-flex-1">
                 <view
                   class="control-icon-wrapper bg-primary-light wot-flex wot-items-center wot-justify-center wot-mr-2 wot-flex-shrink-0"
-                >
-                  <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-                  <wd-icon css-icon="i-ri-battery-charge-line" size="18px" :color="activeThemeColor" />
+                >                  <wd-icon css-icon="i-ri-battery-charge-line" size="18px" :color="activeThemeColor" />
                 </view>
                 <view class="wot-flex wot-flex-col wot-min-w-0">
                   <text
@@ -280,9 +256,7 @@
                   </text>
                 </view>
               </view>
-              <view class="wot-flex wot-justify-end wot-items-center wot-flex-shrink-0" :style="{ width: '80rpx' }">
-                <!-- Source: uni_modules/wot-ui/components/wd-switch/wd-switch.vue -->
-                <wd-switch
+              <view class="wot-flex wot-justify-end wot-items-center wot-flex-shrink-0" :style="{ width: '80rpx' }">                <wd-switch
                   :model-value="isCharging"
                   :disabled="!isConnected"
                   @change="toggleCharge"
@@ -300,9 +274,7 @@
               <view class="wot-flex wot-items-center wot-min-w-0 wot-flex-1">
                 <view
                   class="control-icon-wrapper bg-success-light wot-flex wot-items-center wot-justify-center wot-mr-2 wot-flex-shrink-0"
-                >
-                  <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-                  <wd-icon css-icon="i-ri-flashlight-line" size="18px" color="#10b981" />
+                >                  <wd-icon css-icon="i-ri-flashlight-line" size="18px" color="#10b981" />
                 </view>
                 <view class="wot-flex wot-flex-col wot-min-w-0">
                   <text
@@ -319,9 +291,7 @@
                   </text>
                 </view>
               </view>
-              <view class="wot-flex wot-justify-end wot-items-center wot-flex-shrink-0" :style="{ width: '80rpx' }">
-                <!-- Source: uni_modules/wot-ui/components/wd-switch/wd-switch.vue -->
-                <wd-switch
+              <view class="wot-flex wot-justify-end wot-items-center wot-flex-shrink-0" :style="{ width: '80rpx' }">                <wd-switch
                   :model-value="isDischarging"
                   :disabled="!isConnected"
                   @change="toggleDischarge"
@@ -351,9 +321,7 @@
               <view
                 class="wot-mr-4 wot-flex wot-items-center wot-justify-center wot-flex-shrink-0"
                 :style="{ width: '80rpx', height: '80rpx' }"
-              >
-                <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-                <wd-icon css-icon="i-ri-temp-hot-line" size="80rpx" color="#10b981" />
+              >                <wd-icon css-icon="i-ri-temp-hot-line" size="80rpx" color="#10b981" />
               </view>
               <view class="wot-grid wot-grid-cols-2 wot-gap-2 wot-flex-1">
                 <view v-for="(tItem, index) in temperatureList" :key="index" class="temp-item-pill">
@@ -364,9 +332,7 @@
                 </view>
               </view>
             </view>
-            <view v-else class="wot-py-4">
-              <!-- Source: uni_modules/wot-ui/components/wd-empty/wd-empty.vue -->
-              <wd-empty image="empty" :description="$t('bms.battery.noData')" />
+            <view v-else class="wot-py-4">              <wd-empty icon="empty" :tip="$t('bms.battery.noData')" />
             </view>
           </view>
 
@@ -411,9 +377,7 @@
                 </view>
               </view>
             </view>
-            <view v-else class="wot-py-4">
-              <!-- Source: uni_modules/wot-ui/components/wd-empty/wd-empty.vue -->
-              <wd-empty image="empty" :description="$t('bms.battery.noData')" />
+            <view v-else class="wot-py-4">              <wd-empty icon="empty" :tip="$t('bms.battery.noData')" />
             </view>
           </view>
 
@@ -431,9 +395,7 @@
             </view>
             <view class="wot-flex wot-flex-col wot-gap-3 wot-pt-3.5">
               <view class="wot-flex wot-items-center wot-justify-between">
-                <view class="wot-flex wot-items-center">
-                  <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-                  <wd-icon css-icon="i-ri-shield-flash-line" size="18px" color="#10b981" class="wot-mr-2" />
+                <view class="wot-flex wot-items-center">                  <wd-icon css-icon="i-ri-shield-flash-line" size="18px" color="#10b981" class="wot-mr-2" />
                   <text class="wot-text-sm wot-text-text-secondary">{{ $t("bms.protect.overTemp") }}</text>
                 </view>
                 <view
@@ -444,9 +406,7 @@
                 </view>
               </view>
               <view class="wot-flex wot-items-center wot-justify-between">
-                <view class="wot-flex wot-items-center">
-                  <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-                  <wd-icon css-icon="i-ri-shield-flash-line" size="18px" color="#10b981" class="wot-mr-2" />
+                <view class="wot-flex wot-items-center">                  <wd-icon css-icon="i-ri-shield-flash-line" size="18px" color="#10b981" class="wot-mr-2" />
                   <text class="wot-text-sm wot-text-text-secondary">{{ $t("bms.protect.overVolt") }}</text>
                 </view>
                 <view
@@ -457,9 +417,7 @@
                 </view>
               </view>
               <view class="wot-flex wot-items-center wot-justify-between">
-                <view class="wot-flex wot-items-center">
-                  <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-                  <wd-icon css-icon="i-ri-shield-keyhole-line" size="18px" color="#10b981" class="wot-mr-2" />
+                <view class="wot-flex wot-items-center">                  <wd-icon css-icon="i-ri-shield-keyhole-line" size="18px" color="#10b981" class="wot-mr-2" />
                   <text class="wot-text-sm wot-text-text-secondary">{{ $t("bms.protect.shortCircuit") }}</text>
                 </view>
                 <view
@@ -478,16 +436,24 @@
 </template>
 
 <script module="navbarWxs" lang="wxs">
+/**
+ * 首页高性能滚动响应 WXS 脚本 (60FPS 渲染层零延迟视图调度)
+ * 托管导航栏渐变透明度、小标题淡入、仪表盘慢速淡出、蓝牙吸顶栏圆角平滑形变
+ */
+
+// 统一与全局 theme.ts (LIGHT/DARK_THEME_VARS) 完全对齐的基础 RGB 颜色
+var DARK_BG_RGB = "18, 18, 18";
+var LIGHT_BG_RGB = "245, 246, 248";
+
 function onScroll(event, ownerInstance) {
   var scrollTop = event.detail.scrollTop;
   var dataset = event.currentTarget.dataset;
 
   var targetScroll = dataset.targetScroll || 0;
-  var navbarHeight = dataset.navbarHeight || 0;
   var isDark = dataset.theme === "dark";
+  var baseRgb = isDark ? DARK_BG_RGB : LIGHT_BG_RGB;
 
-  // 1. 计算导航栏背景及标题的透明度 navbarOpacity
-  // 起点设定为 80px，终点设定在吸顶（targetScroll）前 40px，确保吸顶瞬间导航栏早已涂实，抵消穿透
+  // 1. 计算导航栏背景及标题的透明度 navbarOpacity (80px 开始渐显，吸顶前 40px 完全涂实)
   var startFade = 80;
   var endFade = targetScroll - 40;
   if (endFade <= startFade) {
@@ -504,12 +470,11 @@ function onScroll(event, ownerInstance) {
     }
   }
 
-  // 2. 修改导航栏底色遮罩背景色
+  // 2. 修改导航栏底色遮罩背景色 (平滑渐变到全局统一暗黑底色 #121212 或亮白底色 #f5f6f8)
   var bgOverlay = ownerInstance.selectComponent(".navbar-bg-overlay");
   if (bgOverlay) {
-    var bg = isDark ? "rgba(15, 23, 42, " + navbarOpacity + ")" : "rgba(246, 248, 252, " + navbarOpacity + ")";
     bgOverlay.setStyle({
-      "background-color": bg,
+      "background-color": "rgba(" + baseRgb + ", " + navbarOpacity + ")",
     });
   }
 
@@ -521,8 +486,7 @@ function onScroll(event, ownerInstance) {
     });
   }
 
-  // 4. 修改上半部分淡出内容的透明度
-  // 保持典雅的慢速淡出曲线，淡出区间为原本的 80px 至 200px
+  // 4. 修改上半部分淡出内容的透明度 (80px 至 200px 慢速淡出)
   var startFadeHeader = 80;
   var endFadeHeader = 200;
   var headerContentOpacity = 1;
@@ -558,21 +522,19 @@ function onScroll(event, ownerInstance) {
     });
   }
 
-  // 6. 蓝牙状态栏的圆角和 padding
+  // 6. 蓝牙状态栏的圆角和 padding 平滑插值 (吸顶前 80px 开始由 16px 变形至 0px 直角贴合)
   var startSticky = targetScroll - 80;
   var endSticky = targetScroll;
   var radius = 16;
+  var paddingTop = 12;
+
   if (scrollTop >= endSticky) {
     radius = 0;
-  } else if (scrollTop > startSticky) {
-    radius = 16 * (1 - (scrollTop - startSticky) / (endSticky - startSticky));
-  }
-
-  var paddingTop = 12;
-  if (scrollTop >= endSticky) {
     paddingTop = 8;
   } else if (scrollTop > startSticky) {
-    paddingTop = 12 - 4 * ((scrollTop - startSticky) / (endSticky - startSticky));
+    var progress = (scrollTop - startSticky) / (endSticky - startSticky);
+    radius = 16 * (1 - progress);
+    paddingTop = 12 - 4 * progress;
   }
 
   var bluetoothSticky = ownerInstance.selectComponent(".bluetooth-sticky-target");
@@ -595,8 +557,8 @@ import { onShow } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
 import SocDashboard from "@/components/soc-dashboard/soc-dashboard.vue";
-import { useToast, useDialog } from "@/uni_modules/wot-ui";
-import { useDeviceInfo } from "@/uni_modules/wot-ui/composables/useDeviceInfo";
+import { useToast, useDialog } from "@wot-ui/ui";
+import { useDeviceInfo } from "@wot-ui/ui/composables/useDeviceInfo";
 import { useBleStore } from "@/stores/ble-store";
 import { useAppStore } from "@/stores/app";
 import { useScanConnect } from "@/composables/use-scan-connect";
@@ -688,7 +650,7 @@ const headerBgStyle = computed(() => {
   const themeColor = activeThemeColor.value;
   return {
     background: isDark
-      ? `linear-gradient(135deg, ${themeColor}22 0%, #0f172a 100%)`
+      ? `linear-gradient(135deg, ${themeColor}22 0%, #121212 100%)`
       : `linear-gradient(135deg, #f4f8fc 0%, ${themeColor}0a 35%, ${themeColor}30 100%)`,
   };
 });
@@ -713,14 +675,6 @@ const navbarContentColor = computed(() => {
     return "#ffffff";
   }
   return "#1d1f29";
-});
-
-// 动态计算下半部分容器的样式（仅处理背景色以与蓝牙状态栏无缝拼接）
-const scrollBottomContainerStyle = computed(() => {
-  const isDark = actualTheme.value === "dark";
-  return {
-    backgroundColor: isDark ? "#0f172a" : "#f6f8fc",
-  };
 });
 
 // 动态提取并拼接温度数据列表
@@ -955,25 +909,6 @@ onMounted(() => {
   width: 100%;
   box-sizing: border-box;
   background-color: transparent;
-}
-
-:deep(.wd-navbar) {
-  background-color: transparent !important;
-  border-bottom: none !important;
-  /* 背景色始终实色，无需过渡动画，移除 transition 避免无效开销 */
-  .wd-navbar__title {
-    font-weight: bold;
-    font-size: 28rpx;
-    transition: color 0.3s ease !important;
-  }
-  .wd-navbar__left {
-    transition: color 0.3s ease !important;
-  }
-  uni-text,
-  text,
-  .wd-icon {
-    transition: color 0.3s ease !important;
-  }
 }
 
 .navbar-placeholder {

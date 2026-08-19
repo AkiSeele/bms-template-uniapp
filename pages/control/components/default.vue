@@ -1,17 +1,11 @@
 <template>
   <view class="wot-w-full wot-bg-filled-bottom wot-box-border wot-px-4">
-    <!-- 自定义顶部导航栏 -->
-    <!-- Source: uni_modules/wot-ui/components/wd-navbar/wd-navbar.vue -->
-    <wd-navbar :title="$t('bms.tab.control')" fixed safe-area-inset-top />
+    <!-- 自定义顶部导航栏 -->    <wd-navbar :title="$t('bms.tab.control')" fixed safe-area-inset-top />
 
     <view class="tab-content-wrap page-body-animate" :style="{ 'padding-top': (navbarHeight + 16) + 'px' }">
-      <!-- 蓝牙未连接时的空状态 -->
-      <!-- Source: uni_modules/wot-ui/components/wd-empty/wd-empty.vue -->
-      <view v-if="!isConnected" class="empty-wrap wot-flex wot-flex-col wot-items-center wot-justify-center">
+      <!-- 蓝牙未连接时的空状态 -->      <view v-if="!isConnected" class="empty-wrap wot-flex wot-flex-col wot-items-center wot-justify-center">
         <wd-empty icon="empty" :tip="$t('bms.battery.noData')">
-          <template #bottom>
-            <!-- Source: uni_modules/wot-ui/components/wd-button/wd-button.vue -->
-            <wd-button size="small" plain @click="toConnect" custom-class="empty-btn">
+          <template #bottom>            <wd-button size="small" plain @click="toConnect" custom-class="wot-mt-3 wot-min-w-[180rpx] wot-rounded-full">
               {{ $t("bms.ble.connect") }}
             </wd-button>
           </template>
@@ -21,12 +15,10 @@
       <!-- 已连接时的控制面板 -->
       <view v-else class="wot-flex wot-flex-col wot-gap-4">
         <!-- 1. 核心开关控制卡片 (开启/关闭按钮组方式，解决读不到状态值引起的 Switch 假滑动问题) -->
-        <view class="wot-bg-filled-oppo wot-p-4 control-panel-card">
+        <view class="wot-bg-filled-oppo wot-p-4 wot-rounded-2xl wot-shadow-sm">
           <view
             class="wot-flex wot-items-center wot-gap-2 wot-mb-4 wot-border-0 wot-border-b wot-border-solid wot-border-divider-main wot-pb-2.5"
-          >
-            <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-            <wd-icon css-icon="i-ri-toggle-line" size="20px" color="var(--wot-icon-auxiliary)" />
+          >            <wd-icon css-icon="i-ri-toggle-line" size="20px" color="var(--wot-icon-auxiliary)" />
             <text class="wot-font-bold wot-text-text-main" :style="{ fontSize: '30rpx' }">
               {{ $t("bms.control.title") }}
             </text>
@@ -38,24 +30,20 @@
               <text class="wot-font-semibold wot-text-text-main" :style="{ fontSize: '28rpx' }">
                 {{ $t("bms.control.chargeMos") }}
               </text>
-              <view class="wot-flex wot-items-center wot-gap-1.5 wot-flex-shrink-0">
-                <!-- Source: uni_modules/wot-ui/components/wd-button/wd-button.vue -->
-                <wd-button
+              <view class="wot-flex wot-items-center wot-gap-1.5 wot-flex-shrink-0">                <wd-button
                   size="small"
                   type="primary"
                   plain
                   @click="handleControlAction('charge', true)"
-                  custom-class="btn-control-style"
+                  custom-class="wot-min-w-[110rpx] wot-font-semibold wot-rounded-md"
                 >
                   {{ $t("bms.common.enable") }}
-                </wd-button>
-                <!-- Source: uni_modules/wot-ui/components/wd-button/wd-button.vue -->
-                <wd-button
+                </wd-button>                <wd-button
                   size="small"
                   type="danger"
                   plain
                   @click="handleControlAction('charge', false)"
-                  custom-class="btn-control-style"
+                  custom-class="wot-min-w-[110rpx] wot-font-semibold wot-rounded-md"
                 >
                   {{ $t("bms.common.disable") }}
                 </wd-button>
@@ -69,24 +57,20 @@
               <text class="wot-font-semibold wot-text-text-main" :style="{ fontSize: '28rpx' }">
                 {{ $t("bms.control.dischargeMos") }}
               </text>
-              <view class="wot-flex wot-items-center wot-gap-1.5 wot-flex-shrink-0">
-                <!-- Source: uni_modules/wot-ui/components/wd-button/wd-button.vue -->
-                <wd-button
+              <view class="wot-flex wot-items-center wot-gap-1.5 wot-flex-shrink-0">                <wd-button
                   size="small"
                   type="primary"
                   plain
                   @click="handleControlAction('discharge', true)"
-                  custom-class="btn-control-style"
+                  custom-class="wot-min-w-[110rpx] wot-font-semibold wot-rounded-md"
                 >
                   {{ $t("bms.common.enable") }}
-                </wd-button>
-                <!-- Source: uni_modules/wot-ui/components/wd-button/wd-button.vue -->
-                <wd-button
+                </wd-button>                <wd-button
                   size="small"
                   type="danger"
                   plain
                   @click="handleControlAction('discharge', false)"
-                  custom-class="btn-control-style"
+                  custom-class="wot-min-w-[110rpx] wot-font-semibold wot-rounded-md"
                 >
                   {{ $t("bms.common.disable") }}
                 </wd-button>
@@ -100,24 +84,20 @@
               <text class="wot-font-semibold wot-text-text-main" :style="{ fontSize: '28rpx' }">
                 {{ $t("bms.control.heatMos") }}
               </text>
-              <view class="wot-flex wot-items-center wot-gap-1.5 wot-flex-shrink-0">
-                <!-- Source: uni_modules/wot-ui/components/wd-button/wd-button.vue -->
-                <wd-button
+              <view class="wot-flex wot-items-center wot-gap-1.5 wot-flex-shrink-0">                <wd-button
                   size="small"
                   type="primary"
                   plain
                   @click="handleControlAction('heat', true)"
-                  custom-class="btn-control-style"
+                  custom-class="wot-min-w-[110rpx] wot-font-semibold wot-rounded-md"
                 >
                   {{ $t("bms.common.enable") }}
-                </wd-button>
-                <!-- Source: uni_modules/wot-ui/components/wd-button/wd-button.vue -->
-                <wd-button
+                </wd-button>                <wd-button
                   size="small"
                   type="danger"
                   plain
                   @click="handleControlAction('heat', false)"
-                  custom-class="btn-control-style"
+                  custom-class="wot-min-w-[110rpx] wot-font-semibold wot-rounded-md"
                 >
                   {{ $t("bms.common.disable") }}
                 </wd-button>
@@ -131,24 +111,20 @@
               <text class="wot-font-semibold wot-text-text-main" :style="{ fontSize: '28rpx' }">
                 {{ $t("bms.control.testMode") }}
               </text>
-              <view class="wot-flex wot-items-center wot-gap-1.5 wot-flex-shrink-0">
-                <!-- Source: uni_modules/wot-ui/components/wd-button/wd-button.vue -->
-                <wd-button
+              <view class="wot-flex wot-items-center wot-gap-1.5 wot-flex-shrink-0">                <wd-button
                   size="small"
                   type="primary"
                   plain
                   @click="handleControlAction('test', true)"
-                  custom-class="btn-control-style"
+                  custom-class="wot-min-w-[110rpx] wot-font-semibold wot-rounded-md"
                 >
                   {{ $t("bms.common.enable") }}
-                </wd-button>
-                <!-- Source: uni_modules/wot-ui/components/wd-button/wd-button.vue -->
-                <wd-button
+                </wd-button>                <wd-button
                   size="small"
                   type="danger"
                   plain
                   @click="handleControlAction('test', false)"
-                  custom-class="btn-control-style"
+                  custom-class="wot-min-w-[110rpx] wot-font-semibold wot-rounded-md"
                 >
                   {{ $t("bms.common.disable") }}
                 </wd-button>
@@ -158,12 +134,10 @@
         </view>
 
         <!-- 2. 系统维护与紧急动作卡片 -->
-        <view class="wot-bg-filled-oppo wot-p-4 control-panel-card">
+        <view class="wot-bg-filled-oppo wot-p-4 wot-rounded-2xl wot-shadow-sm">
           <view
             class="wot-flex wot-items-center wot-gap-2 wot-mb-4 wot-border-0 wot-border-b wot-border-solid wot-border-divider-main wot-pb-2.5"
-          >
-            <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-            <wd-icon css-icon="i-ri-settings-5-line" size="20px" color="var(--wot-icon-secondary)" />
+          >            <wd-icon css-icon="i-ri-settings-5-line" size="20px" color="var(--wot-icon-secondary)" />
             <text class="wot-font-bold wot-text-text-main" :style="{ fontSize: '30rpx' }">
               {{ $t("bms.control.systemMaintenance") }}
             </text>
@@ -175,9 +149,7 @@
             <view class="wot-flex wot-items-center wot-justify-between">
               <text class="wot-font-semibold wot-text-text-main" :style="{ fontSize: '28rpx' }">
                 {{ $t("bms.control.clearStatus") }}
-              </text>
-              <!-- Source: uni_modules/wot-ui/components/wd-button/wd-button.vue -->
-              <wd-button size="small" plain @click="confirmAction('clear')" custom-class="btn-style">
+              </text>              <wd-button size="small" plain @click="confirmAction('clear')" custom-class="wot-min-w-[140rpx] wot-font-semibold wot-rounded-md">
                 {{ $t("bms.control.btnClear") }}
               </wd-button>
             </view>
@@ -188,9 +160,7 @@
             >
               <text class="wot-font-semibold wot-text-text-main" :style="{ fontSize: '28rpx' }">
                 {{ $t("bms.control.clearParam") }}
-              </text>
-              <!-- Source: uni_modules/wot-ui/components/wd-button/wd-button.vue -->
-              <wd-button size="small" plain @click="confirmAction('clearParam')" custom-class="btn-style">
+              </text>              <wd-button size="small" plain @click="confirmAction('clearParam')" custom-class="wot-min-w-[140rpx] wot-font-semibold wot-rounded-md">
                 {{ $t("bms.control.btnClear") }}
               </wd-button>
             </view>
@@ -201,9 +171,7 @@
             >
               <text class="wot-font-semibold wot-text-text-main" :style="{ fontSize: '28rpx' }">
                 {{ $t("bms.control.forceStart") }}
-              </text>
-              <!-- Source: uni_modules/wot-ui/components/wd-button/wd-button.vue -->
-              <wd-button size="small" plain @click="confirmAction('start')" custom-class="btn-style">
+              </text>              <wd-button size="small" plain @click="confirmAction('start')" custom-class="wot-min-w-[140rpx] wot-font-semibold wot-rounded-md">
                 {{ $t("bms.control.btnStart") }}
               </wd-button>
             </view>
@@ -214,9 +182,7 @@
             >
               <text class="wot-font-semibold wot-text-text-main" :style="{ fontSize: '28rpx' }">
                 {{ $t("bms.control.forceSleep") }}
-              </text>
-              <!-- Source: uni_modules/wot-ui/components/wd-button/wd-button.vue -->
-              <wd-button size="small" plain @click="confirmAction('sleep')" custom-class="btn-style">
+              </text>              <wd-button size="small" plain @click="confirmAction('sleep')" custom-class="wot-min-w-[140rpx] wot-font-semibold wot-rounded-md">
                 {{ $t("bms.control.btnSleep") }}
               </wd-button>
             </view>
@@ -229,17 +195,28 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
-import { useToast, useDialog } from "@/uni_modules/wot-ui";
+import { storeToRefs } from "pinia";
+import { useToast, useDialog } from "@wot-ui/ui";
+import { useDeviceInfo } from "@wot-ui/ui/composables/useDeviceInfo";
 import { useBleStore } from "@/stores/ble-store";
 import { useUserStore } from "@/stores/user";
-import { useDeviceInfo } from "@/uni_modules/wot-ui/composables/useDeviceInfo";
 
 // 初始化 UI 交互反馈与翻译
 const toast = useToast();
 const dialog = useDialog();
 const { t } = useI18n();
+
+// 触感震动反馈辅助函数
+const vibrateFeedback = () => {
+  try {
+    if (typeof uni.vibrateShort === "function") {
+      uni.vibrateShort({});
+    }
+  } catch (e) {
+    // 忽略平台不支持触感震动的异常
+  }
+};
 
 // 引入 wot-ui 底层设备信息适配，以彻底破除微信小程序 v-show 保活机制下 placeholder 测量塌陷的 bug
 const { statusBarHeight, navBarTotalHeight } = useDeviceInfo();
@@ -294,6 +271,7 @@ const getControlErrorMessage = (err: any): string => {
 
 // 统一的开关控制动作下发
 const handleControlAction = (type: "charge" | "discharge" | "heat" | "test", open: boolean) => {
+  vibrateFeedback();
   if (!isAuthorized.value) {
     showAuthRequiredDialog();
     return;
@@ -348,6 +326,7 @@ const handleControlAction = (type: "charge" | "discharge" | "heat" | "test", ope
 
 // 系统级维护与安全拉起动作 Dialog 二次授权校验
 const confirmAction = (action: "clear" | "sleep" | "start" | "clearParam") => {
+  vibrateFeedback();
   if (!isAuthorized.value) {
     showAuthRequiredDialog();
     return;
@@ -394,24 +373,6 @@ const confirmAction = (action: "clear" | "sleep" | "start" | "clearParam") => {
 </script>
 
 <style scoped>
-/* 按钮基础风格重置，融入 wot-ui 配色设计 */
-:deep(.btn-style) {
-  min-width: 140rpx;
-  font-weight: 600;
-  border-radius: 12rpx;
-}
-
-:deep(.btn-control-style) {
-  min-width: 110rpx;
-  font-weight: 600;
-  border-radius: 12rpx;
-}
-
-.control-panel-card {
-  border-radius: 28rpx;
-  box-shadow: 0 8px 20px rgba(163, 177, 198, 0.1);
-}
-
 /* 顶部安全区域与自定义导航栏高度自适应占位 */
 .tab-content-wrap {
   padding-bottom: env(safe-area-inset-bottom);
@@ -420,11 +381,5 @@ const confirmAction = (action: "clear" | "sleep" | "start" | "clearParam") => {
 .empty-wrap {
   min-height: 65vh;
   box-sizing: border-box;
-}
-
-:deep(.empty-btn) {
-  margin-top: 24rpx;
-  min-width: 180rpx;
-  border-radius: 100rpx;
 }
 </style>

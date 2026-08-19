@@ -27,6 +27,11 @@ export const LIGHT_THEME_VARS = {
   borderMain: "#e5e6eb",
   borderStrong: "#c9cbd4",
   dividerMain: "#0000000a",
+
+  // 组件全局通用尺寸规范（统一全站圆角与间距）
+  cardRadius: "16px",
+  buttonRadiusMain: "8px",
+  cellPadding: "12px 16px",
 };
 
 // 暗黑模式 (Dark Theme) 定制配置：选用极光天青蓝，背景深邃防眩光炭黑
@@ -52,4 +57,9 @@ export const DARK_THEME_VARS = {
   borderMain: "#383c4e", // 调亮线框以增加卡片轮廓感
   borderStrong: "#3f3f46",
   dividerMain: "#ffffff14",
+
+  // 组件全局通用尺寸规范（统一全站圆角与间距）
+  cardRadius: "16px",
+  buttonRadiusMain: "8px",
+  cellPadding: "12px 16px",
 };

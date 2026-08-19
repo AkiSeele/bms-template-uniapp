@@ -119,9 +119,6 @@
         </view>
       </template>
     </z-paging>
-
-    <!-- Source: uni_modules/wot-ui/components/wd-toast/wd-toast.vue -->
-    <wd-toast />
   </layout-provider>
 </template>
 
@@ -130,13 +127,12 @@ import { ref, watch, nextTick, onMounted } from "vue";
 import { onShow, onHide, onUnload } from "@dcloudio/uni-app";
 
 import { useI18n } from "vue-i18n";
-import { useToast } from "@/uni_modules/wot-ui";
+import { useToast } from "@wot-ui/ui";
 import { gsap } from "gsap";
 import { bleManager } from "@/service/ble-manager";
 import { useBleStore } from "@/stores/ble-store";
 import { useBlePermission } from "@/composables/use-ble-permission";
 import { resolveDeviceMac } from "@/utils/bms-helper";
-import { getRegisteredUuids } from "@/service/protocol/protocol-registry";
 import { APP_CONFIG } from "@/config";
 
 // 初始化国际化 i18n
@@ -306,7 +302,7 @@ const onQuery = async () => {
       // 针对真物理 MAC 进行去重，防止相同设备广播重复渲染导致重绘闪烁
       const mac = resolveDeviceMac(device);
       (device as any).macAddress = mac;
-      
+
       const exists = allScannedDevices.value.some((d) => d.macAddress === mac);
       if (!exists) {
         allScannedDevices.value.push(device);

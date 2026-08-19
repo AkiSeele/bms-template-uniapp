@@ -1,35 +1,17 @@
 <template>
   <layout-provider>
-    <!-- 自定义顶部导航栏 -->
-    <!-- Source: uni_modules/wot-ui/components/wd-navbar/wd-navbar.vue -->
-    <wd-navbar :title="$t('bms.auth.title')" fixed placeholder left-arrow safe-area-inset-top @click-left="goBack" />
+    <!-- 自定义顶部导航栏 -->    <wd-navbar :title="$t('bms.auth.title')" fixed placeholder left-arrow safe-area-inset-top @click-left="goBack" />
 
     <view class="wot-px-3 wot-py-4 page-body-animate">
-      <!-- 核心授权状态指示卡片（扁平三态版） -->
-      <!-- Source: uni_modules/wot-ui/components/wd-card/wd-card.vue -->
-      <wd-card class="wot-mb-4">
+      <!-- 核心授权状态指示卡片（扁平三态版） -->      <wd-card class="wot-mb-4">
         <view class="wot-flex wot-items-center wot-py-4 wot-px-2">
           <!-- 状态圆环与图标（三色动态联动） -->
           <view
-            :class="[
-              isAuthorized
-                ? 'wot-bg-green-50 dark:wot-bg-green-950/30'
-                : authEndTime === 0
-                  ? 'wot-bg-slate-100 dark:wot-bg-zinc-800'
-                  : 'wot-bg-orange-50 dark:wot-bg-orange-950/30',
-            ]"
+            :class="statusCircleClass"
             class="status-circle-small wot-flex wot-items-center wot-justify-center wot-rounded-full wot-mr-4"
-          >
-            <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-            <wd-icon
-              :css-icon="
-                isAuthorized
-                  ? 'i-ri-shield-check-fill'
-                  : authEndTime === 0
-                    ? 'i-ri-shield-user-line'
-                    : 'i-ri-shield-flash-line'
-              "
-              :color="isAuthorized ? '#07c160' : authEndTime === 0 ? '#80868b' : '#ff9900'"
+          >            <wd-icon
+              :css-icon="statusIconName"
+              :color="statusIconColor"
               size="26px"
             />
           </view>
@@ -44,13 +26,7 @@
             <!-- 时限说明气泡标签贴纸（三色气泡） -->
             <view class="wot-flex">
               <view
-                :class="[
-                  isAuthorized
-                    ? 'wot-bg-green-100 wot-text-green-700 dark:wot-bg-green-950/50 dark:wot-text-green-400'
-                    : authEndTime === 0
-                      ? 'wot-bg-slate-200 wot-text-slate-600 dark:wot-bg-zinc-800 dark:wot-text-zinc-400'
-                      : 'wot-bg-orange-100 wot-text-orange-700 dark:wot-bg-orange-950/50 dark:wot-text-orange-400',
-                ]"
+                :class="statusBadgeClass"
                 class="wot-px-2.5 wot-py-0.5 wot-rounded wot-text-caption wot-font-semibold"
               >
                 {{ expirationText }}
@@ -60,9 +36,7 @@
         </view>
       </wd-card>
 
-      <!-- 设备硬件码复制卡片 -->
-      <!-- Source: uni_modules/wot-ui/components/wd-card/wd-card.vue -->
-      <wd-card class="wot-mb-4" :title="$t('bms.auth.deviceCode')">
+      <!-- 设备硬件码复制卡片 -->      <wd-card class="wot-mb-4" :title="$t('bms.auth.deviceCode')">
         <view
           class="wot-flex wot-flex-col wot-items-center wot-py-6 wot-bg-filled-main wot-rounded-xl"
           @click="copyDeviceCode"
@@ -72,21 +46,15 @@
             {{ codeDev }}
           </text>
           <!-- 点击复制操作引导文案 -->
-          <view class="wot-flex wot-items-center wot-mt-3 wot-gap-1 wot-pointer-events-none">
-            <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-            <wd-icon css-icon="i-ri-file-copy-2-line" size="14px" color="#80868b" />
+          <view class="wot-flex wot-items-center wot-mt-3 wot-gap-1 wot-pointer-events-none">            <wd-icon css-icon="i-ri-file-copy-2-line" size="14px" color="#80868b" />
             <text class="wot-text-caption wot-text-text-secondary">{{ $t("bms.auth.copyHint") }}</text>
           </view>
         </view>
       </wd-card>
 
-      <!-- 激活指令输入与确认按钮卡片 -->
-      <!-- Source: uni_modules/wot-ui/components/wd-card/wd-card.vue -->
-      <wd-card class="wot-mb-4" :title="$t('bms.auth.authCode')">
+      <!-- 激活指令输入与确认按钮卡片 -->      <wd-card class="wot-mb-4" :title="$t('bms.auth.authCode')">
         <view class="wot-py-2">
-          <!-- 授权激活输入框 -->
-          <!-- Source: uni_modules/wot-ui/components/wd-input/wd-input.vue -->
-          <wd-input
+          <!-- 授权激活输入框 -->          <wd-input
             v-model="codeCheck"
             type="text"
             clearable
@@ -95,9 +63,7 @@
             custom-style="margin-bottom: 24px;"
           />
 
-          <!-- 激活保存大按钮 -->
-          <!-- Source: uni_modules/wot-ui/components/wd-button/wd-button.vue -->
-          <wd-button block type="primary" size="large" @click="onCheckCode">
+          <!-- 激活保存大按钮 -->          <wd-button block type="primary" size="large" @click="onCheckCode">
             {{ $t("bms.auth.activateBtn") }}
           </wd-button>
         </view>
@@ -114,7 +80,8 @@ declare const plus: any;
 
 import { ref, computed, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
-import { useToast, useDialog } from "@/uni_modules/wot-ui";
+import { useToast, useDialog } from "@wot-ui/ui";
+import { isAppAndroid, isAppIOS } from "@uni-helper/uni-env";
 import { useUserStore } from "@/stores/user";
 import { storeToRefs } from "pinia";
 import { generateRandomDeviceCode, calculateAuthCode, decodeAuthCode, calculateEndTime } from "@/utils/auth-helper";
@@ -131,6 +98,50 @@ const codeCheck = ref("");
 // 获取全局用户状态仓并进行解构响应式关联
 const userStore = useUserStore();
 const { isAuthorized, authEndTime, authType } = storeToRefs(userStore);
+
+// 状态指示圆环背景样式计算属性，消除模板复杂三目运算符
+const statusCircleClass = computed(() => {
+  if (isAuthorized.value) {
+    return "wot-bg-green-50 dark:wot-bg-green-950/30";
+  }
+  if (authEndTime.value === 0) {
+    return "wot-bg-slate-100 dark:wot-bg-zinc-800";
+  }
+  return "wot-bg-orange-50 dark:wot-bg-orange-950/30";
+});
+
+// 状态气泡标签样式计算属性
+const statusBadgeClass = computed(() => {
+  if (isAuthorized.value) {
+    return "wot-bg-green-100 wot-text-green-700 dark:wot-bg-green-950/50 dark:wot-text-green-400";
+  }
+  if (authEndTime.value === 0) {
+    return "wot-bg-slate-200 wot-text-slate-600 dark:wot-bg-zinc-800 dark:wot-text-zinc-400";
+  }
+  return "wot-bg-orange-100 wot-text-orange-700 dark:wot-bg-orange-950/50 dark:wot-text-orange-400";
+});
+
+// 状态图标名称计算属性
+const statusIconName = computed(() => {
+  if (isAuthorized.value) {
+    return "i-ri-shield-check-fill";
+  }
+  if (authEndTime.value === 0) {
+    return "i-ri-shield-user-line";
+  }
+  return "i-ri-shield-flash-line";
+});
+
+// 状态图标颜色计算属性
+const statusIconColor = computed(() => {
+  if (isAuthorized.value) {
+    return "#07c160";
+  }
+  if (authEndTime.value === 0) {
+    return "#80868b";
+  }
+  return "#ff9900";
+});
 
 // 页面挂载时初始化设备识别特征码
 onMounted(() => {
@@ -178,51 +189,24 @@ const goBack = () => {
   uni.navigateBack();
 };
 
-// 一键将特征硬件识别码写入剪切板，并触发延迟权限回读检测
+// 一键将特征硬件识别码写入剪切板
 const copyDeviceCode = () => {
   const textToCopy = codeDev.value || uni.getStorageSync("code_dev") || "UNKNOWN";
   console.log("开始复制设备识别码:", textToCopy);
 
-  // 执行 uni 官方剪贴板写入 API
   uni.setClipboardData({
     data: textToCopy,
-    showToast: false, // 拦截微信小程序默认提示
+    showToast: false,
     success: () => {
-      // 成功写入回调
-      console.log("uni.setClipboardData 成功触发");
+      toast.show({
+        msg: t("bms.auth.copied"),
+      });
     },
     fail: (err) => {
-      // 写入失败回调
-      console.error("uni.setClipboardData 复制失败:", err);
+      console.error("写入剪切板失败，引导系统授权:", err);
+      showPermissionDialog();
     },
   });
-
-  // 延迟校验回读剪切板数据，确保写入成功且未被系统拦截
-  verifyClipboard(textToCopy);
-};
-
-// 延迟 200 毫秒从系统剪贴板回读并比对，判定写入权限是否被系统拦截
-const verifyClipboard = (expectedText: string) => {
-  setTimeout(() => {
-    uni.getClipboardData({
-      success: (res) => {
-        // 比对读取的数据与期望的设备码是否一致
-        if (res.data !== expectedText) {
-          console.error("剪切板内容校验失败，预期值:", expectedText, "实际值:", res.data);
-          showPermissionDialog();
-        } else {
-          console.log("剪贴板校验匹配成功，弹出复制成功反馈");
-          toast.show({
-            msg: t("bms.auth.copied"),
-          });
-        }
-      },
-      fail: (err) => {
-        console.error("回读剪贴板数据失败，可能未获系统授权:", err);
-        showPermissionDialog();
-      },
-    });
-  }, 200);
 };
 
 // 弹出权限未开启确认对话框，引导去系统设置页
@@ -247,10 +231,7 @@ const showPermissionDialog = () => {
 const openSystemSettings = () => {
   // #ifdef APP-PLUS
   try {
-    const systemInfo = uni.getSystemInfoSync();
-    const osName = (systemInfo.osName || "").toLowerCase();
-    const platform = (systemInfo.platform || "").toLowerCase();
-    if (platform === "android" || osName === "harmonyos" || platform === "harmonyos") {
+    if (isAppAndroid) {
       const main = plus.android.runtimeMainActivity();
       const Intent = plus.android.importClass("android.content.Intent");
       const Settings = plus.android.importClass("android.provider.Settings");
@@ -259,7 +240,7 @@ const openSystemSettings = () => {
       const uri = Uri.fromParts("package", main.getPackageName(), null);
       intent.setData(uri);
       main.startActivity(intent);
-    } else if (platform === "ios") {
+    } else if (isAppIOS) {
       const UIApplication = plus.ios.importClass("UIApplication");
       const NSURL = plus.ios.importClass("NSURL");
       const sharedApplication = UIApplication.sharedApplication();
@@ -343,9 +324,8 @@ const onCheckCode = () => {
   font-size: 32px;
 }
 
-/* 样式穿透覆盖卡片默认的左右外边距，防止与主页面边距叠加导致留白过宽 */
-:deep(.wd-card) {
-  margin-left: 0 !important;
-  margin-right: 0 !important;
+/* 通过 Wot UI 官方 CSS 变量消除卡片水平外边距，防止与主页面边距叠加导致留白过宽 */
+.page-body-animate {
+  --wot-card-margin-horizontal: 0;
 }
 </style>

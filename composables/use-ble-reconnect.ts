@@ -1,7 +1,7 @@
 import { watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { storeToRefs } from "pinia";
-import { useToast, useDialog } from "@/uni_modules/wot-ui";
+import { useToast, useDialog } from "@wot-ui/ui";
 import { useBleStore } from "@/stores/ble-store";
 
 /**

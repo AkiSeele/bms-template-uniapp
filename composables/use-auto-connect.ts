@@ -1,5 +1,5 @@
 import { useI18n } from "vue-i18n";
-import { useToast } from "@/uni_modules/wot-ui";
+import { useToast } from "@wot-ui/ui";
 import { useBleStore } from "@/stores/ble-store";
 import { bleManager } from "@/service/ble-manager";
 import { permissionManager } from "@/service/permission";

@@ -37,6 +37,12 @@
       "skillPath": "skills/gsap-utils/SKILL.md",
       "computedHash": "72af4a036d417d6eaef7478eca2f28e760631fb78db822ba34a9c706797aab62"
     },
+    "uni-helper": {
+      "source": "uni-helper/skills",
+      "sourceType": "github",
+      "skillPath": "skills/uni-helper/SKILL.md",
+      "computedHash": "03f65c8c3e48a190902df3f219d0085fbd045e42402b7ccee26f24481f61134e"
+    },
     "uniapp-project": {
       "source": "teachingai/full-stack-skills",
       "sourceType": "github",

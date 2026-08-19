@@ -3,6 +3,7 @@ import { ref, watch } from "vue";
 import { bleManager } from "@/service/ble-manager";
 import { APP_CONFIG, BleServiceConfig } from "@/config";
 import { uint8ArrayToHexString } from "@/utils/bms-helper";
+import { isAppIOS } from "@uni-helper/uni-env";
 import { useAppStore } from "@/stores/app";
 import { BmsProtocolParser, BmsExtendedData } from "@/types/protocol";
 import { resolveProtocol, getRegisteredUuids } from "@/service/protocol/protocol-registry";
@@ -944,10 +945,7 @@ export const useBleStore = defineStore("ble", () => {
 
       // 步骤 8：动态 MTU 协商（非 iOS 平台主动协商，目标值取自配置）
       //    iOS 系统会在物理连接时由底层自动完成 MTU 协商，无需手动调用
-      const appStore = useAppStore();
-      const os = (appStore.deviceInfo.osName || "").toLowerCase();
-
-      if (os !== "ios" && typeof uni.setBLEMTU === "function") {
+      if (!isAppIOS && typeof uni.setBLEMTU === "function") {
         try {
           const targetMtu = APP_CONFIG.BLE_SCAN.TARGET_MTU;
           const mtuRes = await bleManager.setMTU(deviceId, targetMtu);
@@ -960,7 +958,7 @@ export const useBleStore = defineStore("ble", () => {
           );
         }
       } else {
-        logStore.addConnectionLog("uni.setBLEMTU", { deviceId }, `skipped: platform=${os}`, "success");
+        logStore.addConnectionLog("uni.setBLEMTU", { deviceId }, "skipped: isAppIOS", "success");
       }
 
       // 步骤 9：订阅通知特征值，使能电池数据通道

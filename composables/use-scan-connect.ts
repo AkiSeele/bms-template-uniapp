@@ -1,5 +1,6 @@
 import { useI18n } from "vue-i18n";
-import { useToast } from "@/uni_modules/wot-ui";
+import { useToast } from "@wot-ui/ui";
+import { isAppAndroid } from "@uni-helper/uni-env";
 import { useBleStore } from "@/stores/ble-store";
 import { bleManager } from "@/service/ble-manager";
 import { permissionManager } from "@/service/permission";
@@ -72,16 +73,7 @@ export function useScanConnect() {
       // 格式化为标准冒号相连的物理地址字串
       const formattedMac = cleanResult.match(/.{1,2}/g)?.join(":") || "";
 
-      // 获取当前物理系统平台类型
-      const systemInfo = uni.getSystemInfoSync();
-      const os = (systemInfo.platform || "").toLowerCase();
-
-      let isAndroid = false;
-      // #ifdef APP-PLUS
-      isAndroid = os === "android";
-      // #endif
-
-      if (isAndroid) {
+      if (isAppAndroid) {
         // 安卓原生端直接传入物理地址作为系统标示符，达到极速连接
         console.log(`[扫码连接] 安卓平台直接发起物理连接: ${formattedMac}`);
         connectWithToast(formattedMac, "BMS Device", formattedMac);

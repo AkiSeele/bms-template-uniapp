@@ -1,8 +1,6 @@
 <template>
   <layout-provider>
-    <!-- 自定义顶部导航栏，固定在顶部并生成占位元素 -->
-    <!-- Source: uni_modules/wot-ui/components/wd-navbar/wd-navbar.vue -->
-    <wd-navbar
+    <!-- 自定义顶部导航栏，固定在顶部并生成占位元素 -->    <wd-navbar
       :title="$t('bms.settings.title')"
       fixed
       placeholder
@@ -42,9 +40,7 @@
                 v-if="themeColor"
                 class="clear-btn wot-flex wot-items-center wot-justify-center wot-p-0.5"
                 @click="themeColor = ''"
-              >
-                <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-                <wd-icon css-icon="i-ri-close-fill" size="14px" color="#80868b" />
+              >                <wd-icon css-icon="i-ri-close-fill" size="14px" color="#80868b" />
               </view>
             </view>
             <!-- 预设色块选项 -->
@@ -58,9 +54,7 @@
                   boxShadow: themeColor === color ? `0 0 0 1.5px #ffffff, 0 0 0 3px ${color}` : 'none',
                 }"
                 @click="themeColor = color"
-              >
-                <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-                <wd-icon v-if="themeColor === color" css-icon="i-ri-check-line" size="12px" color="#fff" />
+              >                <wd-icon v-if="themeColor === color" css-icon="i-ri-check-line" size="12px" color="#fff" />
               </view>
             </view>
           </view>
@@ -85,9 +79,7 @@
                 v-if="warningColor"
                 class="clear-btn wot-flex wot-items-center wot-justify-center wot-p-0.5"
                 @click="warningColor = ''"
-              >
-                <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-                <wd-icon css-icon="i-ri-close-fill" size="14px" color="#80868b" />
+              >                <wd-icon css-icon="i-ri-close-fill" size="14px" color="#80868b" />
               </view>
             </view>
             <!-- 预设色块选项 -->
@@ -101,9 +93,7 @@
                   boxShadow: warningColor === color ? `0 0 0 1.5px #ffffff, 0 0 0 3px ${color}` : 'none',
                 }"
                 @click="warningColor = color"
-              >
-                <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-                <wd-icon v-if="warningColor === color" css-icon="i-ri-check-line" size="12px" color="#fff" />
+              >                <wd-icon v-if="warningColor === color" css-icon="i-ri-check-line" size="12px" color="#fff" />
               </view>
             </view>
           </view>
@@ -128,9 +118,7 @@
                 v-if="successColor"
                 class="clear-btn wot-flex wot-items-center wot-justify-center wot-p-0.5"
                 @click="successColor = ''"
-              >
-                <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-                <wd-icon css-icon="i-ri-close-fill" size="14px" color="#80868b" />
+              >                <wd-icon css-icon="i-ri-close-fill" size="14px" color="#80868b" />
               </view>
             </view>
             <!-- 预设色块选项 -->
@@ -144,9 +132,7 @@
                   boxShadow: successColor === color ? `0 0 0 1.5px #ffffff, 0 0 0 3px ${color}` : 'none',
                 }"
                 @click="successColor = color"
-              >
-                <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-                <wd-icon v-if="successColor === color" css-icon="i-ri-check-line" size="12px" color="#fff" />
+              >                <wd-icon v-if="successColor === color" css-icon="i-ri-check-line" size="12px" color="#fff" />
               </view>
             </view>
           </view>
@@ -169,9 +155,7 @@
                 v-if="dangerColor"
                 class="clear-btn wot-flex wot-items-center wot-justify-center wot-p-0.5"
                 @click="dangerColor = ''"
-              >
-                <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-                <wd-icon css-icon="i-ri-close-fill" size="14px" color="#80868b" />
+              >                <wd-icon css-icon="i-ri-close-fill" size="14px" color="#80868b" />
               </view>
             </view>
             <!-- 预设色块选项 -->
@@ -185,9 +169,7 @@
                   boxShadow: dangerColor === color ? `0 0 0 1.5px #ffffff, 0 0 0 3px ${color}` : 'none',
                 }"
                 @click="dangerColor = color"
-              >
-                <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-                <wd-icon v-if="dangerColor === color" css-icon="i-ri-check-line" size="12px" color="#fff" />
+              >                <wd-icon v-if="dangerColor === color" css-icon="i-ri-check-line" size="12px" color="#fff" />
               </view>
             </view>
           </view>
@@ -201,7 +183,7 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
 import { storeToRefs } from "pinia";
-import { useToast } from "@/uni_modules/wot-ui";
+import { useToast } from "@wot-ui/ui";
 import { useI18n } from "vue-i18n";
 import { useAppStore } from "@/stores/app";
 

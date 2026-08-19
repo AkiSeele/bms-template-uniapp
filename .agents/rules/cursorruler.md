@@ -2,12 +2,6 @@
 trigger: always_on
 ---
 
-# BMS BLE uni-app 开发规范与 Ruler
-
-本规范适用于 BMS BLE uni-app 项目（Android, iOS, HarmonyOS, 微信小程序），确保多端高兼容、极佳性能与强可维护性。所有开发与 AI 协同必须 100% 严格执行。
-
----
-
 ## 一、 技术栈与开发基础
 
 1. **核心框架**：uni-app (Vue 3) + TypeScript + `<script setup>` 组合式语法。
@@ -38,12 +32,12 @@ trigger: always_on
 
 ## 三、 wot-ui v2 开发与组件管理
 
-1. **反馈 Hook**：使用 `useToast()`、`useDialog()` 时，**当前页面模板必须显式挂载对应实例**（如 `<wd-toast />`, `<wd-dialog />`），否则无法弹窗。
+1. **反馈 Hook**：全站所有页面容器必须被全局高阶组件 `<layout-provider>` 包裹，该高阶组件内部已统一挂载全局的 `<wd-toast />` 与 `<wd-dialog root-portal />` 实例。因此，**业务页面与子组件模板内部严禁重复挂载 `<wd-toast />` 或 `<wd-dialog />`**；在脚本中直接调用 `useToast()`、`useDialog()` 即可触发全局唯一弹窗与提示，杜绝实例重复注册冲突。
 2. **样式重用与主题**：定制主题色统一采用 `ConfigProvider` 和全局 SCSS 变量，**禁止**在业务代码中使用 `::v-deep` 强行覆盖组件库内部类名。网格及 Flex 布局统一使用配备 `wot-` 前缀的 UnoCSS 全局预设。
-3. **前置知识求证与本地诊断工具**：
+3. **前置知识求证与本地诊断工具（禁止凭空猜测组件名/属性）**：
    - 优先使用 `wd-icon` 承载 UnoCSS 图标（如 `<wd-icon css-icon="i-<前缀>-<图名>" />`），属性命名与官方文档严格一致。
-   - 在使用、重构或调试任何 wot-ui 组件之前，**必须**首先阅读并调用 `wot-ui-v2` 专属 Skill。如遇不确定的属性、插槽或获取组件示例，**必须自动调用本地已安装的 `@wot-ui/cli` 工具查询**（如 `npx @wot-ui/cli info <Component>`、`npx @wot-ui/cli doc <Component>`、`npx @wot-ui/cli token <Component>`）。
-   - 在进行大规模 wot-ui 组件重构或遇到兼容性/编译问题时，**必须**主动运行 `npx @wot-ui/cli lint` 或 `npx @wot-ui/cli doctor` 检查项目中组件使用情况，杜绝未知组件或属性导致的运行期异常。
+   - **禁止凭空猜测组件名称或 Props**：在新增、重构或使用任何 `wd-` 开头的 wot-ui 组件之前，**必须**首先调用 `wot-ui` MCP 专属工具（如 `wot_info`、`wot_doc`、`wot_demo`、`wot_list`）或直接执行 `wot info <Component>` 核对真实属性、插槽与事件，严禁凭借其他 UI 库习惯猜测名称（如将 `wd-empty` 误记为 `status-tip`）。
+   - 在进行大规模 wot-ui 组件重构或遇到兼容性/编译问题时，**必须**主动调用 `wot_lint` MCP 工具或在终端运行 `wot lint` / `wot doctor` 检查项目中组件使用情况，杜绝未知组件或属性导致的运行期异常。
 4. **插槽红线**：严禁凭直觉猜测属性或插槽。**`wd-cell` 不存在且严禁使用已废弃的 `#value` 具名插槽，右侧值展示区域必须且只能使用默认匿名插槽（`#default`）**。
 5. **GSAP (GreenSock) 动画规范**：
    - **禁止操作 DOM**：小程序无 DOM，必须使用状态补间驱动（绑定 Vue 的 `ref` 数值渲染到 CSS/SVG 样式中）或类名选择器，避免原生报错。
@@ -59,6 +53,7 @@ trigger: always_on
 3. **禁止使用动态变量占位符**：语言包中**禁止**使用 `{key}` 等大括号占位符（兼容性差），统一配置为静态词条，在脚本中通过 `t('key') + 变量` 物理拼接。
 4. **系统语言自适应**：通过全局 `locale/i18n.ts` 的 `initI18nLocale()` 检测系统语言，针对包含 `hant, tw, hk, mo` 的系统语言自动激活繁体包，`en` 激活英文包；其他默认回退为简体中文（`zh-Hans`）。
 5. **无用 Key 同步清理**：在删减或删除页面、组件时，必须同步清理语言包中完全没有被用到的国际化词条 Key，防止无用翻译堆积。
+6. **JSON 结构防重红线（严禁重复对象键）**：在修改或为 `locale/zh-Hans.json`、`locale/zh-Hant.json` 或 `locale/en.json` 添加新词条时，**必须且只能**先通过 `grep_search` 或 `view_file` 确认目标 Parent Key（如 `"common"`、`"control"`、`"mine"`）的唯一位置与精准行号。**绝对禁止凭直觉在 JSON 任意位置新建已存在的同名 Key 块**；新词条必须严格合并到既有的唯一 Parent Key 对象内，杜绝 JSON 语法“重复对象键 (Duplicate Object Key)”错误！
 
 ---
 
@@ -126,3 +121,22 @@ trigger: always_on
    - **微信小程序端完全不支持 `<component :is>` 动态组件编译**。在需要支持小程序的页面容器中，**必须**使用条件编译（`#ifdef MP-WEIXIN`）来通过 `v-if` / `v-else-if` 分流并显式渲染静态导入的子面板组件。
    - 动态组件 `:is` 对象绑定（由视图层组件注册表 `panel-registry.ts` 返回引用）的动态渲染设计仅允许在非小程序端（如 App、H5）作为 `#ifndef MP-WEIXIN` 分支执行。
    - 新增协议专属面板时，在 `components/protocol-panels/` 下新建组件，并在 `panel-registry.ts` 静态 `import` 并配置在 Map 映射中即可，无需在业务页面编写分支判断，保障开闭原则。
+
+---
+
+## 九、 uni-helper 生态组件与工具库开发规范
+
+1. **API 核验红线（严禁凭空猜测函数名与导出项）**：
+   - 在使用任何 `@uni-helper/*` 生态工具库（如 `uni-env`、`axios-adapter`、`uni-use` 等）之前，**必须**首先查阅项目 Skill 目录 `.agents/skills/uni-helper/SKILL.md` 及配套参考文档，或直接检视 `node_modules/@uni-helper/<pkg>/dist/` 的真实 `.d.ts` 声明。
+   - **严禁凭空猜测导出名称**：禁止将 VueUse 或其它第三方库的 API 名称直接套用在 uni-helper 工具库上，杜绝因导出不存在引发的运行期/编译期崩溃。
+2. **`@uni-helper/uni-env` 跨端环境判断规范**：
+   - 区分平台大类组常量（`isApp`、`isH5`、`isMp`、`isDev`、`isProd`）与具体平台细分常量（`isAppAndroid`、`isAppIOS`、`isAppHarmony`、`isMpWeixin`）。
+   - 跨端运行时差异判断优先统一采用 `uni-env` 常量，消灭零散、容易拼错的 `process.env.UNI_PLATFORM === '...'` 或手动获取系统信息的字符串比对。
+   - 涉及特定端独有的原生插件、SDK 或原生 API 调用时，必须配合 `#ifdef APP-PLUS` / `#ifdef MP-WEIXIN` 条件编译，确保构建期死代码消除（Tree-shaking）。
+3. **`@uni-helper/vite-plugin-uni-components` 组件按需自动引入**：
+   - 全站 UI 组件库（如 Wot UI v2）必须通过 `vite.config.js` 的 `Components({ resolvers: [...] })` 插件进行自动引入与类型声明（`types/components.d.ts`），**业务页面与子组件中禁止手动编写局部 `import Wd...`**。
+   - **Vite 插件链声明顺序红线**：所有 `@uni-helper/vite-plugin-*` 插件（如 `Components`）**必须严格声明在官方 `@dcloudio/vite-plugin-uni`（`uni()`）之前**，确保模板中的标签能在 uni-app 编译器解析前完成拦截与按需转换。
+4. **`@uni-helper/axios-adapter` 网络请求层规范**：
+   - 全局网络请求统一由 `service/request.ts` 托管，必须通过 `createUniAppAxiosAdapter()` 创建适配器实例注入给 Axios，杜绝多端网络通信差异。
+5. **类型增强库统一注册**：
+   - 全局原生标签与清单类型必须配置在 `tsconfig.json` 的 `compilerOptions.types` 中（`@uni-helper/uni-app-types` 与 `@uni-helper/uni-manifest-types`），确保全项目享受 TypeScript 自动推导保护。

@@ -16,7 +16,9 @@
       "@/*": ["./*"]
     },
     "types": [
-      "@dcloudio/types"
+      "@dcloudio/types",
+      "@uni-helper/uni-app-types",
+      "@uni-helper/uni-manifest-types"
     ]
   },
   "include": [

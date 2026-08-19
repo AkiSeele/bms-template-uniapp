@@ -1,109 +1,166 @@
+import axios, { type AxiosRequestConfig, type AxiosResponse, type InternalAxiosRequestConfig } from "axios";
+import { createUniAppAxiosAdapter } from "@uni-helper/axios-adapter";
 import { APP_CONFIG } from "@/config";
 import { useUserStore } from "@/stores/user";
 import { translate as t } from "@/locale/i18n";
 import { useLogStore } from "@/stores/log-store";
 
-// 基础网络请求配置扩展，增加 noAuth 配置项决定是否跳过 Token 鉴权
-interface RequestOptions extends UniApp.RequestOptions {
-  noAuth?: boolean; // 为 true 时表示无需在 header 中携带 Token
+// 扩展 Axios 请求配置，增加 noAuth 字段决定是否免 Token 鉴权
+export interface CustomAxiosRequestConfig extends AxiosRequestConfig {
+  noAuth?: boolean; // 为 true 时表示无需在请求头中携带 Token
+}
+
+// 扩展内部请求配置
+interface CustomInternalAxiosRequestConfig extends InternalAxiosRequestConfig {
+  noAuth?: boolean;
 }
 
 /**
- * 核心网络请求服务拦截器
- * 负责底层 HTTP 请求的发送、请求头 Token 注入、离线单机拦截以及 401 未授权处理
+ * 实例化基于 uni-app 跨端适配器的 Axios 请求客户端
  */
-export const request = <T = any>(options: RequestOptions): Promise<T> => {
-  return new Promise((resolve, reject) => {
+export const http = axios.create({
+  baseURL: APP_CONFIG.BASE_URL,
+  timeout: APP_CONFIG.REQUEST_TIMEOUT,
+  adapter: createUniAppAxiosAdapter(),
+  headers: {
+    "Content-Type": "application/json;charset=utf-8",
+  },
+});
+
+/**
+ * 1. 请求拦截器 (Request Interceptor)
+ * 职责：离线单机模式拦截、Token 鉴权凭证自动注入
+ */
+http.interceptors.request.use(
+  (config: CustomInternalAxiosRequestConfig) => {
     const logStore = useLogStore();
+    const fullUrl = `${config.baseURL || ""}${config.url || ""}`;
 
-    // 判定云平台 API 请求主地址
-    let fullUrl = options.url;
-    if (!fullUrl.startsWith("http://") && !fullUrl.startsWith("https://")) {
-      // 规整斜杠连接符
-      const separator = fullUrl.startsWith("/") ? "" : "/";
-      fullUrl = `${APP_CONFIG.BASE_URL}${separator}${fullUrl}`;
-    }
-
-    // 1. 请求拦截 - 判定单机离线模式
+    // 离线单机模式物理拦截：禁止向外发起真实网络请求
     if (APP_CONFIG.APP_MODE === "offline") {
-      console.warn("[BMS 离线单机模式拦截] 已成功拦截网络请求:", options.url);
+      console.warn("[BMS 离线单机模式拦截] 已成功拦截网络请求:", fullUrl);
       uni.showToast({
         title: t("bms.request.offlineMode"),
         icon: "none",
       });
       // 记录离线拦截接口日志
-      logStore.addApiLog(fullUrl, options.method || "GET", options.data, 0, undefined, "OFFLINE_MODE");
-      return reject(new Error("OFFLINE_MODE"));
+      logStore.addApiLog(fullUrl, config.method?.toUpperCase() || "GET", config.data, 0, undefined, "OFFLINE_MODE");
+      return Promise.reject(new Error("OFFLINE_MODE"));
     }
 
-    // 3. 请求拦截 - 组装 Header 请求头并自动注入 Token 鉴权字段
-    const header = { ...(options.header || {}) };
-    if (!options.noAuth) {
+    // 注入 Token 鉴权请求头
+    if (!config.noAuth) {
       const userStore = useUserStore();
       if (userStore.token) {
-        header["Authorization"] = `Bearer ${userStore.token}`;
+        config.headers.set("Authorization", `Bearer ${userStore.token}`);
       }
     }
 
-    // 发起 uni-app 跨端通用网络请求服务
-    uni.request({
-      ...options,
-      url: fullUrl,
-      header,
-      timeout: APP_CONFIG.REQUEST_TIMEOUT,
-      success: (res) => {
-        const statusCode = res.statusCode;
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
 
-        // 4. 响应拦截 - 解析处理服务端响应结果
-        if (statusCode >= 200 && statusCode < 300) {
-          // 记录正常成功响应日志
-          logStore.addApiLog(fullUrl, options.method || "GET", options.data, statusCode, res.data);
-          // 响应成功，解析返回核心数据
-          resolve(res.data as T);
-        } else if (statusCode === 401) {
-          // 401 未授权或 Token 已过期：执行登出清理缓存，并退回到个人中心
-          const userStore = useUserStore();
-          userStore.logout();
+/**
+ * 2. 响应拦截器 (Response Interceptor)
+ * 职责：成功响应解析解包、401 凭证失效重定向与全局异常捕获
+ */
+http.interceptors.response.use(
+  (response: AxiosResponse) => {
+    const logStore = useLogStore();
+    const fullUrl = `${response.config.baseURL || ""}${response.config.url || ""}`;
 
-          uni.showToast({
-            title: t("bms.request.loginExpired"),
-            icon: "none",
-          });
+    // 记录正常成功响应日志
+    logStore.addApiLog(
+      fullUrl,
+      response.config.method?.toUpperCase() || "GET",
+      response.config.data,
+      response.status,
+      response.data
+    );
 
-          // 记录 Token 过期接口日志
-          logStore.addApiLog(fullUrl, options.method || "GET", options.data, statusCode, res.data, "UNAUTHORIZED");
+    // 自动解包，直接返回后端真实业务数据载荷
+    return response.data;
+  },
+  (error) => {
+    const logStore = useLogStore();
+    const config = error.config || {};
+    const fullUrl = `${config.baseURL || ""}${config.url || ""}`;
+    const statusCode = error.response?.status;
+    const responseData = error.response?.data;
 
-          // 延时 1.5s 重定向，保证用户能完整看清 Toast 过期提示
-          setTimeout(() => {
-            uni.reLaunch({
-              url: "/pages/index/index?tab=mine",
-            });
-          }, 1500);
+    if (statusCode === 401) {
+      // 401 未授权或 Token 已过期：执行登出清理缓存，并退回到个人中心
+      const userStore = useUserStore();
+      userStore.logout();
 
-          reject(new Error("UNAUTHORIZED"));
-        } else {
-          // 其它 400、404、500 等异常 HTTP 状态码报错提示
-          const errorMsg = (res.data as any)?.message || (t("bms.request.serverError") + statusCode);
-          uni.showToast({
-            title: errorMsg,
-            icon: "none",
-          });
-          // 记录 HTTP 异常状态码日志
-          logStore.addApiLog(fullUrl, options.method || "GET", options.data, statusCode, res.data, errorMsg);
-          reject(new Error(errorMsg));
-        }
-      },
-      fail: (err) => {
-        // 因网络中断、服务器宕机或请求超时而触发 of 系统底层 fail 回调
-        console.error("[BMS 请求失败] 连接云服务发生严重错误:", err);
-        uni.showToast({
-          title: t("bms.request.networkFailed"),
-          icon: "none",
+      uni.showToast({
+        title: t("bms.request.loginExpired"),
+        icon: "none",
+      });
+
+      // 记录 Token 过期接口日志
+      logStore.addApiLog(
+        fullUrl,
+        config.method?.toUpperCase() || "GET",
+        config.data,
+        statusCode,
+        responseData,
+        "UNAUTHORIZED"
+      );
+
+      // 延时 1.5s 重定向，保证用户能完整看清 Toast 过期提示
+      setTimeout(() => {
+        uni.reLaunch({
+          url: "/pages/index/index?tab=mine",
         });
-        // 记录底层请求失败日志
-        logStore.addApiLog(fullUrl, options.method || "GET", options.data, 0, undefined, err.errMsg || String(err));
-        reject(err);
-      },
-    });
-  });
+      }, 1500);
+
+      return Promise.reject(new Error("UNAUTHORIZED"));
+    } else if (statusCode) {
+      // 其它 400、404、500 等异常 HTTP 状态码报错提示
+      const errorMsg = responseData?.message || `${t("bms.request.serverError")}${statusCode}`;
+      uni.showToast({
+        title: errorMsg,
+        icon: "none",
+      });
+      // 记录 HTTP 异常状态码日志
+      logStore.addApiLog(
+        fullUrl,
+        config.method?.toUpperCase() || "GET",
+        config.data,
+        statusCode,
+        responseData,
+        errorMsg
+      );
+      return Promise.reject(new Error(errorMsg));
+    } else {
+      // 因网络中断、服务器宕机或请求超时而触发底层失败
+      console.error("[BMS 请求失败] 连接云服务发生严重错误:", error);
+      uni.showToast({
+        title: t("bms.request.networkFailed"),
+        icon: "none",
+      });
+      // 记录底层请求失败日志
+      logStore.addApiLog(
+        fullUrl,
+        config.method?.toUpperCase() || "GET",
+        config.data,
+        0,
+        undefined,
+        error.message || String(error)
+      );
+      return Promise.reject(error);
+    }
+  }
+);
+
+/**
+ * 统一网络请求入口函数（完全兼容旧版 request 调用规范）
+ * @param config 请求配置参数
+ */
+export const request = <T = any>(config: CustomAxiosRequestConfig): Promise<T> => {
+  return http.request(config) as unknown as Promise<T>;
 };

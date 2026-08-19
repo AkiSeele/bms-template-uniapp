@@ -1,12 +1,10 @@
 <template>
-  <layout-provider>
-    <!-- Source: uni_modules/wot-ui/components/wd-navbar/wd-navbar.vue -->
-    <wd-navbar
+  <layout-provider>    <wd-navbar
       :title="$t('bms.firmware.title')"
       fixed
       left-arrow
       safe-area-inset-top
-      custom-style="background-color: transparent !important; border-bottom: none !important;"
+      custom-style="background-color: transparent !important; border-bottom: none !important; --wot-navbar-color: #ffffff;"
       @click-left="handleBack"
     />
 
@@ -24,9 +22,7 @@
         <!-- 脉冲图标容器 -->
         <view class="fw-hero__icon wot-relative wot-flex-shrink-0 wot-flex wot-items-center wot-justify-center">
           <!-- 脉冲圆环由 GSAP 补间驱动 scale + opacity -->
-          <view class="fw-pulse-ring" :style="pulseRingStyle" />
-          <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-          <wd-icon css-icon="i-lucide-cpu" size="32px" color="#fff" />
+          <view class="fw-pulse-ring" :style="pulseRingStyle" />          <wd-icon css-icon="i-lucide-cpu" size="32px" color="#fff" />
         </view>
 
         <view class="wot-flex wot-flex-col wot-ml-4">
@@ -40,25 +36,11 @@
         </view>
       </view>
 
-      <!-- ② 流程步骤条 -->
-      <!-- Source: uni_modules/wot-ui/components/wd-card/wd-card.vue -->
-      <wd-card class="wot-mb-4">
-        <!-- Source: uni_modules/wot-ui/components/wd-steps/wd-steps.vue -->
-        <wd-steps :active="currentStep" align-center>
-          <!-- Source: uni_modules/wot-ui/components/wd-step/wd-step.vue -->
-          <wd-step :title="$t('bms.firmware.stepSelect')" />
-          <!-- Source: uni_modules/wot-ui/components/wd-step/wd-step.vue -->
-          <wd-step :title="$t('bms.firmware.stepVerify')" />
-          <!-- Source: uni_modules/wot-ui/components/wd-step/wd-step.vue -->
-          <wd-step :title="$t('bms.firmware.stepFlash')" />
-          <!-- Source: uni_modules/wot-ui/components/wd-step/wd-step.vue -->
-          <wd-step :title="$t('bms.firmware.stepDone')" />
+      <!-- ② 流程步骤条 -->      <wd-card class="wot-mb-4">        <wd-steps :active="currentStep" align-center>          <wd-step :title="$t('bms.firmware.stepSelect')" />          <wd-step :title="$t('bms.firmware.stepVerify')" />          <wd-step :title="$t('bms.firmware.stepFlash')" />          <wd-step :title="$t('bms.firmware.stepDone')" />
         </wd-steps>
       </wd-card>
 
-      <!-- ③ 文件选择卡片 -->
-      <!-- Source: uni_modules/wot-ui/components/wd-card/wd-card.vue -->
-      <wd-card class="wot-mb-4" :title="$t('bms.firmware.selectFile')">
+      <!-- ③ 文件选择卡片 -->      <wd-card class="wot-mb-4" :title="$t('bms.firmware.selectFile')">
         <view
           class="fw-file-zone wot-flex wot-items-center wot-rounded-xl wot-p-3"
           :class="{ 'fw-file-zone--active': hasFileSelected }"
@@ -68,9 +50,7 @@
           <view
             class="fw-file-icon wot-flex wot-items-center wot-justify-center wot-flex-shrink-0 wot-rounded-xl"
             :class="{ 'fw-file-icon--active': hasFileSelected }"
-          >
-            <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-            <wd-icon :css-icon="fileIconName" size="26px" :color="fileIconColor" />
+          >            <wd-icon :css-icon="fileIconName" size="26px" :color="fileIconColor" />
           </view>
 
           <!-- 文件名和提示 -->
@@ -83,28 +63,18 @@
             </text>
             <text v-if="fileSizeText" class="wot-text-xs wot-text-green-500 wot-mt-1">{{ fileSizeText }}</text>
             <text v-else class="wot-text-xs wot-text-text-secondary wot-mt-1">{{ $t("bms.firmware.supportedFormats") }}</text>
-          </view>
-
-          <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-          <wd-icon css-icon="i-lucide-chevron-right" size="18px" color="#94a3b8" />
+          </view>          <wd-icon css-icon="i-lucide-chevron-right" size="18px" color="#94a3b8" />
         </view>
       </wd-card>
 
-      <!-- ④ 进度卡片（写入中或完成后显示） -->
-      <!-- Source: uni_modules/wot-ui/components/wd-card/wd-card.vue -->
-      <wd-card v-if="showProgressCard" class="wot-mb-4">
+      <!-- ④ 进度卡片（写入中或完成后显示） -->      <wd-card v-if="showProgressCard" class="wot-mb-4">
         <!-- 进度头部行 -->
         <view class="wot-flex wot-items-center wot-justify-between wot-mb-3">
-          <view class="wot-flex wot-items-center">
-            <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-            <wd-icon css-icon="i-lucide-download" size="18px" color="#22c55e" class="wot-mr-2" />
+          <view class="wot-flex wot-items-center">            <wd-icon css-icon="i-lucide-download" size="18px" color="#22c55e" class="wot-mr-2" />
             <text class="wot-text-sm wot-font-semibold wot-text-text-main">{{ $t("bms.firmware.flashProgress") }}</text>
           </view>
           <text class="fw-progress-pct">{{ displayProgressValue }}%</text>
-        </view>
-
-        <!-- Source: uni_modules/wot-ui/components/wd-progress/wd-progress.vue -->
-        <wd-progress
+        </view>        <wd-progress
           :percentage="displayProgressValue"
           :color="progressBarColor"
           :hide-text="true"
@@ -121,17 +91,7 @@
         </view>
       </wd-card>
 
-      <!-- ⑤ 固件信息卡片（选中文件后显示） -->
-      <!-- Source: uni_modules/wot-ui/components/wd-card/wd-card.vue -->
-      <wd-card v-if="hasFileSelected" class="wot-mb-4" :title="$t('bms.firmware.fwInfo')">
-        <!-- Source: uni_modules/wot-ui/components/wd-cell-group/wd-cell-group.vue -->
-        <wd-cell-group border>
-          <!-- Source: uni_modules/wot-ui/components/wd-cell/wd-cell.vue -->
-          <wd-cell :title="$t('bms.firmware.fwFileName')" :value="selectedFileName" />
-          <!-- Source: uni_modules/wot-ui/components/wd-cell/wd-cell.vue -->
-          <wd-cell :title="$t('bms.firmware.fwSize')" :value="fileSizeText" />
-          <!-- Source: uni_modules/wot-ui/components/wd-cell/wd-cell.vue -->
-          <wd-cell :title="$t('bms.firmware.fwStatus')">
+      <!-- ⑤ 固件信息卡片（选中文件后显示） -->      <wd-card v-if="hasFileSelected" class="wot-mb-4" :title="$t('bms.firmware.fwInfo')">        <wd-cell-group border>          <wd-cell :title="$t('bms.firmware.fwFileName')" :value="selectedFileName" />          <wd-cell :title="$t('bms.firmware.fwSize')" :value="fileSizeText" />          <wd-cell :title="$t('bms.firmware.fwStatus')">
             <template #default>
               <text class="wot-text-green-500 wot-font-medium">{{ $t("bms.firmware.fwReadyToFlash") }}</text>
             </template>
@@ -141,9 +101,7 @@
 
       <!-- ⑥ 底部操作按钮区 -->
       <view class="wot-mt-4 wot-mb-6">
-        <!-- 开始写入 / 更新中 / 完成 主按钮 -->
-        <!-- Source: uni_modules/wot-ui/components/wd-button/wd-button.vue -->
-        <wd-button
+        <!-- 开始写入 / 更新中 / 完成 主按钮 -->        <wd-button
           block
           size="large"
           :type="mainBtnType"
@@ -155,9 +113,7 @@
           {{ mainBtnText }}
         </wd-button>
 
-        <!-- 取消/重置 次要按钮 -->
-        <!-- Source: uni_modules/wot-ui/components/wd-button/wd-button.vue -->
-        <wd-button
+        <!-- 取消/重置 次要按钮 -->        <wd-button
           v-if="showCancelBtn"
           block
           size="large"
@@ -179,7 +135,8 @@ import { ref, computed, onMounted, onUnmounted } from "vue";
 import { onUnload, onBackPress } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import { useFirmwareAnimation } from "@/composables/use-firmware-animation";
-import { useToast, useDialog } from "@/uni_modules/wot-ui";
+import { useToast, useDialog } from "@wot-ui/ui";
+import { isAppAndroid } from "@uni-helper/uni-env";
 import { useBleStore } from "@/stores/ble-store";
 import { useAppStore } from "@/stores/app";
 import { calcChecksum16LE, uint8ArrayToHexString } from "@/utils/bms-helper";
@@ -414,7 +371,6 @@ const handleSelectFile = () => {
 
   // #ifdef APP-PLUS
   const fileSelectPlugin = uni.requireNativePlugin("lemonjk-FileSelect");
-  const sysInfo = uni.getSystemInfoSync();
 
   const fileCallback = (result: any) => {
     if (result.code === 1001) {
@@ -439,7 +395,7 @@ const handleSelectFile = () => {
     }
   };
 
-  if (sysInfo.osName === "android") {
+  if (isAppAndroid) {
     fileSelectPlugin?.showNativePicker(
       { pathScope: "/Download", mimeType: "*/*" },
       fileCallback,
@@ -949,60 +905,35 @@ const handleCancelOrReset = () => {
   font-variant-numeric: tabular-nums;
 }
 
-/* 样式穿透：消除 wd-card 默认左右外边距，防止与页面 px-3 叠加导致留白过宽 */
-:deep(.wd-card) {
-  margin-left: 0 !important;
-  margin-right: 0 !important;
-}
-
-/* 样式穿透：定制透明导航栏的标题和返回箭头为白色 */
-:deep(.wd-navbar) {
-  background-color: transparent !important;
-}
-
-:deep(.wd-navbar__title) {
-  color: #ffffff !important;
-}
-
-:deep(.wd-navbar__arrow) {
-  color: #ffffff !important;
-}
-
-/* 主内容容器顶部预留出状态栏加导航栏的安全高度，防止被透明导航栏遮挡 */
+/* 主内容容器：通过 Wot UI 官方 CSS 变量消除卡片水平外边距，并预留出导航栏安全高度 */
 .fw-container {
+  --wot-card-margin-horizontal: 0;
   padding-top: calc(var(--status-bar-height) + 44px + 16px);
 }
 
 /* ==========================================================================
    暗黑模式 (Dark Mode) 适配
    ========================================================================== */
-:deep(.wot-theme-dark) {
-  /* 顶部装饰渐变背景底层淡出遮罩：淡出到暗黑大背景 #121212 */
-  .fw-header-bg {
-    &::after {
-      background: linear-gradient(to bottom, rgba(18, 18, 18, 0) 0%, #121212 86%) !important;
-    }
-  }
+:global(.wot-theme-dark) .fw-header-bg::after {
+  background: linear-gradient(to bottom, rgba(18, 18, 18, 0) 0%, #121212 86%) !important;
+}
 
-  /* 文件选择触发区暗色适配 */
-  .fw-file-zone {
-    background: #1e1e1e !important;
-    border-color: #333333 !important;
+:global(.wot-theme-dark) .fw-file-zone {
+  background: #1e1e1e !important;
+  border-color: #333333 !important;
+}
 
-    &--active {
-      background: linear-gradient(135deg, rgba(30, 41, 59, 0.5) 0%, rgba(20, 83, 45, 0.25) 100%) !important;
-      border-color: rgba(59, 130, 246, 0.3) !important;
-    }
-  }
+:global(.wot-theme-dark) .fw-file-zone--active {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.5) 0%, rgba(20, 83, 45, 0.25) 100%) !important;
+  border-color: rgba(59, 130, 246, 0.3) !important;
+}
 
-  /* 文件图标容器暗色适配 */
-  .fw-file-icon {
-    background: #2a2a2a !important;
-    box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.3) !important;
+:global(.wot-theme-dark) .fw-file-icon {
+  background: #2a2a2a !important;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.3) !important;
+}
 
-    &--active {
-      background: linear-gradient(135deg, #1e293b, #14532d) !important;
-    }
-  }
+:global(.wot-theme-dark) .fw-file-icon--active {
+  background: linear-gradient(135deg, #1e293b, #14532d) !important;
 }
 </style>

@@ -1,7 +1,5 @@
 <template>
-  <!-- 全局配置提供者，动态接收当前主题与自定义 CSS 主题色变量 -->
-  <!-- Source: uni_modules/wot-ui/components/wd-config-provider/wd-config-provider.vue -->
-  <wd-config-provider :theme="actualTheme" :theme-vars="themeVars">
+  <!-- 全局配置提供者，动态接收当前主题与自定义 CSS 主题色变量 -->  <wd-config-provider :theme="actualTheme" :theme-vars="themeVars">
     <!-- 独立的背景容器，铺垫明暗切换的平滑颜色过渡，避免影响页面内 fixed 组件的定位上下文 -->
     <view 
       :class="[actualTheme === 'dark' ? 'wot-theme-dark bg-dark-gradient' : 'wot-theme-light bg-light-gradient']" 
@@ -18,9 +16,7 @@
  
  
  
-      <!-- 全局「连接/自动连接中」Popup：底部浮动加载层 -->
-      <!-- Source: uni_modules/wot-ui/components/wd-popup/wd-popup.vue -->
-      <wd-popup
+      <!-- 全局「连接/自动连接中」Popup：底部浮动加载层 -->      <wd-popup
         v-model="showConnectingPopup"
         position="bottom"
         :close-on-click-modal="false"
@@ -35,9 +31,7 @@
             v-if="isAutoConnecting && isAutoConnectingCancelable"
             class="wot-absolute wot-right-4 wot-top-4 wot-p-1 wot-cursor-pointer"
             @click="triggerCancelAutoConnect"
-          >
-            <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-            <wd-icon css-icon="i-ri-close-line" size="20px" color="#858585" />
+          >            <wd-icon css-icon="i-ri-close-line" size="20px" color="#858585" />
           </view>
           <!-- 环形旋转加载组件 -->
           <view 
@@ -51,9 +45,7 @@
         </view>
       </wd-popup>
 
-      <!-- 全局「连接失败」Popup：居中弹出，展示失败具体原因 -->
-      <!-- Source: uni_modules/wot-ui/components/wd-popup/wd-popup.vue -->
-      <wd-popup
+      <!-- 全局「连接失败」Popup：居中弹出，展示失败具体原因 -->      <wd-popup
         v-model="isConnectionErrorVisible"
         position="center"
         :close-on-click-modal="true"
@@ -63,28 +55,20 @@
         custom-style="width: 82%; padding: 28px 24px 20px; z-index: 2000;"
       >
         <view class="wot-flex wot-flex-col wot-items-center">
-          <view class="error-icon-ring wot-flex wot-items-center wot-justify-center wot-rounded-full wot-mb-3">
-            <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-            <wd-icon css-icon="i-ri-close-circle-fill" size="36px" color="#ea4335" />
+          <view class="error-icon-ring wot-flex wot-items-center wot-justify-center wot-rounded-full wot-mb-3">            <wd-icon css-icon="i-ri-close-circle-fill" size="36px" color="#ea4335" />
           </view>
           <text class="wot-text-base wot-font-bold wot-text-text-main wot-mb-2">
             {{ $t("bms.ble.connectFailed") }}
           </text>
           <text class="wot-text-sm wot-text-text-secondary wot-text-center">{{ connectionError }}</text>
-          <view class="wot-mt-6 wot-w-full">
-            <!-- Source: uni_modules/wot-ui/components/wd-button/wd-button.vue -->
-            <wd-button block type="primary" @click="isConnectionErrorVisible = false">
+          <view class="wot-mt-6 wot-w-full">            <wd-button block type="primary" @click="isConnectionErrorVisible = false">
               {{ $t("bms.common.confirm") }}
             </wd-button>
           </view>
         </view>
       </wd-popup>
 
-      <!-- 统一全局的 Toast 和 Dialog 实例进行兜底注入 -->
-      <!-- Source: uni_modules/wot-ui/components/wd-toast/wd-toast.vue -->
-      <wd-toast />
-      <!-- Source: uni_modules/wot-ui/components/wd-dialog/wd-dialog.vue -->
-      <wd-dialog root-portal />
+      <!-- 统一全局的 Toast 和 Dialog 实例进行兜底注入 -->      <wd-toast />      <wd-dialog root-portal />
     </view>
   </wd-config-provider>
 </template>
@@ -93,7 +77,7 @@
 import { computed } from "vue";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
-import { useToast, useDialog } from "@/uni_modules/wot-ui";
+import { useToast, useDialog } from "@wot-ui/ui";
 import { useAppStore } from "@/stores/app";
 import { useBleStore } from "@/stores/ble-store";
 import { LIGHT_THEME_VARS, DARK_THEME_VARS } from "@/config/theme";
@@ -267,16 +251,6 @@ const themeVars = computed(() => {
 /* 暗色模式的防眩光沉浸式微渐变深炭黑大背景 */
 .bg-dark-gradient {
   background-color: #121212;
-}
-
-/* 确保深色卡片或特定 wot 选择器在此环境下也有平滑的渐变过渡 */
-:deep(.header-card),
-:deep(.battery-card),
-:deep(.param-card),
-:deep(.device-card),
-:deep(.user-card),
-:deep(.wot-bg-filled-oppo) {
-  transition: background-color 0.35s ease-in-out, border-color 0.35s ease-in-out, box-shadow 0.35s ease-in-out !important;
 }
 
 /* 全局「连接中」Popup 背景样式 */

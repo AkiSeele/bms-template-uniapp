@@ -42,5 +42,13 @@ export default {
 </script>
 
 <style>
-/*每个页面公共css */
+/* 每个页面公共 css：确保深色卡片与特定 wot 选择器在明暗切换时拥有平滑过渡 */
+.header-card,
+.battery-card,
+.param-card,
+.device-card,
+.user-card,
+.wot-bg-filled-oppo {
+  transition: background-color 0.35s ease-in-out, border-color 0.35s ease-in-out, box-shadow 0.35s ease-in-out !important;
+}
 </style>

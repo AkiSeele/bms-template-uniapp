@@ -1,5 +1,5 @@
 import { ref } from "vue";
-import { useToast, useDialog } from "@/uni_modules/wot-ui";
+import { useToast, useDialog } from "@wot-ui/ui";
 import { useI18n } from "vue-i18n";
 import { permissionManager, BLE_ENV_ERROR } from "@/service/permission";
 import { bleManager } from "@/service/ble-manager";
@@ -118,7 +118,7 @@ export function useBlePermission() {
           if (res.confirm) {
             uni.openSetting();
           }
-        }
+        },
       });
       // #endif
       // #ifndef MP-WEIXIN

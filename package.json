@@ -15,6 +15,9 @@
     "@iconify-json/lucide": "1.2.109",
     "@iconify-json/ri": "1.2.10",
     "@types/crypto-js": "^4.2.2",
+    "@uni-helper/uni-app-types": "^1.1.0",
+    "@uni-helper/uni-manifest-types": "^0.6.0",
+    "@uni-helper/vite-plugin-uni-components": "^0.3.2",
     "@unocss/preset-icons": "66.7.0",
     "@unocss/vite": "66.7.0",
     "pinia": "2.1.7",
@@ -25,8 +28,13 @@
     "vue-i18n": "9.9.1"
   },
   "dependencies": {
+    "@uni-helper/axios-adapter": "^1.18.1",
+    "@uni-helper/uni-env": "^0.3.1",
+    "@wot-ui/ui": "^2.3.2",
     "@wot-ui/unocss-preset": "1.0.0",
+    "axios": "^1.19.0",
     "crypto-js": "^4.2.0",
-    "gsap": "^3.15.0"
+    "gsap": "^3.15.0",
+    "std-env": "^4.2.0"
   }
 }

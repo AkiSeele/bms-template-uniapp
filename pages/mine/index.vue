@@ -1,8 +1,6 @@
 <template>
   <view>
-    <!-- 自定义顶部导航栏，固定在顶部并生成占位元素 -->
-    <!-- Source: uni_modules/wot-ui/components/wd-navbar/wd-navbar.vue -->
-    <wd-navbar :title="$t('bms.mine.title')" fixed safe-area-inset-top />
+    <!-- 自定义顶部导航栏，固定在顶部并生成占位元素 -->    <wd-navbar :title="$t('bms.mine.title')" fixed safe-area-inset-top />
 
     <!-- 用户个人中心头部卡片 -->
     <view class="tab-content-wrap wot-px-3 wot-py-4 page-body-animate" :style="{ 'padding-top': (navbarHeight + 16) + 'px' }">
@@ -16,9 +14,7 @@
           <view
             :class="[isOfflineMode ? 'wot-bg-slate-100' : isLoggedIn ? 'wot-bg-primary/10' : 'wot-bg-orange-50']"
             class="wot-w-16 wot-h-16 wot-rounded-full wot-flex wot-items-center wot-justify-center"
-          >
-            <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-            <wd-icon
+          >            <wd-icon
               :css-icon="isOfflineMode ? 'i-lucide-user' : isLoggedIn ? 'i-lucide-user-check' : 'i-lucide-user'"
               size="36px"
               :color="isOfflineMode ? '#858585' : isLoggedIn ? activeThemeColor : '#ff9900'"
@@ -42,9 +38,7 @@
           <view
             v-if="isOfflineMode"
             class="wot-bg-slate-100 wot-text-slate-600 wot-border wot-border-slate-200/50 wot-rounded-full wot-px-2.5 wot-py-0.5 wot-text-caption wot-flex wot-items-center wot-gap-1 wot-font-semibold"
-          >
-            <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-            <wd-icon css-icon="i-lucide-cloud-off" size="12px" />
+          >            <wd-icon css-icon="i-lucide-cloud-off" size="12px" />
             <text>{{ $t("bms.mine.offlineMode") }}</text>
           </view>
 
@@ -52,9 +46,7 @@
           <view
             v-else-if="isLoggedIn"
             class="wot-bg-green-50 wot-text-green-700 wot-border wot-border-green-200/50 wot-rounded-full wot-px-2.5 wot-py-0.5 wot-text-caption wot-flex wot-items-center wot-gap-1 wot-font-semibold"
-          >
-            <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-            <wd-icon css-icon="i-lucide-cloud" size="12px" />
+          >            <wd-icon css-icon="i-lucide-cloud" size="12px" />
             <text>{{ $t("bms.mine.cloudOnline") }}</text>
           </view>
 
@@ -62,42 +54,28 @@
           <view
             v-else
             class="wot-bg-orange-50 wot-text-orange-700 wot-border wot-border-orange-200/50 wot-rounded-full wot-px-2.5 wot-py-0.5 wot-text-caption wot-flex wot-items-center wot-gap-1 wot-font-semibold"
-          >
-            <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-            <wd-icon css-icon="i-lucide-user-x" size="12px" />
+          >            <wd-icon css-icon="i-lucide-user-x" size="12px" />
             <text>{{ $t("bms.mine.clickToLogin") }}</text>
           </view>
         </view>
       </view>
 
       <!-- 系统设置项单元格列表 -->
-      <view class="wot-bg-filled-oppo wot-rounded-2xl wot-overflow-hidden wot-shadow-sm wot-mb-4">
-        <!-- Source: uni_modules/wot-ui/components/wd-cell-group/wd-cell-group.vue -->
-        <wd-cell-group border custom-class="custom-settings-group">
-          <!-- 手动切换语言的单元格 -->
-          <!-- Source: uni_modules/wot-ui/components/wd-cell/wd-cell.vue -->
-          <wd-cell
+      <view class="wot-bg-filled-oppo wot-rounded-2xl wot-overflow-hidden wot-shadow-sm wot-mb-4">        <wd-cell-group border custom-class="custom-settings-group">
+          <!-- 手动切换语言的单元格 -->          <wd-cell
             :title="$t('bms.mine.language')"
             :value="currentLanguageLabel"
             is-link
             @click="showLanguagePicker = true"
           >
-            <template #prefix>
-              <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-              <wd-icon css-icon="i-lucide-globe" size="20px" class="wot-mr-2" color="#858585" />
+            <template #prefix>              <wd-icon css-icon="i-lucide-globe" size="20px" class="wot-mr-2" color="#858585" />
             </template>
           </wd-cell>
 
-          <!-- 现代化主题模式设置，Google 分段选择卡片设计 -->
-          <!-- Source: uni_modules/wot-ui/components/wd-cell/wd-cell.vue -->
-          <wd-cell :title="$t('bms.mine.themeMode')" center custom-class="compact-cell">
-            <template #prefix>
-              <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-              <wd-icon css-icon="i-lucide-palette" size="20px" class="wot-mr-2" color="#858585" />
+          <!-- 现代化主题模式设置，Google 分段选择卡片设计 -->          <wd-cell :title="$t('bms.mine.themeMode')" center custom-class="compact-cell">
+            <template #prefix>              <wd-icon css-icon="i-lucide-palette" size="20px" class="wot-mr-2" color="#858585" />
             </template>
-            <view class="wot-flex wot-justify-end">
-              <!-- Source: uni_modules/wot-ui/components/wd-segmented/wd-segmented.vue -->
-              <wd-segmented
+            <view class="wot-flex wot-justify-end">              <wd-segmented
                 v-if="activeTab === 'mine'"
                 v-model:value="themeMode"
                 :options="themeOptions"
@@ -107,77 +85,45 @@
               >
                 <!-- 自定义分段器选项的插槽渲染，在选项中增加对应图标 -->
                 <template #label="{ option }">
-                  <view class="wot-flex wot-items-center wot-justify-center wot-py-0.5">
-                    <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-                    <wd-icon :css-icon="getThemeIcon(option.value)" size="18px" />
+                  <view class="wot-flex wot-items-center wot-justify-center wot-py-0.5">                    <wd-icon :css-icon="getThemeIcon(option.value)" size="18px" />
                   </view>
                 </template>
               </wd-segmented>
             </view>
           </wd-cell>
 
-          <!-- 自动连接设置单元格 -->
-          <!-- Source: uni_modules/wot-ui/components/wd-cell/wd-cell.vue -->
-          <wd-cell :title="$t('bms.mine.autoConnect')" center custom-class="compact-cell">
-            <template #prefix>
-              <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-              <wd-icon css-icon="i-lucide-zap" size="20px" class="wot-mr-2" color="#858585" />
-            </template>
-            <!-- Source: uni_modules/wot-ui/components/wd-switch/wd-switch.vue -->
-            <wd-switch v-model="autoConnectEnabled" @change="handleAutoConnectChange" size="20px" />
+          <!-- 自动连接设置单元格 -->          <wd-cell :title="$t('bms.mine.autoConnect')" center custom-class="compact-cell">
+            <template #prefix>              <wd-icon css-icon="i-lucide-zap" size="20px" class="wot-mr-2" color="#858585" />
+            </template>            <wd-switch v-model="autoConnectEnabled" @change="handleAutoConnectChange" size="20px" />
           </wd-cell>
 
-          <!-- 项目配置入口单元格：点击跳转至独立的设置页面 -->
-          <!-- Source: uni_modules/wot-ui/components/wd-cell/wd-cell.vue -->
-          <wd-cell :title="$t('bms.settings.title')" is-link @click="navigateToSettings">
-            <template #prefix>
-              <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-              <wd-icon css-icon="i-lucide-settings" size="20px" class="wot-mr-2" color="#858585" />
+          <!-- 项目配置入口单元格：点击跳转至独立的设置页面 -->          <wd-cell :title="$t('bms.settings.title')" is-link @click="navigateToSettings">
+            <template #prefix>              <wd-icon css-icon="i-lucide-settings" size="20px" class="wot-mr-2" color="#858585" />
             </template>
           </wd-cell>
 
-          <!-- 系统权限诊断入口单元格：点击跳转至独立的诊断页面 -->
-          <!-- Source: uni_modules/wot-ui/components/wd-cell/wd-cell.vue -->
-          <wd-cell :title="$t('bms.mine.permissionsTitle')" is-link @click="navigateToPermissionCheck">
-            <template #prefix>
-              <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-              <wd-icon css-icon="i-lucide-shield-check" size="20px" class="wot-mr-2" color="#858585" />
+          <!-- 系统权限诊断入口单元格：点击跳转至独立的诊断页面 -->          <wd-cell :title="$t('bms.mine.permissionsTitle')" is-link @click="navigateToPermissionCheck">
+            <template #prefix>              <wd-icon css-icon="i-lucide-shield-check" size="20px" class="wot-mr-2" color="#858585" />
             </template>
           </wd-cell>
 
-          <!-- 设备授权激活单元格：跳转至独立的授权激活页面 -->
-          <!-- Source: uni_modules/wot-ui/components/wd-cell/wd-cell.vue -->
-          <wd-cell :title="$t('bms.auth.title')" :value="authStateLabel" is-link @click="navigateToAuth">
-            <template #prefix>
-              <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-              <wd-icon css-icon="i-ri-shield-keyhole-line" size="20px" class="wot-mr-2" color="#858585" />
+          <!-- 设备授权激活单元格：跳转至独立的授权激活页面 -->          <wd-cell :title="$t('bms.auth.title')" :value="authStateLabel" is-link @click="navigateToAuth">
+            <template #prefix>              <wd-icon css-icon="i-ri-shield-keyhole-line" size="20px" class="wot-mr-2" color="#858585" />
             </template>
           </wd-cell>
 
-          <!-- 固件升级入口单元格：跳转至固件写入页面 -->
-          <!-- Source: uni_modules/wot-ui/components/wd-cell/wd-cell.vue -->
-          <wd-cell :title="$t('bms.firmware.title')" is-link @click="navigateToFirmwareUpdate">
-            <template #prefix>
-              <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-              <wd-icon css-icon="i-lucide-cpu" size="20px" class="wot-mr-2" color="#858585" />
+          <!-- 固件升级入口单元格：跳转至固件写入页面 -->          <wd-cell :title="$t('bms.firmware.title')" is-link @click="navigateToFirmwareUpdate">
+            <template #prefix>              <wd-icon css-icon="i-lucide-cpu" size="20px" class="wot-mr-2" color="#858585" />
             </template>
           </wd-cell>
 
-          <!-- 系统日志入口单元格，仅在解锁时显示 -->
-          <!-- Source: uni_modules/wot-ui/components/wd-cell/wd-cell.vue -->
-          <wd-cell v-if="isSystemLogsUnlocked" :title="$t('bms.mine.systemLogs')" is-link @click="navigateToSystemLogs">
-            <template #prefix>
-              <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-              <wd-icon css-icon="i-lucide-scroll-text" size="20px" class="wot-mr-2" color="#858585" />
+          <!-- 系统日志入口单元格，仅在解锁时显示 -->          <wd-cell v-if="isSystemLogsUnlocked" :title="$t('bms.mine.systemLogs')" is-link @click="navigateToSystemLogs">
+            <template #prefix>              <wd-icon css-icon="i-lucide-scroll-text" size="20px" class="wot-mr-2" color="#858585" />
             </template>
           </wd-cell>
 
-          <!-- 安全退出登录单元格：仅在云端联机且已登录时展现 -->
-          <!-- Source: uni_modules/wot-ui/components/wd-cell/wd-cell.vue -->
-          <wd-cell v-if="!isOfflineMode && isLoggedIn" :title="$t('bms.mine.logout')" is-link @click="handleLogout">
-            <template #prefix>
-              <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-              <wd-icon css-icon="i-lucide-log-out" size="20px" class="wot-mr-2" color="#d54941" />
+          <!-- 安全退出登录单元格：仅在云端联机且已登录时展现 -->          <wd-cell v-if="!isOfflineMode && isLoggedIn" :title="$t('bms.mine.logout')" is-link @click="handleLogout">
+            <template #prefix>              <wd-icon css-icon="i-lucide-log-out" size="20px" class="wot-mr-2" color="#d54941" />
             </template>
           </wd-cell>
         </wd-cell-group>
@@ -221,8 +167,8 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { useDeviceInfo } from "@/uni_modules/wot-ui/composables/useDeviceInfo";
-import { useToast, useDialog } from "@/uni_modules/wot-ui";
+import { useToast, useDialog } from "@wot-ui/ui";
+import { useDeviceInfo } from "@wot-ui/ui/composables/useDeviceInfo";
 import { useAppStore } from "@/stores/app";
 import { useUserStore } from "@/stores/user";
 import { useLogStore } from "@/stores/log-store";

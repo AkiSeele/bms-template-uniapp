@@ -6,11 +6,18 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+import Components from "@uni-helper/vite-plugin-uni-components";
+import { WotV2Resolver } from "@uni-helper/vite-plugin-uni-components/resolvers";
+
 // 挂载全局编译配置，自动注入编译期逻辑
 export default defineConfig(async () => {
   const UnoCSS = (await import("unocss/vite")).default;
   return {
     plugins: [
+      Components({
+        resolvers: [WotV2Resolver()],
+        dts: "types/components.d.ts",
+      }),
       uni(),
       UnoCSS({
         configFile: path.resolve(__dirname, "uno.config.js"),

@@ -1,8 +1,6 @@
 <template>
   <layout-provider>
-    <!-- 自定义顶部导航栏，固定在顶部并生成占位元素 -->
-    <!-- Source: uni_modules/wot-ui/components/wd-navbar/wd-navbar.vue -->
-    <wd-navbar
+    <!-- 自定义顶部导航栏，固定在顶部并生成占位元素 -->    <wd-navbar
       :title="$t('bms.mine.permissionsTitle')"
       fixed
       placeholder
@@ -15,23 +13,15 @@
       <!-- 系统权限与诊断服务卡片组 (Google Pixel 风格卡片) -->
       <view class="wot-bg-filled-oppo wot-rounded-2xl wot-overflow-hidden wot-shadow-sm wot-mb-4">
         <view
-          class="wot-p-4 wot-border-b wot-border-gray-100 dark:wot-border-neutral-800 wot-flex wot-justify-between wot-items-center"
+          class="wot-p-4 wot-border-b wot-border-divider-main wot-flex wot-justify-between wot-items-center"
         >
-          <view class="wot-flex wot-items-center">
-            <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-            <wd-icon css-icon="i-lucide-shield-check" size="20px" class="wot-mr-2" :color="activeThemeColor" />
+          <view class="wot-flex wot-items-center">            <wd-icon css-icon="i-lucide-shield-check" size="20px" class="wot-mr-2" :color="activeThemeColor" />
             <text class="wot-text-base wot-font-bold wot-text-text-main">{{ $t("bms.mine.permissionsTitle") }}</text>
-          </view>
-          <!-- Source: uni_modules/wot-ui/components/wd-button/wd-button.vue -->
-          <wd-button size="small" plain @click="checkAllPermissions(true)">
+          </view>          <wd-button size="small" plain @click="checkAllPermissions(true)">
             {{ $t("bms.mine.checkPermissions") }}
           </wd-button>
-        </view>
-        <!-- Source: uni_modules/wot-ui/components/wd-cell-group/wd-cell-group.vue -->
-        <wd-cell-group border>
-          <!-- 系统蓝牙服务 -->
-          <!-- Source: uni_modules/wot-ui/components/wd-cell/wd-cell.vue -->
-          <wd-cell
+        </view>        <wd-cell-group border>
+          <!-- 系统蓝牙服务 -->          <wd-cell
             :title="$t('bms.mine.btHardware')"
             :label="$t('bms.mine.btHardwareDesc')"
             :clickable="!permissionsState.btHardware"
@@ -54,9 +44,7 @@
             </template>
           </wd-cell>
 
-          <!-- 系统定位服务 -->
-          <!-- Source: uni_modules/wot-ui/components/wd-cell/wd-cell.vue -->
-          <wd-cell
+          <!-- 系统定位服务 -->          <wd-cell
             v-if="showLocationCheck"
             :title="$t('bms.mine.gpsHardware')"
             :label="$t('bms.mine.gpsHardwareDesc')"
@@ -80,9 +68,7 @@
             </template>
           </wd-cell>
 
-          <!-- 蓝牙应用级权限 -->
-          <!-- Source: uni_modules/wot-ui/components/wd-cell/wd-cell.vue -->
-          <wd-cell
+          <!-- 蓝牙应用级权限 -->          <wd-cell
             :title="$t('bms.mine.btPermission')"
             :label="$t('bms.mine.btPermissionDesc')"
             :clickable="!permissionsState.btPermission"
@@ -105,9 +91,7 @@
             </template>
           </wd-cell>
 
-          <!-- 定位应用级权限 -->
-          <!-- Source: uni_modules/wot-ui/components/wd-cell/wd-cell.vue -->
-          <wd-cell
+          <!-- 定位应用级权限 -->          <wd-cell
             v-if="showLocationCheck"
             :title="$t('bms.mine.locPermission')"
             :label="$t('bms.mine.locPermissionDesc')"
@@ -136,37 +120,26 @@
       <!-- 设备与环境信息卡片 (Google Pixel 风格卡片) -->
       <view class="wot-bg-filled-oppo wot-rounded-2xl wot-overflow-hidden wot-shadow-sm wot-mb-4">
         <view
-          class="wot-p-4 wot-border-b wot-border-gray-100 dark:wot-border-neutral-800 wot-flex wot-items-center"
-        >
-          <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-          <wd-icon css-icon="i-lucide-smartphone" size="20px" class="wot-mr-2" :color="activeThemeColor" />
+          class="wot-p-4 wot-border-b wot-border-divider-main wot-flex wot-items-center"
+        >          <wd-icon css-icon="i-lucide-smartphone" size="20px" class="wot-mr-2" :color="activeThemeColor" />
           <text class="wot-text-base wot-font-bold wot-text-text-main">{{ $t("bms.mine.deviceInfo") }}</text>
         </view>
         <wd-cell-group border>
-          <!-- 运行平台（端） -->
-          <!-- Source: uni_modules/wot-ui/components/wd-cell/wd-cell.vue -->
-          <wd-cell :title="$t('bms.mine.devicePlatform')" :value="clientPlatform" />
-          <!-- 设备品牌 -->
-          <!-- Source: uni_modules/wot-ui/components/wd-cell/wd-cell.vue -->
-          <wd-cell :title="$t('bms.mine.deviceBrand')" :value="deviceBrand" />
-          <!-- 设备型号 -->
-          <!-- Source: uni_modules/wot-ui/components/wd-cell/wd-cell.vue -->
-          <wd-cell :title="$t('bms.mine.deviceModel')" :value="deviceModel" />
-          <!-- 系统版本 -->
-          <!-- Source: uni_modules/wot-ui/components/wd-cell/wd-cell.vue -->
-          <wd-cell :title="$t('bms.mine.deviceSystem')" :value="deviceSystem" />
+          <!-- 运行平台（端） -->          <wd-cell :title="$t('bms.mine.devicePlatform')" :value="clientPlatform" />
+          <!-- 设备品牌 -->          <wd-cell :title="$t('bms.mine.deviceBrand')" :value="deviceBrand" />
+          <!-- 设备型号 -->          <wd-cell :title="$t('bms.mine.deviceModel')" :value="deviceModel" />
+          <!-- 系统版本 -->          <wd-cell :title="$t('bms.mine.deviceSystem')" :value="deviceSystem" />
         </wd-cell-group>
       </view>
     </view>
-    <!-- 显式挂载 toast 实例，防止 useToast() 弹窗失效 -->
-    <wd-toast />
   </layout-provider>
 </template>
 
 <script setup lang="ts">
 import { ref, computed } from "vue";
 import { onShow, onUnload } from "@dcloudio/uni-app";
-import { useToast } from "@/uni_modules/wot-ui";
+import { useToast } from "@wot-ui/ui";
+import { isAppIOS, isMpWeixin, isApp } from "@uni-helper/uni-env";
 import { permissionManager } from "@/service/permission";
 import { translate } from "@/locale/i18n";
 import { useAppStore } from "@/stores/app";
@@ -179,19 +152,10 @@ const toast = useToast();
 const appStore = useAppStore();
 const { deviceInfo, activeThemeColor } = storeToRefs(appStore);
 
-
 // 诊断当前运行宿主平台所在的端并转换为对应的翻译字词，使用运行时 uniPlatform 避免条件编译失效问题
 const clientPlatform = computed(() => {
-  let platform = "web";
-  let os = "";
-  try {
-    const sys = uni.getSystemInfoSync();
-    platform = sys.uniPlatform || "web";
-    os = (sys.osName || sys.platform || "").toLowerCase();
-    console.log("[设备诊断] 当前运行期 uniPlatform:", platform, "osName/platform:", os);
-  } catch (e) {
-    console.error("获取运行期系统信息异常:", e);
-  }
+  const platform = deviceInfo.value?.uniPlatform || (isMpWeixin ? "mp-weixin" : isApp ? "app" : "web");
+  const os = (deviceInfo.value?.osName || deviceInfo.value?.platform || "").toLowerCase();
 
   // 微信小程序平台
   if (platform === "mp-weixin") {
@@ -257,18 +221,7 @@ const deviceSystem = computed(() => {
 });
 
 // 判定当前平台是否需要展示定位相关的硬件及应用权限（苹果应用平台下完全不需要，做免除和隐藏）
-const showLocationCheck = computed(() => {
-  let isIosApp = false;
-  // #ifdef APP-PLUS
-  try {
-    const sys = uni.getSystemInfoSync();
-    isIosApp = (sys.platform || "").toLowerCase() === "ios";
-  } catch (e) {
-    isIosApp = false;
-  }
-  // #endif
-  return !isIosApp;
-});
+const showLocationCheck = computed(() => !isAppIOS);
 
 // 四项必要系统与应用权限服务的实时物理诊断状态值
 const permissionsState = ref({

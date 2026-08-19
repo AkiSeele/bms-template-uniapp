@@ -1,17 +1,11 @@
 <template>
   <view class="wot-w-full wot-bg-filled-bottom wot-box-border wot-px-4">
-    <!-- 自定义顶部导航栏，固定在顶部并生成占位元素 -->
-    <!-- Source: uni_modules/wot-ui/components/wd-navbar/wd-navbar.vue -->
-    <wd-navbar :title="$t('bms.tab.params')" fixed safe-area-inset-top />
+    <!-- 自定义顶部导航栏，固定在顶部并生成占位元素 -->    <wd-navbar :title="$t('bms.tab.params')" fixed safe-area-inset-top />
 
     <view class="tab-content-wrap page-body-animate" :style="{ 'padding-top': (navbarHeight + 16) + 'px' }">
-      <!-- 蓝牙未连接时的空状态展示 -->
-      <!-- Source: uni_modules/wot-ui/components/wd-empty/wd-empty.vue -->
-      <view v-if="!isConnected" class="empty-wrap wot-flex wot-flex-col wot-items-center wot-justify-center">
+      <!-- 蓝牙未连接时的空状态展示 -->      <view v-if="!isConnected" class="empty-wrap wot-flex wot-flex-col wot-items-center wot-justify-center">
         <wd-empty icon="empty" :tip="$t('bms.battery.noData')">
-          <template #bottom>
-            <!-- Source: uni_modules/wot-ui/components/wd-button/wd-button.vue -->
-            <wd-button size="small" plain @click="toConnect" custom-class="empty-btn">
+          <template #bottom>            <wd-button size="small" plain @click="toConnect" custom-class="wot-mt-3 wot-min-w-[180rpx] wot-rounded-full">
               {{ $t("bms.ble.connect") }}
             </wd-button>
           </template>
@@ -21,7 +15,7 @@
       <!-- 已连接时的状态看板 -->
       <view v-else>
         <!-- 32项保护状态平铺大卡片 -->
-        <view class="wot-bg-filled-oppo alarm-grid-card wot-p-3">
+        <view class="wot-bg-filled-oppo wot-p-3 wot-rounded-2xl wot-shadow-sm">
           <!-- 标题栏，包含右侧紧凑的运行总时间 -->
           <view
             class="wot-border-solid wot-border-divider-main wot-border-t-0 wot-border-l-0 wot-border-r-0 wot-pb-2.5 wot-mb-3.5 wot-flex wot-items-center wot-justify-between"
@@ -41,9 +35,7 @@
               v-if="runTimeStr"
               class="wot-flex wot-items-center wot-text-text-auxiliary"
               :style="{ fontSize: '22rpx' }"
-            >
-              <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-              <wd-icon css-icon="i-ri-time-line" size="12px" color="var(--wot-icon-auxiliary)" class="wot-mr-1" />
+            >              <wd-icon css-icon="i-ri-time-line" size="12px" color="var(--wot-icon-auxiliary)" class="wot-mr-1" />
               <text>{{ runTimeStr }}</text>
             </view>
           </view>
@@ -96,7 +88,7 @@ import { computed } from "vue";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
 import { useBleStore } from "@/stores/ble-store";
-import { useDeviceInfo } from "@/uni_modules/wot-ui/composables/useDeviceInfo";
+import { useDeviceInfo } from "@wot-ui/ui/composables/useDeviceInfo";
 
 const bleStore = useBleStore();
 const { isBleConnected: isConnected, extendedProtocolData } = storeToRefs(bleStore);
@@ -194,17 +186,6 @@ const allAlarmList = [
 .empty-wrap {
   min-height: 65vh;
   box-sizing: border-box;
-}
-
-:deep(.empty-btn) {
-  margin-top: 24rpx;
-  min-width: 180rpx;
-  border-radius: 100rpx;
-}
-
-.alarm-grid-card {
-  border-radius: 28rpx;
-  box-shadow: 0 8px 20px rgba(163, 177, 198, 0.1);
 }
 
 /* 红色指示灯呼吸动画 */

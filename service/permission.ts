@@ -5,6 +5,7 @@
 
 import { APP_CONFIG } from "@/config";
 import { translate } from "@/locale/i18n";
+import { isAppAndroid, isAppIOS, isApp, isMpWeixin } from "@uni-helper/uni-env";
 
 // 声明 html5+ 原生桥接命名空间变量，防止 TS 编译器因缺少 plus 类型定义而报错
 declare const plus: any;
@@ -68,12 +69,7 @@ export const permissionManager = {
         // 1. 系统硬件层面（蓝牙硬件开关）
         let btEnabled = systemInfo.bluetoothEnabled !== false;
 
-        let isAndroidApp = false;
-        // #ifdef APP-PLUS
-        isAndroidApp = platform === "android";
-        // #endif
-
-        if (isAndroidApp) {
+        if (isAppAndroid) {
           // Android App 原生层直接获取底层 BluetoothAdapter 状态，百分之百实时且无缓存 Bug
           // #ifdef APP-PLUS
           try {
@@ -142,12 +138,12 @@ export const permissionManager = {
         state.btHardware = btEnabled;
 
         // 2. 系统硬件层面（定位硬件开关）
-        if (platform === "ios") {
+        if (isAppIOS) {
           // iOS 系统的蓝牙扫描不需要系统 GPS 定位服务开启，做免定位硬件校验
           state.gpsHardware = true;
         } else {
           // #ifdef APP-PLUS
-          if (platform === "android") {
+          if (isAppAndroid) {
             state.gpsHardware = this.checkAndroidGps();
           } else {
             state.gpsHardware = systemInfo.locationEnabled !== false;
@@ -183,7 +179,7 @@ export const permissionManager = {
 
         // #ifdef APP-PLUS
         // 4. Android / iOS APP 原生层权限状态检测核查
-        if (platform === "android") {
+        if (isAppAndroid) {
           try {
             const context = plus.android.runtimeMainActivity();
             const Build = plus.android.importClass("android.os.Build");
@@ -204,7 +200,7 @@ export const permissionManager = {
             console.error("[BLE 权限诊断] Android 原生权限诊断异常:", e);
           }
           resolve(state);
-        } else if (platform === "ios") {
+        } else if (isAppIOS) {
           try {
             // iOS 定位权限免检
             state.locPermission = true;
@@ -246,60 +242,68 @@ export const permissionManager = {
   async requestSettingOrResolve(type: "btHardware" | "gpsHardware" | "btPermission" | "locPermission"): Promise<boolean> {
     try {
       const systemInfo = uni.getSystemInfoSync();
-      const platform = (systemInfo.platform || "").toLowerCase();
 
       return new Promise((resolve) => {
         // 1. 系统蓝牙硬件开关
         if (type === "btHardware") {
-          // #ifdef APP-PLUS
-          if (platform === "android") {
-            try {
-              const main = plus.android.runtimeMainActivity();
-              const Intent = plus.android.importClass("android.content.Intent");
-              const Settings = plus.android.importClass("android.provider.Settings");
-              const intent = new Intent(Settings.ACTION_BLUETOOTH_SETTINGS);
-              main.startActivity(intent);
-              return resolve(true);
-            } catch (e) {
-              console.error("[BLE 权限修复] Android 蓝牙硬件页面跳转失败:", e);
-            }
-          }
-          // #endif
-          
-          // 微信小程序、iOS 或者跳转失败的 Android，均弹出 Toast 提示引导
           uni.showModal({
             title: translate("bms.common.bluetoothTitle"),
             content: translate("bms.ble.env.bluetoothDisabled"),
-            showCancel: false,
-            confirmText: translate("bms.common.confirm"),
+            confirmText: translate("bms.common.goOpen"),
+            cancelText: translate("bms.common.cancel"),
+            success: (modalRes) => {
+              if (modalRes.confirm) {
+                // #ifdef APP-PLUS
+                if (isAppAndroid) {
+                  try {
+                    const main = plus.android.runtimeMainActivity();
+                    const Intent = plus.android.importClass("android.content.Intent");
+                    const Settings = plus.android.importClass("android.provider.Settings");
+                    const intent = new Intent(Settings.ACTION_BLUETOOTH_SETTINGS);
+                    main.startActivity(intent);
+                    return resolve(true);
+                  } catch (e) {
+                    console.error("[BLE 权限修复] Android 蓝牙硬件页面跳转失败:", e);
+                  }
+                }
+                // #endif
+              }
+              resolve(false);
+            },
+            fail: () => resolve(false),
           });
-          return resolve(false);
+          return;
         }
 
         // 2. 系统定位硬件开关
         if (type === "gpsHardware") {
-          // #ifdef APP-PLUS
-          if (platform === "android") {
-            try {
-              const main = plus.android.runtimeMainActivity();
-              const Intent = plus.android.importClass("android.content.Intent");
-              const Settings = plus.android.importClass("android.provider.Settings");
-              const intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
-              main.startActivity(intent);
-              return resolve(true);
-            } catch (e) {
-              console.error("[BLE 权限修复] Android 位置硬件页面跳转失败:", e);
-            }
-          }
-          // #endif
-
           uni.showModal({
             title: translate("bms.common.gpsTitle"),
             content: translate("bms.ble.env.locationDisabled"),
-            showCancel: false,
-            confirmText: translate("bms.common.confirm"),
+            confirmText: translate("bms.common.goOpen"),
+            cancelText: translate("bms.common.cancel"),
+            success: (modalRes) => {
+              if (modalRes.confirm) {
+                // #ifdef APP-PLUS
+                if (isAppAndroid) {
+                  try {
+                    const main = plus.android.runtimeMainActivity();
+                    const Intent = plus.android.importClass("android.content.Intent");
+                    const Settings = plus.android.importClass("android.provider.Settings");
+                    const intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+                    main.startActivity(intent);
+                    return resolve(true);
+                  } catch (e) {
+                    console.error("[BLE 权限修复] Android 位置硬件页面跳转失败:", e);
+                  }
+                }
+                // #endif
+              }
+              resolve(false);
+            },
+            fail: () => resolve(false),
           });
-          return resolve(false);
+          return;
         }
 
         // 3. 应用级蓝牙授权
@@ -337,14 +341,14 @@ export const permissionManager = {
           // #endif
 
           // #ifdef APP-PLUS
-          if (platform === "android") {
+          if (isAppAndroid) {
             // 重新动态申请权限
             const permissions = [
               APP_CONFIG.ANDROID_PERMISSIONS.BLUETOOTH_SCAN,
               APP_CONFIG.ANDROID_PERMISSIONS.BLUETOOTH_CONNECT,
             ];
             plus.android.requestPermissions(permissions, (res: any) => {
-              const isAllGranted = permissions.every(p => (res.granted || []).includes(p));
+              const isAllGranted = permissions.every((p) => (res.granted || []).includes(p));
               if (isAllGranted) {
                 resolve(true);
               } else {
@@ -374,7 +378,7 @@ export const permissionManager = {
               }
             });
             return;
-          } else if (platform === "ios") {
+          } else if (isAppIOS) {
             // iOS 调起 App 系统设置页
             try {
               const UIApplication = plus.ios.importClass("UIApplication");
@@ -428,10 +432,10 @@ export const permissionManager = {
           // #endif
 
           // #ifdef APP-PLUS
-          if (platform === "android") {
+          if (isAppAndroid) {
             const permissions = [APP_CONFIG.ANDROID_PERMISSIONS.ACCESS_FINE_LOCATION];
             plus.android.requestPermissions(permissions, (res: any) => {
-              const isAllGranted = permissions.every(p => (res.granted || []).includes(p));
+              const isAllGranted = permissions.every((p) => (res.granted || []).includes(p));
               if (isAllGranted) {
                 resolve(true);
               } else {
@@ -460,7 +464,7 @@ export const permissionManager = {
               }
             });
             return;
-          } else if (platform === "ios") {
+          } else if (isAppIOS) {
             try {
               const UIApplication = plus.ios.importClass("UIApplication");
               const NSURL = plus.ios.importClass("NSURL");
@@ -732,23 +736,31 @@ export const permissionManager = {
   },
 
   /**
-   * Android App：检测手机系统定位 (GPS) 开关是否开启
+   * Android App：检测手机系统定位 (GPS) 开关是否开启 (兼容 Android 8 及各 Android 版本)
    */
   checkAndroidGps(): boolean {
     try {
       const context: any = plus.android.runtimeMainActivity();
+      const Build: any = plus.android.importClass("android.os.Build");
+      const sdkVersion: number = Build.VERSION.SDK_INT;
       const LocationManager: any = plus.android.importClass("android.location.LocationManager");
       const locationManager: any = context.getSystemService(context.LOCATION_SERVICE);
-      const gpsEnabled: boolean = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
-      const networkEnabled: boolean = locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
 
-      console.log("[BLE GPS] GPS 定位开关:", gpsEnabled, "网络定位开关:", networkEnabled);
-
-      if (!gpsEnabled && !networkEnabled) {
-        return false;
+      if (sdkVersion >= 28) {
+        // Android 9.0 (API 28) 及以上，使用官方推荐的 isLocationEnabled() 回读总开关
+        return locationManager.isLocationEnabled();
+      } else {
+        // Android 8.1 及以下 (SDK < 28)，通过 Settings.Secure.LOCATION_MODE 读取位置总开关
+        const Settings: any = plus.android.importClass("android.provider.Settings");
+        const locationMode: number = Settings.Secure.getInt(
+          context.getContentResolver(),
+          Settings.Secure.LOCATION_MODE,
+          Settings.Secure.LOCATION_MODE_OFF
+        );
+        return locationMode !== Settings.Secure.LOCATION_MODE_OFF;
       }
-      return true;
     } catch (e) {
+      console.error("[BLE 权限] Android 原生 LocationManager 校验异常:", e);
       return true;
     }
   },
@@ -759,10 +771,7 @@ export const permissionManager = {
    */
   requestAppPermissionsOnLaunch(): void {
     // #ifdef APP-PLUS
-    const systemInfo = uni.getSystemInfoSync();
-    const platform = systemInfo.platform.toLowerCase();
-
-    if (platform !== "android") {
+    if (!isAppAndroid) {
       return;
     }
 

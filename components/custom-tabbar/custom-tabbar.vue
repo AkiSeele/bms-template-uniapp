@@ -1,49 +1,31 @@
 <template>
-  <!-- 自定义底部导航栏组件，fixed 属性开启固定定位，placeholder 属性生成底部占位，bordered 开启上边框 -->
-  <!-- Source: uni_modules/wot-ui/components/wd-tabbar/wd-tabbar.vue -->
-  <wd-tabbar :model-value="activeTab" @change="handleChange" fixed :placeholder="activeTab !== 'realtime'" bordered safe-area-inset-bottom :z-index="100" :active-color="activeThemeColor">
-    <!-- 实时数据 Tab 选项项 -->
-    <!-- Source: uni_modules/wot-ui/components/wd-tabbar-item/wd-tabbar-item.vue -->
-    <wd-tabbar-item name="realtime" :title="$t('bms.tab.realtime')">
-      <template #icon>
-        <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-        <wd-icon 
+  <!-- 自定义底部导航栏组件，fixed 属性开启固定定位，placeholder 属性生成底部占位，bordered 开启上边框 -->  <wd-tabbar :model-value="activeTab" @change="handleChange" fixed :placeholder="activeTab !== 'realtime'" bordered safe-area-inset-bottom :z-index="100" :active-color="activeThemeColor">
+    <!-- 实时数据 Tab 选项项 -->    <wd-tabbar-item name="realtime" :title="$t('bms.tab.realtime')">
+      <template #icon>        <wd-icon 
           css-icon="i-lucide-activity" 
           size="22px" 
           :color="activeTab === 'realtime' ? activeThemeColor : '#858585'" 
         />
       </template>
     </wd-tabbar-item>
-    <!-- 参数设置 Tab 选项项 -->
-    <!-- Source: uni_modules/wot-ui/components/wd-tabbar-item/wd-tabbar-item.vue -->
-    <wd-tabbar-item name="param" :title="$t('bms.tab.params')">
-      <template #icon>
-        <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-        <wd-icon 
+    <!-- 参数设置 Tab 选项项 -->    <wd-tabbar-item name="param" :title="$t('bms.tab.params')">
+      <template #icon>        <wd-icon 
           css-icon="i-lucide-sliders" 
           size="22px" 
           :color="activeTab === 'param' ? activeThemeColor : '#858585'" 
         />
       </template>
     </wd-tabbar-item>
-    <!-- 控制开关 Tab 选项项 -->
-    <!-- Source: uni_modules/wot-ui/components/wd-tabbar-item/wd-tabbar-item.vue -->
-    <wd-tabbar-item name="control" :title="$t('bms.tab.control')">
-      <template #icon>
-        <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-        <wd-icon 
+    <!-- 控制开关 Tab 选项项 -->    <wd-tabbar-item name="control" :title="$t('bms.tab.control')">
+      <template #icon>        <wd-icon 
           css-icon="i-lucide-settings" 
           size="22px" 
           :color="activeTab === 'control' ? activeThemeColor : '#858585'" 
         />
       </template>
     </wd-tabbar-item>
-    <!-- 个人中心 Tab 选项项 -->
-    <!-- Source: uni_modules/wot-ui/components/wd-tabbar-item/wd-tabbar-item.vue -->
-    <wd-tabbar-item name="mine" :title="$t('bms.tab.mine')" @click="handleMineClick">
-      <template #icon>
-        <!-- Source: uni_modules/wot-ui/components/wd-icon/wd-icon.vue -->
-        <wd-icon 
+    <!-- 个人中心 Tab 选项项 -->    <wd-tabbar-item name="mine" :title="$t('bms.tab.mine')" @click="handleMineClick">
+      <template #icon>        <wd-icon 
           css-icon="i-lucide-user" 
           size="22px" 
           :color="activeTab === 'mine' ? activeThemeColor : '#858585'" 
