@@ -36,6 +36,7 @@ declare module 'vue' {
     WdTabbarItem: typeof import('@wot-ui/ui/components/wd-tabbar-item/wd-tabbar-item.vue')['WdTabbarItem']
     WdTabs: typeof import('@wot-ui/ui/components/wd-tabs/wd-tabs.vue')['WdTabs']
     WdToast: typeof import('@wot-ui/ui/components/wd-toast/wd-toast.vue')['WdToast']
+    ZPaging: typeof import('z-paging/components/z-paging/z-paging.vue')['ZPaging']
   }
 }
 
@@ -65,4 +66,5 @@ declare global {
   const WdTabbarItem: typeof import('@wot-ui/ui/components/wd-tabbar-item/wd-tabbar-item.vue')['WdTabbarItem']
   const WdTabs: typeof import('@wot-ui/ui/components/wd-tabs/wd-tabs.vue')['WdTabs']
   const WdToast: typeof import('@wot-ui/ui/components/wd-toast/wd-toast.vue')['WdToast']
+  const ZPaging: typeof import('z-paging/components/z-paging/z-paging.vue')['ZPaging']
 }

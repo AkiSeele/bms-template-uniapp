@@ -4,13 +4,10 @@ import { useI18n } from "vue-i18n";
 import { permissionManager, BLE_ENV_ERROR } from "@/service/permission";
 import { bleManager } from "@/service/ble-manager";
 
-// 声明 HTML5+ 原生桥接命名空间变量，防止 TS 编译器报错
-declare const plus: any;
-
 /**
  * 蓝牙及定位权限管理的可复用 Vue 组合式函数 (Composable)
  * 职责分工：视图层状态管理、NoticeBar 警告及引导 UI。
- * 底层核验工作已完全交由 service/permission.ts 中的 permissionManager 完成，本层仅处理 UI 联动。
+ * 底层核验与系统跳转已完全交由 service/permission.ts 中的 permissionManager 完成，本层仅处理 UI 联动。
  */
 export function useBlePermission() {
   const toast = useToast();
@@ -64,81 +61,20 @@ export function useBlePermission() {
 
   /**
    * 触发一键开启/修复逻辑
-   * 支持：Android 蓝牙一键原生拉起、跳转定位服务设置页、跳转应用权限详情页、小程序权限页等。
+   * 委托给分平台 permissionManager 处理原生 Intent 跳转与小程序设置页唤起。
    */
   const resolveEnv = () => {
     if (!envErrorType.value) return;
 
-    // 只要有任何环境错误处理引导跳转，都标记 returned_from_settings 为 true
-    // 这样当用户操作完设置返回 App 时，蓝牙连接页能够安全地重新触发环境核验与扫描刷新
+    // 标记 returned_from_settings 为 true，当用户返回页面时自动触发重新核验与扫描刷新
     uni.setStorageSync("returned_from_settings", true);
 
     if (envErrorType.value === "bluetooth") {
-      // #ifdef APP-PLUS
-      // 安卓端直接反射调起系统的原生蓝牙开启请求询问框，免除手动翻设置的痛苦
-      try {
-        const BluetoothAdapter: any = plus.android.importClass("android.bluetooth.BluetoothAdapter");
-        const bluetoothAdapter: any = BluetoothAdapter.getDefaultAdapter();
-        if (bluetoothAdapter && !bluetoothAdapter.isEnabled()) {
-          const Intent: any = plus.android.importClass("android.content.Intent");
-          const intent: any = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-          const mainActivity: any = plus.android.runtimeMainActivity();
-          mainActivity.startActivity(intent);
-        }
-      } catch (e) {
-        toast.info(t("bms.ble.env.bluetoothDisabled"));
-      }
-      // #endif
-      // #ifndef APP-PLUS
-      toast.info(t("bms.ble.env.bluetoothDisabled"));
-      // #endif
+      permissionManager.openBluetoothSettings();
     } else if (envErrorType.value === "androidGps") {
-      // #ifdef APP-PLUS
-      // 跳转系统定位服务设置页
-      try {
-        const Intent: any = plus.android.importClass("android.content.Intent");
-        const Settings: any = plus.android.importClass("android.provider.Settings");
-        const intent: any = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
-        const mainActivity: any = plus.android.runtimeMainActivity();
-        mainActivity.startActivity(intent);
-      } catch (e) {
-        console.error("跳转系统定位设置失败:", e);
-      }
-      // #endif
-      // #ifndef APP-PLUS
-      toast.info(t("bms.ble.env.locationDisabled"));
-      // #endif
-    } else if (envErrorType.value === "wechatSetting") {
-      // #ifdef MP-WEIXIN
-      uni.showModal({
-        title: t("bms.common.authPrompt"),
-        content: envWarningText.value || t("bms.ble.env.wechatLocationRefused"),
-        confirmText: t("bms.common.goSettings"),
-        success: (res) => {
-          if (res.confirm) {
-            uni.openSetting();
-          }
-        },
-      });
-      // #endif
-      // #ifndef MP-WEIXIN
-      uni.openSetting();
-      // #endif
-    } else if (envErrorType.value === "androidPermission") {
-      // #ifdef APP-PLUS
-      // 直接跳转当前应用的系统应用详情权限页
-      try {
-        const Uri: any = plus.android.importClass("android.net.Uri");
-        const Intent: any = plus.android.importClass("android.content.Intent");
-        const Settings: any = plus.android.importClass("android.provider.Settings");
-        const intent: any = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-        const mainActivity: any = plus.android.runtimeMainActivity();
-        intent.setData(Uri.parse("package:" + mainActivity.getPackageName()));
-        mainActivity.startActivity(intent);
-      } catch (e) {
-        console.error("跳转系统应用详情页失败:", e);
-      }
-      // #endif
+      permissionManager.openGpsSettings();
+    } else if (envErrorType.value === "wechatSetting" || envErrorType.value === "androidPermission") {
+      permissionManager.openAppSettings();
     }
   };
 

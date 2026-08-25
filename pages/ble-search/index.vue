@@ -27,9 +27,9 @@
         <!-- 搜索控制台：手写极其轻量精致的 Google Material 圆角输入框，无任何多余嵌套 -->
         <view class="search-box-wrapper wot-px-4 wot-py-3 wot-bg-filled-bottom">
           <view
-            class="google-search-box wot-flex wot-items-center wot-bg-filled-oppo wot-rounded-full wot-px-4 wot-border wot-border-solid wot-border-border-main"
+            class="google-search-box wot-flex wot-items-center wot-bg-filled-oppo wot-rounded-lg wot-px-3 wot-h-9 wot-border wot-border-solid wot-border-border-main"
           >
-            <wd-icon css-icon="i-ri-search-line" size="18px" color="var(--wot-icon-secondary)" class="wot-mr-2" />
+            <wd-icon css-icon="i-ri-search-line" size="16px" color="var(--wot-icon-secondary)" class="wot-mr-2" />
             <input
               v-model="searchQuery"
               type="text"
@@ -55,7 +55,7 @@
           v-for="device in deviceList"
           :key="device.deviceId"
           @click="handleConnect(device)"
-          class="device-card wot-bg-filled-oppo wot-rounded-xl wot-px-3 wot-py-2.5 wot-mb-2 wot-flex wot-items-center wot-justify-between wot-border wot-border-solid wot-border-border-main active:wot-bg-filled-content"
+          class="device-card wot-bg-filled-oppo wot-rounded-lg wot-px-3 wot-py-2.5 wot-mb-2 wot-flex wot-items-center wot-justify-between wot-border wot-border-solid wot-border-border-main active:wot-bg-filled-content"
         >
           <!-- Left side device info -->
           <view class="wot-flex wot-items-center wot-gap-3 wot-min-w-0 wot-flex-1">
@@ -379,11 +379,7 @@ const handleConnect = async (device: any) => {
     await bleStore.connectDevice(device.deviceId, deviceName, macAddress);
 
     // 3. 连接成功：提示成功并在延时后返回上一页
-    uni.showToast({
-      title: t("bms.ble.connectSuccess"),
-      icon: "success",
-      duration: 1200,
-    });
+    toast.success(t("bms.ble.connectSuccess"));
     setTimeout(() => {
       uni.navigateBack();
     }, 1200);

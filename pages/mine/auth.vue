@@ -81,7 +81,7 @@ declare const plus: any;
 import { ref, computed, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { useToast, useDialog } from "@wot-ui/ui";
-import { isAppAndroid, isAppIOS } from "@uni-helper/uni-env";
+import { permissionManager } from "@/service/permission";
 import { useUserStore } from "@/stores/user";
 import { storeToRefs } from "pinia";
 import { generateRandomDeviceCode, calculateAuthCode, decodeAuthCode, calculateEndTime } from "@/utils/auth-helper";
@@ -194,15 +194,13 @@ const copyDeviceCode = () => {
   const textToCopy = codeDev.value || uni.getStorageSync("code_dev") || "UNKNOWN";
   console.log("开始复制设备识别码:", textToCopy);
 
-  uni.setClipboardData({
+  (uni.setClipboardData as any)({
     data: textToCopy,
     showToast: false,
     success: () => {
-      toast.show({
-        msg: t("bms.auth.copied"),
-      });
+      toast.success(t("bms.auth.copied"));
     },
-    fail: (err) => {
+    fail: (err: any) => {
       console.error("写入剪切板失败，引导系统授权:", err);
       showPermissionDialog();
     },
@@ -227,36 +225,9 @@ const showPermissionDialog = () => {
     });
 };
 
-// 引导并跳转至系统设置页（分平台自适应适配）
+// 引导并跳转至系统设置页（由分平台 permissionManager 统一处理）
 const openSystemSettings = () => {
-  // #ifdef APP-PLUS
-  try {
-    if (isAppAndroid) {
-      const main = plus.android.runtimeMainActivity();
-      const Intent = plus.android.importClass("android.content.Intent");
-      const Settings = plus.android.importClass("android.provider.Settings");
-      const Uri = plus.android.importClass("android.net.Uri");
-      const intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-      const uri = Uri.fromParts("package", main.getPackageName(), null);
-      intent.setData(uri);
-      main.startActivity(intent);
-    } else if (isAppIOS) {
-      const UIApplication = plus.ios.importClass("UIApplication");
-      const NSURL = plus.ios.importClass("NSURL");
-      const sharedApplication = UIApplication.sharedApplication();
-      const settingsURL = NSURL.URLWithString("app-settings:");
-      if (sharedApplication.canOpenURL(settingsURL)) {
-        sharedApplication.openURL(settingsURL);
-      }
-    }
-  } catch (err) {
-    console.error("反射跳转系统设置失败:", err);
-  }
-  // #endif
-
-  // #ifdef MP-WEIXIN
-  uni.openSetting();
-  // #endif
+  permissionManager.openAppSettings();
 };
 
 // 激活指令对账与校验确认核心逻辑

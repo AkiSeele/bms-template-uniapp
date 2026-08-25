@@ -28,9 +28,18 @@ export const LIGHT_THEME_VARS = {
   borderStrong: "#c9cbd4",
   dividerMain: "#0000000a",
 
-  // 组件全局通用尺寸规范（统一全站圆角与间距）
+  // 组件全局通用尺寸与圆角基准规范 (Baseline Tokens)
+  // 1. 一级大卡片与模态容器圆角 (16px)
   cardRadius: "16px",
+  dialogRadius: "16px",
+  actionSheetRadius: "16px",
+
+  // 2. 二级交互控件：按钮、输入搜索框、分段器统一基准圆角 (8px)
   buttonRadiusMain: "8px",
+  searchInputRadius: "8px",
+  segmentedRadius: "8px",
+
+  // 3. 通用单元格内边距
   cellPadding: "12px 16px",
 };
 
@@ -58,8 +67,17 @@ export const DARK_THEME_VARS = {
   borderStrong: "#3f3f46",
   dividerMain: "#ffffff14",
 
-  // 组件全局通用尺寸规范（统一全站圆角与间距）
+  // 组件全局通用尺寸与圆角基准规范 (Baseline Tokens)
+  // 1. 一级大卡片与模态容器圆角 (16px)
   cardRadius: "16px",
+  dialogRadius: "16px",
+  actionSheetRadius: "16px",
+
+  // 2. 二级交互控件：按钮、输入搜索框、分段器统一基准圆角 (8px)
   buttonRadiusMain: "8px",
+  searchInputRadius: "8px",
+  segmentedRadius: "8px",
+
+  // 3. 通用单元格内边距
   cellPadding: "12px 16px",
 };

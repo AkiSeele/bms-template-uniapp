@@ -60,6 +60,14 @@ export const useLogStore = defineStore("log", () => {
   };
 
   /**
+   * 锁定并隐藏系统调试日志入口，清除持久化缓存
+   */
+  const lockSystemLogs = () => {
+    isSystemLogsUnlocked.value = false;
+    uni.removeStorageSync("system_logs_unlocked");
+  };
+
+  /**
    * 获取格式化的当前时间字符串 (格式: HH:mm:ss.SSS)
    */
   const getFormattedTime = (): string => {
@@ -134,6 +142,7 @@ export const useLogStore = defineStore("log", () => {
 
   /**
    * 记录并上报一次底部导航栏 “我的” Tab 选项项点击事件
+   * 连续点击 5 次触发分流：若未解锁则弹出密码输入框；若已解锁则直接锁定并隐藏入口（无需密码）
    */
   const recordMineTabClick = () => {
     const now = Date.now();
@@ -145,10 +154,14 @@ export const useLogStore = defineStore("log", () => {
     }
     lastMineTabClickTime.value = now;
 
-    // 连续点击达到 5 次，触发弹窗，重置计数器
+    // 连续点击达到 5 次，分流处理
     if (mineTabClickCount.value === 5) {
       mineTabClickCount.value = 0;
-      passwordPromptTrigger.value++;
+      if (isSystemLogsUnlocked.value) {
+        lockSystemLogs();
+      } else {
+        passwordPromptTrigger.value++;
+      }
     }
   };
 
@@ -168,6 +181,7 @@ export const useLogStore = defineStore("log", () => {
     passwordPromptTrigger,
     isSystemLogsUnlocked,
     unlockSystemLogs,
+    lockSystemLogs,
     addConnectionLog,
     addCommandLog,
     addApiLog,

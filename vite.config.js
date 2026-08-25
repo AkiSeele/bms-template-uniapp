@@ -7,7 +7,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 import Components from "@uni-helper/vite-plugin-uni-components";
-import { WotV2Resolver } from "@uni-helper/vite-plugin-uni-components/resolvers";
+import { WotV2Resolver, ZPagingResolver } from "@uni-helper/vite-plugin-uni-components/resolvers";
+import UniPlatform from "@uni-helper/vite-plugin-uni-platform";
 
 // 挂载全局编译配置，自动注入编译期逻辑
 export default defineConfig(async () => {
@@ -15,14 +16,21 @@ export default defineConfig(async () => {
   return {
     plugins: [
       Components({
-        resolvers: [WotV2Resolver()],
+        resolvers: [WotV2Resolver(), ZPagingResolver()],
         dts: "types/components.d.ts",
       }),
+      UniPlatform(),
       uni(),
       UnoCSS({
         configFile: path.resolve(__dirname, "uno.config.js"),
       }),
     ],
+    resolve: {
+      alias: {
+        "pdf-lib": path.resolve(__dirname, "node_modules/pdf-lib/dist/pdf-lib.min.js"),
+        "@antv/f2": path.resolve(__dirname, "node_modules/@antv/f2/dist/index.min.js"),
+      },
+    },
     // 强制编译器与打包链将 ES2020 可选链、空值合并等语法降级转译，保障小程序全端预览与上传兼容性
     build: {
       target: "es2015",

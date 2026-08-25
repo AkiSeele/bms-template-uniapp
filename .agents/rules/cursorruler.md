@@ -16,13 +16,15 @@ trigger: always_on
 
 ## 二、 多端兼容性与布局适配
 
-1. **条件编译**：任何具有平台特异性的逻辑/样式，必须使用条件编译（如 `#ifdef MP-WEIXIN`、`#ifdef APP-PLUS`）进行隔离。
+1. **条件编译与物理分流选型**：
+   - 具有平台特异性的轻量逻辑/样式可使用条件编译（如 `#ifdef MP-WEIXIN`、`#ifdef APP-PLUS`）进行隔离。
+   - 对于涉及多端底层硬件、原生能力（如权限诊断、原生文件选择、版本检测更新）的复杂服务层逻辑，**严禁在单个文件中长篇手写大量 `#ifdef`**，必须统一通过 `@uni-helper/vite-plugin-uni-platform` 采用独立目录包裹的物理分流架构（`.app.ts` / `.mp-weixin.ts` / `.ts`）。
 2. **微信小程序限制**：
    - **图片路径**：SCSS/CSS 的 `background-image` 禁止使用本地相对路径，必须使用 Base64、网络 URL，或模板内 `<image>` 标签。
    - **分包管理**：主包限 2MB。非首屏引用的页面/组件必须放入分包（`subPackages`），大资源（如超过 40KB 静态图片）禁止放入主包。
    - **原生层级**：`video`、`canvas` 等原生组件层级最高，其上覆盖自定义内容必须使用 `cover-view` 和 `cover-image`。
    - **动态组件限制**：微信小程序端不支持 `<component :is="...">`。编译器解析到此标签会报错中断构建。在页面容器中，**必须**使用条件编译进行分流（`#ifdef MP-WEIXIN`），静态导入组件并通过 `v-if` / `v-else-if` 进行渲染。
-   - **UnoCSS 编译转义**：微信小程序不支持转义类名选择器。开发时配合 `transformerClass` 转换器，并尽量避免书写极其怪异的任意值类名；复杂颜色透明度应优先通过 `:style` 绑定或局部 scoped 样式处理。
+   - **UnoCSS 跨端转义与适配**：微信小程序不支持转义类名选择器。采用 `@uni-helper/unocss-preset-uni` 自动处理底层多端选择器转义，避免书写极其怪异的任意值类名；复杂颜色透明度应优先通过 `:style` 绑定或局部 scoped 样式处理。
 3. **安全区与设备自适应**：
    - 无原生导航栏顶部安全留白使用 `var(--status-bar-height)`，底部使用 `env(safe-area-inset-bottom)`；输入框防遮挡优先用 `<wd-input>`。
    - 设备信息抓取**仅允许在 `App.vue` 的 `onLaunch`** 中通过 `uni.getDeviceInfo()` 获取并写入 Pinia `appStore`，严禁零散高频调用。
@@ -33,7 +35,7 @@ trigger: always_on
 ## 三、 wot-ui v2 开发与组件管理
 
 1. **反馈 Hook**：全站所有页面容器必须被全局高阶组件 `<layout-provider>` 包裹，该高阶组件内部已统一挂载全局的 `<wd-toast />` 与 `<wd-dialog root-portal />` 实例。因此，**业务页面与子组件模板内部严禁重复挂载 `<wd-toast />` 或 `<wd-dialog />`**；在脚本中直接调用 `useToast()`、`useDialog()` 即可触发全局唯一弹窗与提示，杜绝实例重复注册冲突。
-2. **样式重用与主题**：定制主题色统一采用 `ConfigProvider` 和全局 SCSS 变量，**禁止**在业务代码中使用 `::v-deep` 强行覆盖组件库内部类名。网格及 Flex 布局统一使用配备 `wot-` 前缀的 UnoCSS 全局预设。
+2. **样式重用与主题**：定制主题色统一采用 `ConfigProvider` 和全局 SCSS 变量，**禁止**在业务代码中使用 `::v-deep` 强行覆盖组件库内部类名。全站原子类统一采用 `@uni-helper/unocss-preset-uni`（配备 `wot-` 双端前缀配置）与 `@wot-ui/unocss-preset` 双预设驱动。
 3. **前置知识求证与本地诊断工具（禁止凭空猜测组件名/属性）**：
    - 优先使用 `wd-icon` 承载 UnoCSS 图标（如 `<wd-icon css-icon="i-<前缀>-<图名>" />`），属性命名与官方文档严格一致。
    - **禁止凭空猜测组件名称或 Props**：在新增、重构或使用任何 `wd-` 开头的 wot-ui 组件之前，**必须**首先调用 `wot-ui` MCP 专属工具（如 `wot_info`、`wot_doc`、`wot_demo`、`wot_list`）或直接执行 `wot info <Component>` 核对真实属性、插槽与事件，严禁凭借其他 UI 库习惯猜测名称（如将 `wd-empty` 误记为 `status-tip`）。
@@ -63,7 +65,7 @@ trigger: always_on
    - 所有蓝牙 API 调用必须用 `try-catch` 或 `fail` 捕获异常，并使用 `i18n` 提示用户。页面 `onUnload` 或卸载时必须断开连接并注销特征值监听。
    - 在发起连接前，**必须**先调用 `stopBluetoothDevicesDiscovery` 停止扫描（防 10003）。
    - 物理连接后，**必须**依次显式调用 `getBLEDeviceServices` 与 `getBLEDeviceCharacteristics` 成功发现服务与特征值，方可启动监听或写入（防 10004）。
-   - Android/小程序端**必须**调用 `setBLEMTU` 协商（推荐 247）。写入数据时自适应切片分包（扣除 3 字节协议开销），配合 50ms 物理延时。
+   - Android/小程序端**必须**调用 `setBLEMTU` 协商（推荐 247）。
    - iOS/鸿蒙扫描返回的 `deviceId` 均为随机 UUID。必须调用 `resolveDeviceMac(device)` 从广播包数据段中提取解析真实物理 MAC。
 2. **遥测主动轮询与高精度更新**：
    - BMS 通信采用“一发一收”的主动轮询机制，控制权在 APP 端。APP 必须在前置收发完毕后，通过定时器/时序队列下发查询指令（推荐间隔 500ms - 1000ms）。严禁在上一帧未响应或超时前，并发下发新指令。
@@ -140,3 +142,13 @@ trigger: always_on
    - 全局网络请求统一由 `service/request.ts` 托管，必须通过 `createUniAppAxiosAdapter()` 创建适配器实例注入给 Axios，杜绝多端网络通信差异。
 5. **类型增强库统一注册**：
    - 全局原生标签与清单类型必须配置在 `tsconfig.json` 的 `compilerOptions.types` 中（`@uni-helper/uni-app-types` 与 `@uni-helper/uni-manifest-types`），确保全项目享受 TypeScript 自动推导保护。
+6. **`@uni-helper/vite-plugin-uni-platform` 物理分流与目录结构规范**：
+   - **文件夹包裹规范**：对于涉及多端差异实现的服务模块（如权限诊断、版本管理、固件升级），必须使用独立目录进行包裹托管，并在该目录下配置分平台实现文件：
+     - `service/<module>/index.app.ts`：App 原生端专有实现（Android / iOS 底层桥接）
+     - `service/<module>/index.mp-weixin.ts`：微信小程序端专有实现
+     - `service/<module>/index.ts`：默认与 Web/H5 兜底实现及 TypeScript 类型契约源
+   - **无缝引入**：业务代码直接通过目录名引入（如 `import { permissionManager } from "@/service/permission"`），由 Vite 编译器根据构建目标物理匹配对应文件，彻底消灭业务层与服务层中的大量 `#ifdef`，享受物理级 Tree-shaking。
+7. **`@uni-helper/unocss-preset-uni` 跨端样式预设规范**：
+   - 基础原子类预设统一采用 `@uni-helper/unocss-preset-uni`（配置 `presetUni({ uno: { prefix: 'wot-', presetOptions: { prefix: 'wot-' } } })`），与 `@wot-ui/unocss-preset`（组件库主题与 Token 预设）协同工作。
+   - 小程序端选择器转义由 `presetUni` 内置 `presetApplet` 与 `presetLegacyCompat` 自动安全处理，无需额外手动配置易误伤 JS 语法的外部 transformer。
+   - 所有通用样式工具类保持 `wot-` 前缀（`wot-flex`、`wot-items-center`、`wot-p-3` 等），实现组件库主题与原子类命名空间严密隔离。

@@ -1,6 +1,6 @@
 <template>
   <layout-provider>
-    <view :class="activeTab === 'realtime' ? 'realtime-page-wrapper' : 'wot-pb-4'">
+    <view :class="pageWrapperClass">
       <!-- 依据 activeTab 局部切换并缓存四大面板，消除路由跳转白屏 -->
       
       <!-- #ifdef MP-WEIXIN -->
@@ -56,6 +56,14 @@ import ControlDefaultPanel from "../control/components/default.vue";
 // 获取全局 App 状态仓
 const appStore = useAppStore();
 const { activeTab } = storeToRefs(appStore);
+
+// 页面容器样式计算属性（收拢三目运算符，符合规范并避免模版解析异常）
+const pageWrapperClass = computed(() => {
+  if (activeTab.value === "realtime") {
+    return "realtime-page-wrapper";
+  }
+  return "wot-pb-4";
+});
 
 // 初始化全局蓝牙断开重连逻辑
 useBleReconnect();

@@ -5,7 +5,8 @@
     <view class="tab-content-wrap page-body-animate" :style="{ 'padding-top': (navbarHeight + 16) + 'px' }">
       <!-- 蓝牙未连接时的空状态 -->      <view v-if="!isConnected" class="empty-wrap wot-flex wot-flex-col wot-items-center wot-justify-center">
         <wd-empty icon="empty" :tip="$t('bms.battery.noData')">
-          <template #bottom>            <wd-button size="small" plain @click="toConnect" custom-class="wot-mt-3 wot-min-w-[180rpx] wot-rounded-full">
+          <template #bottom>
+            <wd-button size="small" plain @click="toConnect" custom-class="wot-mt-3 wot-min-w-[180rpx] wot-rounded-lg">
               {{ $t("bms.ble.connect") }}
             </wd-button>
           </template>

@@ -50,7 +50,9 @@
           <view
             class="fw-file-icon wot-flex wot-items-center wot-justify-center wot-flex-shrink-0 wot-rounded-xl"
             :class="{ 'fw-file-icon--active': hasFileSelected }"
-          >            <wd-icon :css-icon="fileIconName" size="26px" :color="fileIconColor" />
+          >
+            <wd-icon v-if="hasFileSelected" css-icon="i-lucide-file-check-2" size="26px" color="#22c55e" />
+            <wd-icon v-else css-icon="i-lucide-file-up" size="26px" color="#94a3b8" />
           </view>
 
           <!-- 文件名和提示 -->
@@ -136,7 +138,7 @@ import { onUnload, onBackPress } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import { useFirmwareAnimation } from "@/composables/use-firmware-animation";
 import { useToast, useDialog } from "@wot-ui/ui";
-import { isAppAndroid } from "@uni-helper/uni-env";
+import { firmwareFileService } from "@/service/firmware-file";
 import { useBleStore } from "@/stores/ble-store";
 import { useAppStore } from "@/stores/app";
 import { calcChecksum16LE, uint8ArrayToHexString } from "@/utils/bms-helper";
@@ -251,14 +253,6 @@ const fileNameDisplay = computed(() =>
   hasFileSelected.value ? selectedFileName.value : t("bms.firmware.tapToSelect"),
 );
 
-/** 文件图标名 */
-const fileIconName = computed(() =>
-  hasFileSelected.value ? "i-lucide-file-check-2" : "i-lucide-file-up",
-);
-
-/** 文件图标颜色 */
-const fileIconColor = computed(() => (hasFileSelected.value ? "#22c55e" : "#94a3b8"));
-
 /** 状态胶囊 CSS 追加类 */
 const statusCapsuleClass = computed(() => {
   if (updateSuccess.value) return "fw-capsule--success";
@@ -327,9 +321,7 @@ onUnload(() => {
     clearInterval(simulateTimer);
     simulateTimer = null;
   }
-  // #ifdef MP-WEIXIN
-  wx.disableAlertBeforeUnload();
-  // #endif
+  firmwareFileService.setPageUnloadAlert(false);
 });
 
 // ---------------------------------------------------------------------------
@@ -349,8 +341,7 @@ const handleBack = () => {
 };
 
 /**
- * 选择固件文件
- * 通过条件编译为不同平台分发不同文件选择方式
+ * 选择固件文件（由分平台服务自适应分发）
  */
 const handleSelectFile = () => {
   if (isUpdating.value) {
@@ -358,23 +349,11 @@ const handleSelectFile = () => {
     return;
   }
 
-  // #ifdef MP-WEIXIN
-  wx.chooseMessageFile({
-    count: 1,
-    type: "all",
-    success(res: any) {
-      const file = res.tempFiles[0];
-      onFileSelected(file.name, file.size || 0, file.path || "");
+  firmwareFileService.chooseFirmwareFile(
+    (file) => {
+      onFileSelected(file.name, file.size, file.path);
     },
-  });
-  // #endif
-
-  // #ifdef APP-PLUS
-  const fileSelectPlugin = uni.requireNativePlugin("lemonjk-FileSelect");
-
-  const fileCallback = (result: any) => {
-    if (result.code === 1001) {
-      // 权限代码 1001 表示存储权限未授权
+    () => {
       dialog
         .confirm({
           title: t("bms.firmware.permTitle"),
@@ -382,78 +361,19 @@ const handleSelectFile = () => {
           zIndex: 2000,
         })
         .then(() => {
-          fileSelectPlugin.gotoSetting();
+          firmwareFileService.openPluginSettings();
         })
         .catch(() => {});
-      return;
-    }
-    if (result.files && result.files.length > 0) {
-      const file = result.files[0];
-      // lemonjk-FileSelect 回调不返回文件大小，使用模拟值
-      const mockSize = Math.floor(Math.random() * 512 * 1024) + 64 * 1024;
-      onFileSelected(file.fileName || "", mockSize, file.path || file.filePath || "");
-    }
-  };
-
-  if (isAppAndroid) {
-    fileSelectPlugin?.showNativePicker(
-      { pathScope: "/Download", mimeType: "*/*" },
-      fileCallback,
-    );
-  } else {
-    fileSelectPlugin?.showPicker(
-      { pathScope: "/Download", mimeType: "*/*", utisType: ["public.data"] },
-      fileCallback,
-    );
-  }
-  // #endif
+    },
+  );
 };
 
 /**
- * 将本地文件路径读取并转换为 base64 DataURL (符合 HTML5+ / 微信小程序规范)
+ * 将本地文件路径读取并转换为 base64 DataURL (委托给分平台服务)
  * @param path 文件本地路径
  */
 const pathToBase64 = (path: string): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    // #ifdef APP-PLUS
-    plus.io.resolveLocalFileSystemURL(
-      path,
-      (entry) => {
-        (entry as any).file(
-          (file: any) => {
-            const fileReader = new plus.io.FileReader();
-            fileReader.onload = (evt: any) => {
-              resolve(evt.target.result);
-            };
-            fileReader.onerror = (error: any) => {
-              reject(error);
-            };
-            fileReader.readAsDataURL(file);
-          },
-          (error: any) => {
-            reject(error);
-          }
-        );
-      },
-      (error) => {
-        reject(error);
-      }
-    );
-    // #endif
-
-    // #ifdef MP-WEIXIN
-    wx.getFileSystemManager().readFile({
-      filePath: path,
-      encoding: "base64",
-      success: (res) => {
-        resolve("data:image/png;base64," + res.data);
-      },
-      fail: (error) => {
-        reject(error);
-      },
-    });
-    // #endif
-  });
+  return firmwareFileService.pathToBase64(path);
 };
 
 /** 内存中缓存的固件文件二进制字节流，以彻底防范在通道锁定和清空时发生文件系统 IO 挂起 */
@@ -546,11 +466,7 @@ const executeFirmwareFlash = () => {
   currentStep.value = 1; // 校验/初始化阶段
   otaProtocolPhase.value = "f0";
 
-  // #ifdef MP-WEIXIN
-  wx.enableAlertBeforeUnload({
-    message: t("bms.firmware.updatingNoBack"),
-  });
-  // #endif
+  firmwareFileService.setPageUnloadAlert(true, t("bms.firmware.updatingNoBack"));
 
   // 挂起其它遥测轮询，锁定升级通道
   bleStore.isOtaUpdating = true;
@@ -653,9 +569,7 @@ const executeFirmwareFlash = () => {
       updateSuccess.value = true;
       bleStore.isOtaUpdating = false;
 
-      // #ifdef MP-WEIXIN
-      wx.disableAlertBeforeUnload();
-      // #endif
+      firmwareFileService.setPageUnloadAlert(false);
 
       toast.success({ msg: t("bms.firmware.updateSuccess") });
 
@@ -683,9 +597,7 @@ const handleFlashError = (err: Error) => {
   bleStore.isOtaUpdating = false;
   otaProtocolPhase.value = "idle";
 
-  // #ifdef MP-WEIXIN
-  wx.disableAlertBeforeUnload();
-  // #endif
+  firmwareFileService.setPageUnloadAlert(false);
 
   const errMsg = err.message || String(err);
   dialog.alert({

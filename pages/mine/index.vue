@@ -117,8 +117,17 @@
             </template>
           </wd-cell>
 
-          <!-- 系统日志入口单元格，仅在解锁时显示 -->          <wd-cell v-if="isSystemLogsUnlocked" :title="$t('bms.mine.systemLogs')" is-link @click="navigateToSystemLogs">
-            <template #prefix>              <wd-icon css-icon="i-lucide-scroll-text" size="20px" class="wot-mr-2" color="#858585" />
+          <!-- 系统日志入口单元格，仅在解锁时显示 -->
+          <wd-cell v-if="isSystemLogsUnlocked" :title="$t('bms.mine.systemLogs')" is-link @click="navigateToSystemLogs">
+            <template #prefix>
+              <wd-icon css-icon="i-lucide-scroll-text" size="20px" class="wot-mr-2" color="#858585" />
+            </template>
+          </wd-cell>
+
+          <!-- 调试测试页面入口单元格，仅在解锁时显示 -->
+          <wd-cell v-if="isSystemLogsUnlocked" :title="$t('bms.mine.testPage')" is-link @click="navigateToTestPage">
+            <template #prefix>
+              <wd-icon css-icon="i-lucide-flask-conical" size="20px" class="wot-mr-2" color="#858585" />
             </template>
           </wd-cell>
 
@@ -174,6 +183,7 @@ import { useUserStore } from "@/stores/user";
 import { useLogStore } from "@/stores/log-store";
 import { storeToRefs } from "pinia";
 import { APP_CONFIG } from "@/config";
+import { appVersionService } from "@/service/app-version";
 import { onLoad } from "@dcloudio/uni-app";
 
 // 获取国际化和消息提示 hooks、对话框 hooks 以及全局 appStore 状态实例
@@ -320,39 +330,9 @@ const navigateToPermissionCheck = () => {
   });
 };
 
-// 计算属性：分平台自适应获取当前应用的真实版本号，并加妥善兜底
+// 计算属性：分平台自适应获取当前应用的真实版本号
 const appVersionDisplay = computed(() => {
-  let version = "v1.0.0"; // 默认的起步版本号
-
-  // #ifdef MP-WEIXIN
-  try {
-    const accountInfo = uni.getAccountInfoSync();
-    if (accountInfo.miniProgram && accountInfo.miniProgram.version) {
-      version = "v" + accountInfo.miniProgram.version;
-    } else if (accountInfo.miniProgram && accountInfo.miniProgram.envVersion) {
-      const envNames: Record<string, string> = {
-        develop: t("bms.mine.envDevelop"),
-        trial: t("bms.mine.envTrial"),
-        release: t("bms.mine.envRelease"),
-      };
-      version = envNames[accountInfo.miniProgram.envVersion] || "v1.0.0";
-    }
-  } catch (e) {
-    console.error("获取微信小程序版本号失败:", e);
-  }
-  // #endif
-
-  // #ifdef APP-PLUS
-  try {
-    if (typeof plus !== "undefined" && plus.runtime && plus.runtime.version) {
-      version = "v" + plus.runtime.version;
-    }
-  } catch (e) {
-    console.error("获取移动端版本号失败:", e);
-  }
-  // #endif
-
-  return version;
+  return appVersionService.getAppVersion(t);
 });
 
 // 版本号点击检测更新的 loading 状态
@@ -364,41 +344,18 @@ const handleVersionClick = () => {
   checkUpdate();
 };
 
-// 分平台自适应的版本检测升级函数，提供按钮文本 loading 体验
-const checkUpdate = () => {
+// 分平台自适应的版本检测升级函数
+const checkUpdate = async () => {
   if (APP_CONFIG.APP_MODE === "offline" || isChecking.value) {
     return;
   }
 
   isChecking.value = true;
-
-  // #ifdef MP-WEIXIN
   try {
-    const updateManager = uni.getUpdateManager();
-    updateManager.onCheckForUpdate((res) => {
-      // 延迟 1 秒使文本检测中... loading 效果对于用户肉眼清晰可见
-      setTimeout(() => {
-        isChecking.value = false;
-        if (res.hasUpdate) {
-          toast.show({ msg: t("bms.mine.newVersionFound"), duration: 2500 });
-        } else {
-          toast.show({ msg: t("bms.mine.alreadyLatest"), duration: 2000 });
-        }
-      }, 1000);
-    });
-  } catch (e) {
-    console.error("微信小程序版本检测异常:", e);
+    await appVersionService.checkAppUpdate(toast, t);
+  } finally {
     isChecking.value = false;
-    toast.show({ msg: t("bms.mine.updateFailed") });
   }
-  // #endif
-
-  // #ifndef MP-WEIXIN
-  setTimeout(() => {
-    isChecking.value = false;
-    toast.show({ msg: t("bms.mine.alreadyLatest"), duration: 2000 });
-  }, 1500);
-  // #endif
 };
 
 // 计算属性：动态编排当前已连接设备之激活授权指示标签
@@ -468,6 +425,20 @@ const navigateToSystemLogs = () => {
     url: "/pages/mine/system-logs",
   });
 };
+
+// 跳转至调试测试页面
+const navigateToTestPage = () => {
+  uni.navigateTo({
+    url: "/pages/mine/test-page",
+  });
+};
+
+// 监听系统调试日志解锁状态变化：当再次连续点击 5 次关闭时，给予提示
+watch(isSystemLogsUnlocked, (unlocked) => {
+  if (!unlocked) {
+    toast.show(t("bms.mine.debugLocked"));
+  }
+});
 
 // 判定当前运行模式是否为单机离线模式
 const isOfflineMode = computed(() => APP_CONFIG.APP_MODE === "offline");

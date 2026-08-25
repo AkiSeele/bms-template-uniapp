@@ -1,175 +1,504 @@
 <template>
   <layout-provider>
-    <view class="wot-flex wot-flex-col wot-h-screen wot-overflow-hidden">
-      <!-- 自定义顶部导航栏 -->      <wd-navbar 
-        :title="$t('bms.logs.title')" 
-        left-arrow 
-        fixed 
-        safe-area-inset-top 
-        placeholder 
-        @click-left="navigateBack" 
+    <view class="wot-flex wot-flex-col wot-h-screen wot-overflow-hidden wot-bg-[#f5f6f8] dark:wot-bg-[#121212]">
+      <!-- 自定义顶部导航栏 -->
+      <wd-navbar
+        :title="$t('bms.logs.title')"
+        left-arrow
+        fixed
+        safe-area-inset-top
+        placeholder
+        @click-left="navigateBack"
       />
 
-      <!-- 日志分类 Tabs -->      <wd-tabs v-model="activeTab" class="wot-flex-1 wot-flex wot-flex-col wot-overflow-hidden">
-        <!-- 连接日志 Tab -->        <wd-tab name="connection" :title="$t('bms.logs.tabConnection')">
-          <scroll-view scroll-y class="scroll-container wot-p-2.5 wot-box-border wot-h-full">
-            <view v-if="connectionLogs.length === 0" class="wot-py-12">              <wd-empty icon="empty" :tip="$t('bms.logs.empty')" />
-            </view>
-            <view v-else class="wot-flex wot-flex-col wot-gap-1">
-              <view 
-                v-for="(log, index) in connectionLogs" 
-                :key="index" 
-                class="log-card wot-p-3 wot-rounded-xl wot-shadow-sm wot-bg-filled-oppo wot-mb-2.5"
-                :class="log.status === 'success' ? 'connection-card-success' : 'connection-card-danger'"
-              >
-                <view 
-                  class="log-title-header"
-                  :class="{ 'has-divider': log.params || log.result }"
+      <!-- 官方默认标准 Tabs（开启 swipeable 手势滑动切换与 animated 丝滑动画） -->
+      <wd-tabs
+        v-model="activeTab"
+        swipeable
+        animated
+        slidable="always"
+        class="wot-flex-1 wot-flex wot-flex-col wot-overflow-hidden"
+      >
+        <!-- 1. 指令日志 Tab (BMS 专属蓝牙报文流，置于首位) -->
+        <wd-tab
+          name="command"
+          :title="$t('bms.logs.tabCommand')"
+        >
+          <view class="tab-pane-wrapper wot-flex wot-flex-col wot-h-full wot-overflow-hidden">
+            <!-- 快捷搜索与筛选工具栏 -->
+            <view class="search-toolbar wot-flex-shrink-0 wot-px-3 wot-pt-2 wot-pb-2 wot-bg-filled-oppo wot-border-b wot-border-slate-100 dark:wot-border-zinc-800">
+              <view class="wot-flex wot-items-center wot-gap-2 wot-mb-2">
+                <view class="search-input-box wot-flex-1 wot-flex wot-items-center wot-bg-[#f5f6f8] dark:wot-bg-[#1e2029] wot-rounded-lg wot-px-3 wot-h-9 wot-box-border">
+                  <wd-icon css-icon="i-lucide-search" size="15px" color="#858585" class="wot-mr-2 wot-flex-shrink-0" />
+                  <input
+                    v-model="searchKeyword"
+                    type="text"
+                    :placeholder="$t('bms.logs.searchPlaceholder')"
+                    class="search-native-input wot-flex-1 wot-text-xs wot-text-text-main wot-h-full"
+                  />
+                  <view
+                    v-if="searchKeyword"
+                    class="wot-flex wot-items-center wot-justify-center wot-p-1 wot-cursor-pointer"
+                    @click.stop="searchKeyword = ''"
+                  >
+                    <wd-icon css-icon="i-ri-close-circle-fill" size="14px" color="#858585" />
+                  </view>
+                </view>
+
+                <view
+                  class="sort-toggle-btn wot-flex wot-items-center wot-justify-center wot-h-9 wot-w-9 wot-rounded-lg wot-bg-[#f5f6f8] dark:wot-bg-[#1e2029] wot-box-border wot-flex-shrink-0 wot-cursor-pointer"
+                  @click="toggleSortOrder"
                 >
-                  <view class="wot-flex wot-items-center wot-gap-1.5 wot-flex-1 wot-min-w-0">
-                    <view class="wot-flex wot-items-center wot-justify-center wot-flex-shrink-0">                      <wd-icon name="link" size="13px" color="#858585" />
-                    </view>
-                    <text class="wot-text-[11px] wot-text-text-main wot-truncate wot-flex-1 monospace">{{ log.apiName }}</text>
-                  </view>
-                  <text class="time-stamp wot-text-[10px] wot-text-text-secondary wot-flex-shrink-0">{{ log.timestamp }}</text>
-                </view>
-                <view v-if="log.params" class="command-row tx-row wot-p-2 wot-rounded-lg wot-mt-1.5">
-                  <view class="wot-flex wot-items-center wot-gap-1.5 wot-mb-1">
-                    <view class="indicator-dot tx-dot" />
-                    <text class="wot-text-[9px] wot-font-bold wot-text-primary">INPUT PARAMETERS</text>
-                  </view>
-                  <text class="monospace wot-text-xs wot-font-bold wot-text-text-main wot-break-all">{{ log.params }}</text>
-                </view>
-                <view v-if="log.result" class="command-row wot-p-2 wot-rounded-lg wot-mt-1.5" :class="log.status === 'success' ? 'rx-row' : 'err-row'">
-                  <view class="wot-flex wot-items-center wot-gap-1.5 wot-mb-1">
-                    <view class="indicator-dot" :class="log.status === 'success' ? 'rx-dot' : 'err-dot'" />
-                    <text class="wot-text-[9px] wot-font-bold" :class="log.status === 'success' ? 'wot-text-success' : 'wot-text-danger'">OUTPUT RESULT</text>
-                  </view>
-                  <text class="monospace wot-text-xs wot-font-bold wot-text-text-main wot-break-all">{{ log.result }}</text>
+                  <wd-icon
+                    :css-icon="sortOrder === 'desc' ? 'i-lucide-arrow-down-wide-narrow' : 'i-lucide-arrow-up-narrow-wide'"
+                    size="17px"
+                    :color="sortOrder === 'desc' ? 'var(--wot-color-theme, #0052d9)' : '#858585'"
+                  />
                 </view>
               </view>
+
+              <view class="filter-wrapper">
+                <wd-segmented v-model:value="currentFilter" :options="filterOptions" size="small" />
+              </view>
             </view>
-            <view class="bottom-placeholder" />
-          </scroll-view>
+
+            <!-- 列表滚动区容器：100% 充满剩余空间 -->
+            <view class="scroll-wrapper wot-flex-1 wot-overflow-hidden wot-min-h-0">
+              <scroll-view scroll-y style="height: 100%; width: 100%;" class="scroll-container wot-p-2.5 wot-box-border">
+                <view v-if="filteredCommandGroups.length === 0" class="wot-py-12">
+                  <wd-empty icon="empty" :tip="$t('bms.logs.empty')" />
+                </view>
+                <view v-else class="wot-flex wot-flex-col wot-gap-2">
+                  <view
+                    v-for="group in filteredCommandGroups"
+                    :key="group.id"
+                    class="log-item-card wot-p-3 wot-rounded-lg wot-bg-filled-oppo wot-shadow-sm"
+                  >
+                    <!-- 卡片头部：交互耗时 + 时间戳 -->
+                    <view class="wot-flex wot-items-center wot-justify-between wot-mb-2">
+                      <view class="wot-flex wot-items-center wot-gap-2">
+                        <text class="wot-text-[11px] wot-font-bold wot-text-text-secondary">{{ $t('bms.logs.cmdInteractionFrame') }}</text>
+                        <view v-if="group.latency !== undefined" class="latency-pill">
+                          ⚡ {{ group.latency }}ms
+                        </view>
+                      </view>
+                      <text class="time-text">{{ group.tx ? group.tx.timestamp : group.rx?.timestamp }}</text>
+                    </view>
+
+                    <!-- 发送指令 TX -->
+                    <view v-if="group.tx" class="stream-row stream-tx wot-p-2 wot-rounded-md wot-mb-1.5" @click.stop="copyText(group.tx.hexData)">
+                      <view class="wot-flex wot-items-center wot-justify-between wot-mb-0.5">
+                        <text class="stream-tag tag-tx">TX {{ $t('bms.logs.directionTx') }}</text>
+                        <view class="copy-btn">
+                          <wd-icon css-icon="i-lucide-copy" size="10px" color="#858585" />
+                        </view>
+                      </view>
+                      <text class="hex-text monospace">{{ formatHex(group.tx.hexData) }}</text>
+                    </view>
+
+                    <!-- 接收指令 RX -->
+                    <view v-if="group.rx" class="stream-row stream-rx wot-p-2 wot-rounded-md" @click.stop="copyText(group.rx.hexData)">
+                      <view class="wot-flex wot-items-center wot-justify-between wot-mb-0.5">
+                        <text class="stream-tag tag-rx">RX {{ $t('bms.logs.directionRx') }}</text>
+                        <view class="copy-btn">
+                          <wd-icon css-icon="i-lucide-copy" size="10px" color="#858585" />
+                        </view>
+                      </view>
+                      <text class="hex-text monospace">{{ formatHex(group.rx.hexData) }}</text>
+                    </view>
+                  </view>
+                </view>
+                <view class="bottom-placeholder" />
+              </scroll-view>
+            </view>
+          </view>
         </wd-tab>
 
-        <!-- 指令日志 Tab -->        <wd-tab name="command" :title="$t('bms.logs.tabCommand')">
-          <scroll-view scroll-y class="scroll-container wot-p-2.5 wot-box-border wot-h-full">
-            <view v-if="commandGroups.length === 0" class="wot-py-12">              <wd-empty icon="empty" :tip="$t('bms.logs.empty')" />
-            </view>
-            <view v-else class="wot-flex wot-flex-col wot-gap-1">
-              <view 
-                v-for="group in commandGroups" 
-                :key="group.id" 
-                class="log-card wot-p-3 wot-rounded-xl wot-shadow-sm wot-bg-filled-oppo wot-mb-2.5 command-group-card"
-              >
-                <!-- 组标题：时间戳 -->
-                <view class="log-title-header has-divider">
-                  <view class="wot-flex wot-items-center wot-gap-1.5 wot-flex-1 wot-min-w-0">
-                    <view class="wot-flex wot-items-center wot-justify-center wot-flex-shrink-0">                      <wd-icon name="swap" size="13px" color="#858585" />
-                    </view>
-                    <text class="wot-text-[11px] wot-font-bold wot-text-text-secondary wot-truncate">{{ $t('bms.logs.cmdInteractionFrame') }}</text>
+        <!-- 2. 连接日志 Tab -->
+        <wd-tab
+          name="connection"
+          :title="$t('bms.logs.tabConnection')"
+        >
+          <view class="tab-pane-wrapper wot-flex wot-flex-col wot-h-full wot-overflow-hidden">
+            <!-- 快捷搜索与筛选工具栏 -->
+            <view class="search-toolbar wot-flex-shrink-0 wot-px-3 wot-pt-2 wot-pb-2 wot-bg-filled-oppo wot-border-b wot-border-slate-100 dark:wot-border-zinc-800">
+              <view class="wot-flex wot-items-center wot-gap-2 wot-mb-2">
+                <view class="search-input-box wot-flex-1 wot-flex wot-items-center wot-bg-[#f5f6f8] dark:wot-bg-[#1e2029] wot-rounded-lg wot-px-3 wot-h-9 wot-box-border">
+                  <wd-icon css-icon="i-lucide-search" size="15px" color="#858585" class="wot-mr-2 wot-flex-shrink-0" />
+                  <input
+                    v-model="searchKeyword"
+                    type="text"
+                    :placeholder="$t('bms.logs.searchPlaceholder')"
+                    class="search-native-input wot-flex-1 wot-text-xs wot-text-text-main wot-h-full"
+                  />
+                  <view
+                    v-if="searchKeyword"
+                    class="wot-flex wot-items-center wot-justify-center wot-p-1 wot-cursor-pointer"
+                    @click.stop="searchKeyword = ''"
+                  >
+                    <wd-icon css-icon="i-ri-close-circle-fill" size="14px" color="#858585" />
                   </view>
-                  <text class="time-stamp wot-text-[10px] wot-text-text-secondary wot-flex-shrink-0">{{ group.tx ? group.tx.timestamp : group.rx?.timestamp }}</text>
-                </view>
-                
-                <!-- 发送指令 TX -->
-                <view v-if="group.tx" class="command-row tx-row wot-p-2 wot-rounded-lg wot-mb-1.5">
-                  <view class="wot-flex wot-items-center wot-gap-1.5 wot-mb-1">
-                    <view class="indicator-dot tx-dot" />
-                    <text class="wot-text-[9px] wot-font-bold wot-text-primary">TX ({{ $t('bms.logs.directionTx') }})</text>
-                  </view>
-                  <text class="monospace wot-text-xs wot-font-bold wot-text-text-main wot-break-all">{{ group.tx.hexData }}</text>
-                </view>
-                
-                <!-- 接收指令 RX -->
-                <view v-if="group.rx" class="command-row rx-row wot-p-2 wot-rounded-lg">
-                  <view class="wot-flex wot-items-center wot-gap-1.5 wot-mb-1">
-                    <view class="indicator-dot rx-dot" />
-                    <text class="wot-text-[9px] wot-font-bold wot-text-success">RX ({{ $t('bms.logs.directionRx') }})</text>
-                  </view>
-                  <text class="monospace wot-text-xs wot-font-bold wot-text-text-main wot-break-all">{{ group.rx.hexData }}</text>
                 </view>
 
-                <!-- 主动推送小标识 -->
-                <view v-if="!group.tx && group.rx" class="wot-flex wot-items-center wot-gap-1.5 wot-mt-2 wot-text-[9px] wot-text-text-secondary wot-pl-1">
-                  <view class="wot-w-1.2 wot-h-1.2 wot-bg-orange-500 wot-rounded-full animate-pulse" />
-                  <text>{{ $t('bms.logs.unsolicitedTelemetry') }}</text>
+                <view
+                  class="sort-toggle-btn wot-flex wot-items-center wot-justify-center wot-h-9 wot-w-9 wot-rounded-lg wot-bg-[#f5f6f8] dark:wot-bg-[#1e2029] wot-box-border wot-flex-shrink-0 wot-cursor-pointer"
+                  @click="toggleSortOrder"
+                >
+                  <wd-icon
+                    :css-icon="sortOrder === 'desc' ? 'i-lucide-arrow-down-wide-narrow' : 'i-lucide-arrow-up-narrow-wide'"
+                    size="17px"
+                    :color="sortOrder === 'desc' ? 'var(--wot-color-theme, #0052d9)' : '#858585'"
+                  />
                 </view>
               </view>
+
+              <view class="filter-wrapper">
+                <wd-segmented v-model:value="currentFilter" :options="filterOptions" size="small" />
+              </view>
             </view>
-            <view class="bottom-placeholder" />
-          </scroll-view>
+
+            <!-- 列表滚动区容器：100% 充满剩余空间 -->
+            <view class="scroll-wrapper wot-flex-1 wot-overflow-hidden wot-min-h-0">
+              <scroll-view scroll-y style="height: 100%; width: 100%;" class="scroll-container wot-p-2.5 wot-box-border">
+                <view v-if="filteredConnectionLogs.length === 0" class="wot-py-12">
+                  <wd-empty icon="empty" :tip="$t('bms.logs.empty')" />
+                </view>
+                <view v-else class="wot-flex wot-flex-col wot-gap-2">
+                  <view
+                    v-for="(log, index) in filteredConnectionLogs"
+                    :key="index"
+                    class="log-item-card wot-p-3 wot-rounded-lg wot-bg-filled-oppo wot-shadow-sm"
+                  >
+                    <!-- 卡片头部：状态徽标 + API名称 + 时间戳与复制 -->
+                    <view class="wot-flex wot-items-center wot-justify-between wot-mb-2">
+                      <view class="wot-flex wot-items-center wot-gap-1.5 wot-flex-1 wot-min-w-0">
+                        <text
+                          class="status-pill"
+                          :class="log.status === 'success' ? 'pill-success' : 'pill-danger'"
+                        >
+                          {{ log.status.toUpperCase() }}
+                        </text>
+                        <text class="wot-text-xs wot-font-bold wot-text-text-main wot-truncate monospace">{{ log.apiName }}</text>
+                      </view>
+                      <view class="wot-flex wot-items-center wot-gap-2">
+                        <text class="time-text">{{ log.timestamp }}</text>
+                        <view class="copy-btn" @click.stop="copyText(log.apiName + (log.params ? ' ' + log.params : ''))">
+                          <wd-icon css-icon="i-lucide-copy" size="12px" color="#858585" />
+                        </view>
+                      </view>
+                    </view>
+
+                    <!-- 参数展示区 -->
+                    <view v-if="log.params" class="code-box wot-p-2 wot-rounded-md wot-mb-1.5" @click.stop="copyText(log.params)">
+                      <text class="code-label">{{ $t('bms.logs.directionTx') }}:</text>
+                      <text class="code-content monospace">{{ log.params }}</text>
+                    </view>
+
+                    <!-- 结果展示区 -->
+                    <view v-if="log.result" class="code-box wot-p-2 wot-rounded-md" :class="{ 'code-box-err': log.status !== 'success' }" @click.stop="copyText(log.result)">
+                      <text class="code-label" :class="{ 'text-danger': log.status !== 'success' }">{{ $t('bms.logs.directionRx') }}:</text>
+                      <text class="code-content monospace" :class="{ 'text-danger': log.status !== 'success' }">{{ log.result }}</text>
+                    </view>
+                  </view>
+                </view>
+                <view class="bottom-placeholder" />
+              </scroll-view>
+            </view>
+          </view>
         </wd-tab>
 
-        <!-- 接口日志 Tab -->        <wd-tab name="api" :title="$t('bms.logs.tabApi')">
-          <scroll-view scroll-y class="scroll-container wot-p-2.5 wot-box-border wot-h-full">
-            <view v-if="apiLogs.length === 0" class="wot-py-12">              <wd-empty icon="empty" :tip="$t('bms.logs.empty')" />
-            </view>
-            <view v-else class="wot-flex wot-flex-col wot-gap-1">
-              <view 
-                v-for="(log, index) in apiLogs" 
-                :key="index" 
-                class="log-card wot-p-3 wot-rounded-xl wot-shadow-sm wot-bg-filled-oppo wot-mb-2.5"
-                :class="isSuccessStatus(log.status) ? 'api-card-success' : 'api-card-danger'"
-              >
-                <view 
-                  class="log-title-header"
-                  :class="{ 'has-divider': log.params || log.response || log.error }"
+        <!-- 3. 接口日志 Tab -->
+        <wd-tab
+          name="api"
+          :title="$t('bms.logs.tabApi')"
+        >
+          <view class="tab-pane-wrapper wot-flex wot-flex-col wot-h-full wot-overflow-hidden">
+            <!-- 快捷搜索与筛选工具栏 -->
+            <view class="search-toolbar wot-flex-shrink-0 wot-px-3 wot-pt-2 wot-pb-2 wot-bg-filled-oppo wot-border-b wot-border-slate-100 dark:wot-border-zinc-800">
+              <view class="wot-flex wot-items-center wot-gap-2 wot-mb-2">
+                <view class="search-input-box wot-flex-1 wot-flex wot-items-center wot-bg-[#f5f6f8] dark:wot-bg-[#1e2029] wot-rounded-lg wot-px-3 wot-h-9 wot-box-border">
+                  <wd-icon css-icon="i-lucide-search" size="15px" color="#858585" class="wot-mr-2 wot-flex-shrink-0" />
+                  <input
+                    v-model="searchKeyword"
+                    type="text"
+                    :placeholder="$t('bms.logs.searchPlaceholder')"
+                    class="search-native-input wot-flex-1 wot-text-xs wot-text-text-main wot-h-full"
+                  />
+                  <view
+                    v-if="searchKeyword"
+                    class="wot-flex wot-items-center wot-justify-center wot-p-1 wot-cursor-pointer"
+                    @click.stop="searchKeyword = ''"
+                  >
+                    <wd-icon css-icon="i-ri-close-circle-fill" size="14px" color="#858585" />
+                  </view>
+                </view>
+
+                <view
+                  class="sort-toggle-btn wot-flex wot-items-center wot-justify-center wot-h-9 wot-w-9 wot-rounded-lg wot-bg-[#f5f6f8] dark:wot-bg-[#1e2029] wot-box-border wot-flex-shrink-0 wot-cursor-pointer"
+                  @click="toggleSortOrder"
                 >
-                  <view class="wot-flex wot-items-center wot-gap-1.5 wot-flex-1 wot-min-w-0">
-                    <view class="wot-flex wot-items-center wot-justify-center wot-flex-shrink-0">                      <wd-icon name="cloud" size="13px" color="#858585" />
-                    </view>
-                    <text class="wot-text-[10px] wot-font-bold wot-px-1.5 wot-py-0.5 wot-rounded wot-bg-purple-50 dark:wot-bg-purple-950/30 wot-text-purple-600 dark:wot-text-purple-400">{{ log.method }}</text>
-                    <text class="wot-text-[11px] wot-text-text-main wot-truncate wot-flex-1 monospace">{{ cleanUrl(log.url) }}</text>
-                  </view>
-                  <text class="time-stamp wot-text-[10px] wot-text-text-secondary wot-flex-shrink-0">{{ log.timestamp }}</text>
-                </view>
-                <view v-if="log.params" class="command-row tx-row wot-p-2 wot-rounded-lg wot-mt-1.5">
-                  <view class="wot-flex wot-items-center wot-gap-1.5 wot-mb-1">
-                    <view class="indicator-dot tx-dot" />
-                    <text class="wot-text-[9px] wot-font-bold wot-text-primary">REQUEST PARAMS</text>
-                  </view>
-                  <text class="monospace wot-text-xs wot-font-bold wot-text-text-main wot-break-all">{{ log.params }}</text>
-                </view>
-                <view v-if="log.response" class="command-row rx-row wot-p-2 wot-rounded-lg wot-mt-1.5">
-                  <view class="wot-flex wot-items-center wot-gap-1.5 wot-mb-1">
-                    <view class="indicator-dot rx-dot" />
-                    <text class="wot-text-[9px] wot-font-bold wot-text-success">RESPONSE DATA</text>
-                  </view>
-                  <text class="monospace wot-text-xs wot-font-bold wot-text-text-main wot-break-all">{{ log.response }}</text>
-                </view>
-                <view v-if="log.error" class="command-row err-row wot-p-2 wot-rounded-lg wot-mt-1.5">
-                  <view class="wot-flex wot-items-center wot-gap-1.5 wot-mb-1">
-                    <view class="indicator-dot err-dot" />
-                    <text class="wot-text-[9px] wot-font-bold wot-text-danger">EXCEPTIONAL ERROR</text>
-                  </view>
-                  <text class="monospace wot-text-xs wot-font-bold wot-text-danger wot-break-all">{{ log.error }}</text>
+                  <wd-icon
+                    :css-icon="sortOrder === 'desc' ? 'i-lucide-arrow-down-wide-narrow' : 'i-lucide-arrow-up-narrow-wide'"
+                    size="17px"
+                    :color="sortOrder === 'desc' ? 'var(--wot-color-theme, #0052d9)' : '#858585'"
+                  />
                 </view>
               </view>
+
+              <view class="filter-wrapper">
+                <wd-segmented v-model:value="currentFilter" :options="filterOptions" size="small" />
+              </view>
             </view>
-            <view class="bottom-placeholder" />
-          </scroll-view>
+
+            <!-- 列表滚动区容器：100% 充满剩余空间 -->
+            <view class="scroll-wrapper wot-flex-1 wot-overflow-hidden wot-min-h-0">
+              <scroll-view scroll-y style="height: 100%; width: 100%;" class="scroll-container wot-p-2.5 wot-box-border">
+                <view v-if="filteredApiLogs.length === 0" class="wot-py-12">
+                  <wd-empty icon="empty" :tip="$t('bms.logs.empty')" />
+                </view>
+                <view v-else class="wot-flex wot-flex-col wot-gap-2">
+                  <view
+                    v-for="(log, index) in filteredApiLogs"
+                    :key="index"
+                    class="log-item-card wot-p-3 wot-rounded-lg wot-bg-filled-oppo wot-shadow-sm"
+                  >
+                    <!-- 头部：Method + Status + URL + 时间戳 -->
+                    <view class="wot-flex wot-items-center wot-justify-between wot-mb-2">
+                      <view class="wot-flex wot-items-center wot-gap-1.5 wot-flex-1 wot-min-w-0">
+                        <text class="method-pill">{{ log.method }}</text>
+                        <text
+                          class="status-pill"
+                          :class="isSuccessStatus(log.status) ? 'pill-success' : 'pill-danger'"
+                        >
+                          {{ log.status }}
+                        </text>
+                        <text class="wot-text-xs wot-text-text-main wot-truncate wot-flex-1 monospace">{{ cleanUrl(log.url) }}</text>
+                      </view>
+                      <view class="wot-flex wot-items-center wot-gap-2">
+                        <text class="time-text">{{ log.timestamp }}</text>
+                        <view class="copy-btn" @click.stop="copyText(`${log.method} ${log.url} -> ${log.status}`)">
+                          <wd-icon css-icon="i-lucide-copy" size="12px" color="#858585" />
+                        </view>
+                      </view>
+                    </view>
+
+                    <!-- 参数 -->
+                    <view v-if="log.params" class="code-box wot-p-2 wot-rounded-md wot-mb-1.5" @click.stop="copyText(log.params)">
+                      <text class="code-label">Params:</text>
+                      <text class="code-content monospace">{{ log.params }}</text>
+                    </view>
+
+                    <!-- 响应 -->
+                    <view v-if="log.response" class="code-box wot-p-2 wot-rounded-md" @click.stop="copyText(log.response)">
+                      <text class="code-label">Response:</text>
+                      <text class="code-content monospace">{{ log.response }}</text>
+                    </view>
+
+                    <!-- 异常错误 -->
+                    <view v-if="log.error" class="code-box code-box-err wot-p-2 wot-rounded-md wot-mt-1.5" @click.stop="copyText(log.error)">
+                      <text class="code-label text-danger">Error:</text>
+                      <text class="code-content text-danger monospace">{{ log.error }}</text>
+                    </view>
+                  </view>
+                </view>
+                <view class="bottom-placeholder" />
+              </scroll-view>
+            </view>
+          </view>
+        </wd-tab>
+
+        <!-- 4. 系统环境与诊断 Tab -->
+        <wd-tab
+          name="system"
+          :title="$t('bms.logs.tabSystem')"
+        >
+          <view class="tab-pane-wrapper wot-flex wot-flex-col wot-h-full wot-overflow-hidden">
+            <view class="scroll-wrapper wot-flex-1 wot-overflow-hidden wot-min-h-0">
+              <scroll-view scroll-y style="height: 100%; width: 100%;" class="scroll-container wot-p-2.5 wot-box-border">
+                <view class="wot-flex wot-flex-col wot-gap-2.5">
+                  <!-- 设备与系统卡片 -->
+                  <view class="log-item-card wot-p-3 wot-rounded-lg wot-bg-filled-oppo">
+                    <view class="card-section-title wot-mb-2.5">
+                      <wd-icon css-icon="i-lucide-smartphone" size="14px" color="#858585" />
+                      <text class="wot-text-xs wot-font-bold wot-text-text-main">{{ $t('bms.logs.sysDeviceInfo') }}</text>
+                    </view>
+                    <view class="wot-flex wot-flex-col wot-gap-2">
+                      <view class="info-row">
+                        <text class="info-k">{{ $t('bms.logs.deviceBrand') }}</text>
+                        <text class="info-v monospace">{{ systemInfo.brand }} {{ systemInfo.model }}</text>
+                      </view>
+                      <view class="info-row">
+                        <text class="info-k">{{ $t('bms.logs.osVersion') }}</text>
+                        <text class="info-v monospace">{{ systemInfo.osName }} {{ systemInfo.osVersion }}</text>
+                      </view>
+                      <view class="info-row">
+                        <text class="info-k">{{ $t('bms.logs.platform') }}</text>
+                        <text class="info-v monospace">{{ systemInfo.platform }} ({{ systemInfo.uniPlatform }})</text>
+                      </view>
+                      <view class="info-row">
+                        <text class="info-k">{{ $t('bms.logs.screenRes') }}</text>
+                        <text class="info-v monospace">{{ systemInfo.screenWidth }}x{{ systemInfo.screenHeight }} (DPR: {{ systemInfo.pixelRatio }})</text>
+                      </view>
+                      <view class="info-row">
+                        <text class="info-k">{{ $t('bms.logs.safeArea') }}</text>
+                        <text class="info-v monospace">Top: {{ systemInfo.statusBarHeight }}px</text>
+                      </view>
+                    </view>
+                  </view>
+
+                  <!-- 蓝牙通信与硬件状态卡片 -->
+                  <view class="log-item-card wot-p-3 wot-rounded-lg wot-bg-filled-oppo">
+                    <view class="card-section-title wot-mb-2.5">
+                      <wd-icon css-icon="i-lucide-bluetooth" size="14px" color="#858585" />
+                      <text class="wot-text-xs wot-font-bold wot-text-text-main">{{ $t('bms.logs.sysBleState') }}</text>
+                    </view>
+                    <view class="wot-flex wot-flex-col wot-gap-2">
+                      <view class="info-row">
+                        <text class="info-k">{{ $t('bms.logs.bleConnectedDevice') }}</text>
+                        <text class="info-v monospace">{{ bleConnectedDeviceName }}</text>
+                      </view>
+                      <view class="info-row">
+                        <text class="info-k">MAC Address</text>
+                        <text class="info-v monospace">{{ bleConnectedMac }}</text>
+                      </view>
+                    </view>
+                  </view>
+
+                  <!-- 本地存储与环境复制卡片 -->
+                  <view class="log-item-card wot-p-3 wot-rounded-lg wot-bg-filled-oppo">
+                    <view class="card-section-title wot-mb-2.5">
+                      <wd-icon css-icon="i-lucide-database" size="14px" color="#858585" />
+                      <text class="wot-text-xs wot-font-bold wot-text-text-main">{{ $t('bms.logs.sysStorage') }}</text>
+                    </view>
+                    <view class="wot-flex wot-flex-col wot-gap-2 wot-mb-3">
+                      <view class="info-row">
+                        <text class="info-k">{{ $t('bms.logs.storageUsed') }}</text>
+                        <text class="info-v monospace">{{ storageInfo.keysCount }} Keys ({{ storageInfo.currentSize }} KB)</text>
+                      </view>
+                    </view>
+                    <wd-button
+                      size="small"
+                      plain
+                      block
+                      type="primary"
+                      custom-class="wot-rounded-lg"
+                      :loading="isCopyingSystemInfo"
+                      @click="handleCopySystemInfo"
+                    >
+                      {{ $t('bms.logs.copySystemInfo') }}
+                    </wd-button>
+                  </view>
+                </view>
+                <view class="bottom-placeholder" />
+              </scroll-view>
+            </view>
+          </view>
         </wd-tab>
       </wd-tabs>
 
       <!-- 底部控制按钮栏 -->
-      <view class="control-bar wot-p-3 wot-bg-filled-oppo wot-flex wot-gap-3 wot-shadow-md">        <wd-button type="danger" plain block class="wot-flex-1" @click="handleClearLogs">
+      <view class="control-bar wot-p-3 wot-bg-filled-oppo wot-flex wot-gap-3 wot-shadow-md">
+        <wd-button type="danger" plain block custom-class="wot-rounded-lg" class="wot-flex-1" @click="handleClearLogs">
           {{ $t('bms.logs.clearBtn') }}
-        </wd-button>        <wd-button type="primary" block class="wot-flex-1" @click="handleCopyLogs">
-          {{ $t('bms.logs.copyBtn') }}
+        </wd-button>
+        <wd-button
+          type="success"
+          block
+          custom-class="wot-rounded-lg"
+          class="wot-flex-1"
+          :loading="isExportingLogs"
+          @click="handleExportLogs"
+        >
+          {{ $t('bms.logs.exportBtn') }}
         </wd-button>
       </view>
+
+      <!-- 导出成功专属弹窗 (支持点击目录地址与前往手机文件管理) -->
+      <wd-popup
+        v-model="showExportSuccessModal"
+        position="center"
+        transition="zoom-in"
+        custom-class="export-success-popup wot-rounded-xl"
+        :close-on-click-modal="true"
+      >
+        <view class="export-modal-content wot-p-5 wot-flex wot-flex-col wot-items-center wot-box-border wot-bg-filled-oppo">
+          <!-- 成功图标徽章 -->
+          <view class="icon-circle wot-w-12 wot-h-12 wot-rounded-full wot-bg-emerald-500/10 dark:wot-bg-emerald-500/20 wot-flex wot-items-center wot-justify-center wot-mb-3">
+            <wd-icon css-icon="i-lucide-check-circle-2" size="28px" color="#10b981" />
+          </view>
+
+          <!-- 弹窗标题 -->
+          <text class="wot-text-base wot-font-bold wot-text-text-main wot-mb-1.5">
+            {{ $t('bms.logs.exportSuccessTitle') }}
+          </text>
+
+          <!-- 提示副标题 -->
+          <text class="wot-text-xs wot-text-text-secondary wot-mb-3.5 wot-text-center">
+            {{ $t('bms.logs.exportSavedDesc') }}
+          </text>
+
+          <!-- 目录地址卡片 (可点击直接打开文件 + 自动换行无横向滚动条) -->
+          <view
+            class="directory-card wot-w-full wot-p-3 wot-rounded-lg wot-box-border wot-mb-4 wot-cursor-pointer"
+            @click="handleOpenFileDirectory"
+          >
+            <view class="wot-flex wot-items-center wot-justify-between wot-mb-1.5">
+              <view class="wot-flex wot-items-center wot-gap-1.5">
+                <wd-icon css-icon="i-lucide-folder-open" size="14px" color="#10b981" />
+                <text class="wot-text-[11px] wot-font-bold wot-text-text-main">{{ $t('bms.logs.savedDirectoryTitle') }}</text>
+              </view>
+              <view class="wot-flex wot-items-center wot-gap-1">
+                <text class="wot-text-[10px] wot-text-emerald-600 dark:wot-text-emerald-400">{{ $t('bms.logs.tapToOpenFolder') }}</text>
+                <wd-icon css-icon="i-lucide-chevron-right" size="10px" color="#10b981" />
+              </view>
+            </view>
+
+            <!-- 路径文本：强制 break-all，自然换行，杜绝横向滚动条 -->
+            <text class="directory-path-text monospace">
+              {{ exportedFilePath }}
+            </text>
+          </view>
+
+          <!-- 底部操作按钮 -->
+          <view class="wot-flex wot-gap-2.5 wot-w-full">
+            <wd-button
+              plain
+              block
+              custom-class="wot-rounded-lg"
+              class="wot-flex-1"
+              @click="showExportSuccessModal = false"
+            >
+              {{ $t('bms.logs.close') }}
+            </wd-button>
+            <wd-button
+              type="success"
+              block
+              custom-class="wot-rounded-lg"
+              class="wot-flex-1"
+              @click="handleOpenFileDirectory"
+            >
+              {{ $t('bms.logs.openFolderBtn') }}
+            </wd-button>
+          </view>
+        </view>
+      </wd-popup>
     </view>
-    
   </layout-provider>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { useToast, useDialog } from "@wot-ui/ui";
 import { useLogStore } from "@/stores/log-store";
+import { useBleStore } from "@/stores/ble-store";
+import { useAppStore } from "@/stores/app";
+import {
+  buildLogsExcelBuffer,
+  saveExcelFile,
+  openFileDirectory,
+  formatDateTimeForFileName,
+} from "@/utils/excel-helper";
 import { storeToRefs } from "pinia";
 
 // 获取 i18n 翻译实例、消息提示及对话框 Hooks
@@ -177,42 +506,128 @@ const { t } = useI18n();
 const toast = useToast();
 const dialog = useDialog();
 const logStore = useLogStore();
+const bleStore = useBleStore();
+const appStore = useAppStore();
 
-// 解构获取响应式日志列表
+// 解构获取响应式日志列表与蓝牙真实状态
 const { connectionLogs, commandLogs, apiLogs } = storeToRefs(logStore);
+const { isBleConnected, connectedDeviceId, connectedDeviceMac, connectedDeviceName } = storeToRefs(bleStore);
 
 // 当前高亮选中的 Tab 页签
-const activeTab = ref("connection");
+const activeTab = ref("command");
 
-// 将一维的指令日志 commandLogs 包装重组为“发送-接收”配对组
+// 复制与导出操作 Loading 状态，防止重复连点并提供即时交互反馈
+const isCopyingSystemInfo = ref(false);
+const isExportingLogs = ref(false);
+
+// 导出成功弹窗展示状态及保存成功的物理路径
+const showExportSuccessModal = ref(false);
+const exportedFilePath = ref("");
+
+// 搜索关键词
+const searchKeyword = ref("");
+
+// 排序模式：默认 'desc'（最新在前/降序）
+const sortOrder = ref<"desc" | "asc">("desc");
+
+// 切换排序模式
+const toggleSortOrder = () => {
+  sortOrder.value = sortOrder.value === "desc" ? "asc" : "desc";
+  toast.show({
+    msg: sortOrder.value === "desc" ? t("bms.logs.sortNewestFirst") : t("bms.logs.sortOldestFirst"),
+  });
+};
+
+// 当前过滤状态 (全部: all, 成功: success, 失败: error, 发送: tx, 接收: rx)
+const currentFilter = ref("all");
+
+// 过滤选项配置（符合 wd-segmented 的 SegmentedOption 规范）
+const filterOptions = computed(() => {
+  if (activeTab.value === "command") {
+    return [
+      { label: t("bms.logs.filterAll"), value: "all" },
+      { label: t("bms.logs.filterTx"), value: "tx" },
+      { label: t("bms.logs.filterRx"), value: "rx" },
+    ];
+  }
+  return [
+    { label: t("bms.logs.filterAll"), value: "all" },
+    { label: t("bms.logs.filterSuccess"), value: "success" },
+    { label: t("bms.logs.filterError"), value: "error" },
+  ];
+});
+
+/**
+ * 格式化 HEX 字符串，每两个字符插入一个空格以增强可读性
+ * 示例: "A55A0301" -> "A5 5A 03 01"
+ */
+const formatHex = (hex: string): string => {
+  if (!hex) return "";
+  const cleaned = hex.replace(/\s+/g, "");
+  return cleaned.match(/.{1,2}/g)?.join(" ") || hex;
+};
+
+/**
+ * 将一维指令日志 commandLogs 包装重组为“发送-接收”配对组并计算精准响应耗时
+ */
 const commandGroups = computed(() => {
-  const groups: Array<{ tx?: typeof commandLogs.value[0]; rx?: typeof commandLogs.value[0]; id: string }> = [];
+  const groups: Array<{
+    tx?: typeof commandLogs.value[0];
+    rx?: typeof commandLogs.value[0];
+    id: string;
+    latency?: number;
+  }> = [];
   const logs = commandLogs.value;
   let i = 0;
-  
+
   while (i < logs.length) {
     const current = logs[i];
-    
-    // 因为是 unshift 写入，时间越新越靠前。
-    // 如果当前是接收 (RX)，且下一个是发送 (TX)，则它们是时间接近的一对交互（TX 发送在前，RX 接收在后，在反序列表中 RX 处于 TX 前面）
+
     if (current.direction === "RX" && i + 1 < logs.length && logs[i + 1].direction === "TX") {
+      const rxLog = current;
+      const txLog = logs[i + 1];
+
+      // 计算毫秒级时间差
+      let latency: number | undefined = undefined;
+      try {
+        const parseMs = (timeStr: string) => {
+          const parts = timeStr.split(":");
+          if (parts.length === 3) {
+            const secParts = parts[2].split(".");
+            return (
+              parseInt(parts[0], 10) * 3600000 +
+              parseInt(parts[1], 10) * 60000 +
+              parseInt(secParts[0], 10) * 1000 +
+              (secParts[1] ? parseInt(secParts[1], 10) : 0)
+            );
+          }
+          return 0;
+        };
+        const diff = parseMs(rxLog.timestamp) - parseMs(txLog.timestamp);
+        if (diff >= 0 && diff < 30000) {
+          latency = diff;
+        }
+      } catch (err) {
+        console.error("计算指令响应耗时失败:", err);
+      }
+
       groups.push({
-        rx: current,
-        tx: logs[i + 1],
-        id: `${current.timestamp}-${logs[i + 1].timestamp}-${i}`
+        rx: rxLog,
+        tx: txLog,
+        id: `${rxLog.timestamp}-${txLog.timestamp}-${i}`,
+        latency,
       });
       i += 2;
     } else {
-      // 孤立的一条日志，无对应配对
       if (current.direction === "TX") {
         groups.push({
           tx: current,
-          id: `tx-${current.timestamp}-${i}`
+          id: `tx-${current.timestamp}-${i}`,
         });
       } else {
         groups.push({
           rx: current,
-          id: `rx-${current.timestamp}-${i}`
+          id: `rx-${current.timestamp}-${i}`,
         });
       }
       i += 1;
@@ -220,6 +635,235 @@ const commandGroups = computed(() => {
   }
   return groups;
 });
+
+// 过滤并排序后的连接日志 (默认最新在前)
+const filteredConnectionLogs = computed(() => {
+  let list = connectionLogs.value;
+  const kw = searchKeyword.value.trim().toLowerCase();
+
+  if (kw) {
+    list = list.filter(
+      (item) =>
+        item.apiName.toLowerCase().includes(kw) ||
+        (item.params && item.params.toLowerCase().includes(kw)) ||
+        (item.result && item.result.toLowerCase().includes(kw)),
+    );
+  }
+
+  if (currentFilter.value === "success") {
+    list = list.filter((item) => item.status === "success");
+  } else if (currentFilter.value === "error") {
+    list = list.filter((item) => item.status !== "success");
+  }
+
+  return sortOrder.value === "desc" ? list : [...list].reverse();
+});
+
+// 过滤并排序后的指令日志组 (默认最新在前)
+const filteredCommandGroups = computed(() => {
+  let list = commandGroups.value;
+  const kw = searchKeyword.value.trim().toLowerCase();
+
+  if (kw) {
+    list = list.filter(
+      (group) =>
+        (group.tx && group.tx.hexData.toLowerCase().includes(kw)) ||
+        (group.rx && group.rx.hexData.toLowerCase().includes(kw)),
+    );
+  }
+
+  if (currentFilter.value === "tx") {
+    list = list.filter((group) => !!group.tx);
+  } else if (currentFilter.value === "rx") {
+    list = list.filter((group) => !!group.rx);
+  }
+
+  return sortOrder.value === "desc" ? list : [...list].reverse();
+});
+
+// 过滤并排序后的 API 日志 (默认最新在前)
+const filteredApiLogs = computed(() => {
+  let list = apiLogs.value;
+  const kw = searchKeyword.value.trim().toLowerCase();
+
+  if (kw) {
+    list = list.filter(
+      (item) =>
+        item.url.toLowerCase().includes(kw) ||
+        item.method.toLowerCase().includes(kw) ||
+        (item.params && item.params.toLowerCase().includes(kw)) ||
+        (item.response && item.response.toLowerCase().includes(kw)) ||
+        (item.error && item.error.toLowerCase().includes(kw)),
+    );
+  }
+
+  if (currentFilter.value === "success") {
+    list = list.filter((item) => isSuccessStatus(item.status));
+  } else if (currentFilter.value === "error") {
+    list = list.filter((item) => !isSuccessStatus(item.status));
+  }
+
+  return sortOrder.value === "desc" ? list : [...list].reverse();
+});
+
+// 系统与环境数据
+const systemInfo = ref({
+  brand: "-",
+  model: "-",
+  osName: "-",
+  osVersion: "-",
+  platform: "-",
+  uniPlatform: "-",
+  screenWidth: 0,
+  screenHeight: 0,
+  pixelRatio: 1,
+  statusBarHeight: 0,
+});
+
+const storageInfo = ref({
+  keysCount: 0,
+  currentSize: 0,
+});
+
+const bleConnectedDeviceName = computed(() => {
+  if (isBleConnected.value && connectedDeviceName.value) {
+    return connectedDeviceName.value;
+  }
+  return t("bms.logs.bleNoDevice");
+});
+
+const bleConnectedMac = computed(() => {
+  if (isBleConnected.value && (connectedDeviceMac.value || connectedDeviceId.value)) {
+    return connectedDeviceMac.value || connectedDeviceId.value;
+  }
+  return "-";
+});
+
+// 挂载时抓取系统信息与存储状态
+onMounted(() => {
+  try {
+    const info = uni.getSystemInfoSync();
+    systemInfo.value = {
+      brand: info.brand || "Generic",
+      model: info.model || "Unknown",
+      osName: info.osName || info.platform || "-",
+      osVersion: info.osVersion || "-",
+      platform: info.platform || "-",
+      uniPlatform: (info as any).uniPlatform || "-",
+      screenWidth: info.screenWidth || 0,
+      screenHeight: info.screenHeight || 0,
+      pixelRatio: info.pixelRatio || 1,
+      statusBarHeight: info.statusBarHeight || 0,
+    };
+
+    const storage = uni.getStorageInfoSync();
+    storageInfo.value = {
+      keysCount: storage.keys?.length || 0,
+      currentSize: storage.currentSize || 0,
+    };
+  } catch (e) {
+    console.error("获取系统诊断信息失败:", e);
+  }
+});
+
+/**
+ * 抓取全量本地缓存数据键值对 (Local Storage Dump)
+ */
+const getFullLocalStorageDump = () => {
+  const storageDump: Record<string, any> = {};
+  try {
+    const storage = uni.getStorageInfoSync();
+    if (storage.keys && storage.keys.length > 0) {
+      storage.keys.forEach((key) => {
+        try {
+          const val = uni.getStorageSync(key);
+          // 尝试解析 JSON 字符串，以结构化对象展示；否则以原始值展示
+          if (typeof val === "string") {
+            try {
+              storageDump[key] = JSON.parse(val);
+            } catch {
+              storageDump[key] = val;
+            }
+          } else {
+            storageDump[key] = val;
+          }
+        } catch (readErr) {
+          storageDump[key] = `<Error Reading: ${readErr}>`;
+        }
+      });
+    }
+  } catch (e) {
+    console.error("读取本地缓存全量数据失败:", e);
+  }
+  return storageDump;
+};
+
+/**
+ * 复制系统诊断信息与全量本地缓存数据 (Full Diagnostic & Storage Dump)
+ */
+const handleCopySystemInfo = async () => {
+  if (isCopyingSystemInfo.value) return;
+  isCopyingSystemInfo.value = true;
+  try {
+    let networkType = "unknown";
+    try {
+      const net = await uni.getNetworkType();
+      networkType = net.networkType || "unknown";
+    } catch (netErr) {
+      console.warn("获取网络类型失败:", netErr);
+    }
+
+    // 抓取全量本地缓存数据键值对
+    const storageDump = getFullLocalStorageDump();
+    let currentStorageInfo = storageInfo.value;
+    try {
+      const st = uni.getStorageInfoSync();
+      currentStorageInfo = {
+        keysCount: st.keys?.length || 0,
+        currentSize: st.currentSize || 0,
+      };
+    } catch (stErr) {
+      console.warn("刷新存储统计失败:", stErr);
+    }
+
+    // 组合全景诊断与缓存报表
+    const fullDiagnosticReport = {
+      reportTitle: "BMS System & Environment Diagnostic Report",
+      exportedAt: new Date().toISOString(),
+      // 1. 系统与设备运行环境
+      system: {
+        ...systemInfo.value,
+        networkType,
+      },
+      // 2. 蓝牙与 BMS 通信状态
+      bluetooth: {
+        isConnected: isBleConnected.value,
+        deviceName: connectedDeviceName.value || null,
+        macAddress: connectedDeviceMac.value || null,
+        deviceId: connectedDeviceId.value || null,
+        activeProtocol: bleStore.activeProtocolId || "auto",
+      },
+      // 3. 应用全局配置与主题状态
+      appState: {
+        locale: appStore.locale,
+        theme: appStore.theme,
+        actualTheme: appStore.actualTheme,
+      },
+      // 4. 本地存储概览指标
+      storageOverview: currentStorageInfo,
+      // 5. 本地缓存数据全量明细 (Storage Key-Value Dump)
+      storageData: storageDump,
+    };
+
+    const data = JSON.stringify(fullDiagnosticReport, null, 2);
+    await copyTextAsync(data, t("bms.logs.systemInfoCopied"));
+  } catch (err) {
+    console.error("复制系统环境信息失败:", err);
+    toast.error(t("bms.auth.clipboardPermissionMsg"));
+  } finally {
+    isCopyingSystemInfo.value = false;
+  }
+};
 
 /**
  * 返回上一页
@@ -254,213 +898,502 @@ const isSuccessStatus = (status: number): boolean => {
 };
 
 /**
- * 清空所有调试日志的交互回调，加入安全二次确认
+ * 通用单文本复制函数
  */
-const handleClearLogs = () => {
-  dialog.confirm({
-    title: t("bms.common.prompt"),
-    msg: t("bms.logs.clearConfirmMsg"),
-    zIndex: 2000,
-  }).then(() => {
-    logStore.clearLogs();
-    toast.success(t("bms.logs.clearSuccess"));
-  }).catch(() => {
-    // 用户取消清空
-  });
-};
-
-/**
- * 导出并复制完整系统日志到剪切板的交互回调
- */
-const handleCopyLogs = () => {
-  if (connectionLogs.value.length === 0 && commandLogs.value.length === 0 && apiLogs.value.length === 0) {
-    toast.show({ msg: t("bms.logs.empty") });
-    return;
-  }
-
-  let logText = "";
-  
-  logText += `=== BMS System Logs Export ===\n`;
-  logText += `Export Time: ${new Date().toISOString()}\n\n`;
-
-  logText += "=== [1] Connection Logs ===\n";
-  connectionLogs.value.forEach((log) => {
-    logText += `[${log.timestamp}] [${log.status.toUpperCase()}] ${log.apiName}\n`;
-    if (log.params) logText += `  Params: ${log.params}\n`;
-    if (log.result) logText += `  Result: ${log.result}\n`;
-  });
-  logText += "\n";
-
-  logText += "=== [2] Command Logs ===\n";
-  commandLogs.value.forEach((log) => {
-    logText += `[${log.timestamp}] [${log.direction}] ${log.hexData}\n`;
-  });
-  logText += "\n";
-
-  logText += "=== [3] API Logs ===\n";
-  apiLogs.value.forEach((log) => {
-    logText += `[${log.timestamp}] [STATUS ${log.status}] ${log.method} ${log.url}\n`;
-    if (log.params) logText += `  Params: ${log.params}\n`;
-    if (log.response) logText += `  Response: ${log.response}\n`;
-    if (log.error) logText += `  Error: ${log.error}\n`;
-  });
-
-  uni.setClipboardData({
-    data: logText,
+const copyText = (content: string, customMsg?: string) => {
+  if (!content) return;
+  (uni.setClipboardData as any)({
+    data: content,
+    showToast: false,
     success: () => {
-      toast.success(t("bms.logs.copied"));
+      toast.success(customMsg || t("bms.logs.copySingleSuccess"));
     },
     fail: () => {
       toast.error(t("bms.auth.clipboardPermissionMsg"));
     },
   });
 };
+
+/**
+ * 异步文本复制函数 (支持 Promise 状态闭环)
+ */
+const copyTextAsync = (content: string, customMsg?: string): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    if (!content) {
+      resolve();
+      return;
+    }
+    (uni.setClipboardData as any)({
+      data: content,
+      showToast: false,
+      success: () => {
+        toast.success(customMsg || t("bms.logs.copySingleSuccess"));
+        resolve();
+      },
+      fail: (err: any) => {
+        toast.error(t("bms.auth.clipboardPermissionMsg"));
+        reject(err);
+      },
+    });
+  });
+};
+
+/**
+ * 清空所有调试日志的交互回调，加入安全二次确认
+ */
+const handleClearLogs = () => {
+  dialog
+    .confirm({
+      title: t("bms.common.prompt"),
+      msg: t("bms.logs.clearConfirmMsg"),
+      zIndex: 2000,
+    })
+    .then(() => {
+      logStore.clearLogs();
+      toast.success(t("bms.logs.clearSuccess"));
+    })
+    .catch(() => {
+      // 用户取消清空
+    });
+};
+
+/**
+ * 导出全量系统运行日志为专业多 Sheet Excel 文件 (包含指令、连接、接口与全景系统环境)
+ */
+const handleExportLogs = async () => {
+  if (isExportingLogs.value) return;
+
+  isExportingLogs.value = true;
+  try {
+    // 1. 抓取网络状态与存储数据
+    let networkType = "unknown";
+    try {
+      const net = await uni.getNetworkType();
+      networkType = net.networkType || "unknown";
+    } catch (netErr) {
+      console.warn("获取网络类型失败:", netErr);
+    }
+
+    const storageDump = getFullLocalStorageDump();
+    let currentStorageInfo = storageInfo.value;
+    try {
+      const st = uni.getStorageInfoSync();
+      currentStorageInfo = {
+        keysCount: st.keys?.length || 0,
+        currentSize: st.currentSize || 0,
+      };
+    } catch (stErr) {
+      console.warn("刷新存储统计失败:", stErr);
+    }
+
+    const systemReport = {
+      system: { ...systemInfo.value, networkType },
+      bluetooth: {
+        isConnected: isBleConnected.value,
+        deviceName: connectedDeviceName.value || null,
+        macAddress: connectedDeviceMac.value || null,
+        deviceId: connectedDeviceId.value || null,
+        activeProtocol: bleStore.activeProtocolId || "auto",
+      },
+      appState: {
+        locale: appStore.locale,
+        theme: appStore.theme,
+        actualTheme: appStore.actualTheme,
+      },
+      storageOverview: currentStorageInfo,
+      storageData: storageDump,
+    };
+
+    // 2. 生成多 Sheet Excel ArrayBuffer
+    const buffer = buildLogsExcelBuffer({
+      commandLogs: commandLogs.value,
+      connectionLogs: connectionLogs.value,
+      apiLogs: apiLogs.value,
+      systemReport,
+    });
+
+    // 3. 跨平台保存文件
+    const fileName = `bms_logs_${formatDateTimeForFileName()}.xlsx`;
+    const savedPath = await saveExcelFile(buffer, fileName);
+
+    // 4. 关键：文件落盘保存完毕，记录路径并关闭 loading
+    exportedFilePath.value = savedPath;
+    isExportingLogs.value = false;
+
+    // 5. 弹出专属导出成功弹窗 (展示美观无横向滚动条的目录卡片)
+    showExportSuccessModal.value = true;
+  } catch (err: any) {
+    console.error("导出日志 Excel 失败:", err);
+    toast.error(t("bms.logs.exportFail"));
+  } finally {
+    isExportingLogs.value = false;
+  }
+};
+
+/**
+ * 点击目录地址或底部按钮：打开手机文件管理并定位到对应目录 (同时复制路径供用户自主管理)
+ */
+const handleOpenFileDirectory = async () => {
+  if (!exportedFilePath.value) return;
+
+  console.log("[SystemLogs] 用户触发 handleOpenFileDirectory, path:", exportedFilePath.value);
+
+  // 1. 复制文件路径到剪切板，方便用户在任何地方粘贴定位
+  copyText(exportedFilePath.value, t("bms.logs.pathCopiedHint"));
+
+  // 2. 调用跨平台文件管理打开方法
+  try {
+    const success = await openFileDirectory(exportedFilePath.value);
+    console.log("[SystemLogs] openFileDirectory 执行结果:", success);
+  } catch (err) {
+    console.warn("[SystemLogs] 唤起文件管理器异常:", err);
+  }
+};
 </script>
 
 <style scoped lang="scss">
-/* 动态适配各系统安全高度的日志内容滚动容器 */
-.scroll-container {
-  height: calc(100vh - var(--status-bar-height) - 88px - 72px - env(safe-area-inset-bottom));
-  box-sizing: border-box;
+/* 导出成功弹窗容器 */
+:deep(.export-success-popup) {
+  width: 320px !important;
+  max-width: 90vw !important;
+  overflow: hidden !important;
+  background: transparent !important;
 }
 
-.bottom-placeholder {
-  height: 20px;
+.export-modal-content {
+  width: 100%;
+  border-radius: 16px;
 }
 
-/* 日志卡片的基础与渐变微雕 */
-.log-card {
-  transition: all 0.2s ease-in-out;
-  border: 1px solid rgba(0, 82, 217, 0.05);
-  box-shadow: 0 4px 12px -2px rgba(0, 82, 217, 0.03);
-  
+.directory-card {
+  background-color: rgba(16, 185, 129, 0.06);
+  border: 1px dashed rgba(16, 185, 129, 0.35);
+  transition: all 0.2s ease;
+
   &:active {
-    transform: scale(0.995);
+    transform: scale(0.98);
+    background-color: rgba(16, 185, 129, 0.12);
   }
 }
 
-.dark .log-card {
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.2);
+.dark .directory-card {
+  background-color: rgba(16, 185, 129, 0.1);
+  border: 1px dashed rgba(16, 185, 129, 0.4);
 }
 
-/* 侧边高雅状态条 */
-.connection-card-success {
-  border-left: 4px solid var(--wot-color-theme, #0052d9);
+.directory-path-text {
+  display: block;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--wot-color-theme, #0052d9);
+  word-break: break-all !important;
+  overflow-wrap: anywhere !important;
+  white-space: pre-wrap !important;
+  user-select: text;
 }
 
-.connection-card-danger {
-  border-left: 4px solid var(--wot-color-danger, #fa3534);
+/* 确保 wd-tabs 内部手势滑动容器 100% 填满视口剩余高度，全屏手势无死角响应 */
+:deep(.wd-tabs) {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 !important;
+  height: 100% !important;
+  min-height: 0 !important;
 }
 
-.api-card-success {
-  border-left: 4px solid var(--wot-color-theme, #0052d9);
+:deep(.wd-tabs__container) {
+  flex: 1 !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
 }
 
-.api-card-danger {
-  border-left: 4px solid var(--wot-color-danger, #fa3534);
+:deep(.wd-tabs__body) {
+  height: 100% !important;
+  min-height: 0 !important;
 }
 
-.command-group-card {
-  border-left: 4px solid var(--wot-color-theme, #0052d9);
+:deep(.wd-tab) {
+  height: 100% !important;
+  min-height: 0 !important;
+  flex-shrink: 0 !important;
 }
 
-/* 指令收发内部卡片微渐变 */
-.command-row {
+:deep(.wd-tab__body) {
+  height: 100% !important;
+  min-height: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.tab-pane-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* 列表滚动外部视口容器：确立严格的 flex 剩余高度边界 */
+.scroll-wrapper {
+  flex: 1;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+}
+
+/* 内部 scroll-view 组件：100% 继承父级视口高度，内部内容超出时触发原生纵向平滑滚动 */
+.scroll-container {
   box-sizing: border-box;
+  width: 100%;
+  height: 100%;
 }
 
-.tx-row {
-  background: rgba(0, 82, 217, 0.03);
-  border: 1px solid rgba(0, 82, 217, 0.06);
+.bottom-placeholder {
+  height: 24px;
 }
 
-.dark .tx-row {
-  background: rgba(0, 82, 217, 0.08);
-  border: 1px solid rgba(0, 82, 217, 0.15);
+/* 搜索输入框与原生 input */
+.search-input-box {
+  border: 1px solid rgba(0, 0, 0, 0.04);
 }
 
-.rx-row {
-  background: rgba(43, 164, 113, 0.03);
-  border: 1px solid rgba(43, 164, 113, 0.06);
+.dark .search-input-box {
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-.dark .rx-row {
-  background: rgba(43, 164, 113, 0.08);
-  border: 1px solid rgba(43, 164, 113, 0.15);
+.search-native-input {
+  border: none;
+  outline: none;
+  background: transparent;
 }
 
-.err-row {
-  background: rgba(250, 53, 52, 0.03);
-  border: 1px solid rgba(250, 53, 52, 0.06);
+/* 排序切换按钮：与输入框 1:1 精确高度 (36px) 与圆角 */
+.sort-toggle-btn {
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &:active {
+    transform: scale(0.92);
+    background-color: rgba(0, 82, 217, 0.12);
+  }
 }
 
-.dark .err-row {
-  background: rgba(250, 53, 52, 0.08);
-  border: 1px solid rgba(250, 53, 52, 0.15);
+.dark .sort-toggle-btn {
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-/* 小圆点发光状态指示 */
-.indicator-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
+/* 日志卡片：极简通透风格 */
+.log-item-card {
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  transition: all 0.15s ease;
+
+  &:active {
+    background-color: rgba(0, 0, 0, 0.015);
+  }
 }
 
-.tx-dot {
-  background-color: var(--wot-color-theme, #0052d9);
-  box-shadow: 0 0 6px rgba(0, 82, 217, 0.6);
+.dark .log-item-card {
+  border: 1px solid rgba(255, 255, 255, 0.05);
+
+  &:active {
+    background-color: rgba(255, 255, 255, 0.02);
+  }
 }
 
-.rx-dot {
-  background-color: var(--wot-color-success, #2ba471);
-  box-shadow: 0 0 6px rgba(43, 164, 113, 0.6);
+/* 状态小胶囊 */
+.status-pill {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+  flex-shrink: 0;
 }
 
-.err-dot {
-  background-color: var(--wot-color-danger, #fa3534);
-  box-shadow: 0 0 6px rgba(250, 53, 52, 0.6);
+.pill-success {
+  background-color: rgba(43, 164, 113, 0.1);
+  color: #2ba471;
 }
 
-/* 统一等宽代码排版 */
+.pill-danger {
+  background-color: rgba(250, 53, 52, 0.1);
+  color: #fa3534;
+}
+
+.method-pill {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background-color: rgba(147, 51, 234, 0.1);
+  color: #9333ea;
+  flex-shrink: 0;
+}
+
+.latency-pill {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background-color: rgba(0, 82, 217, 0.08);
+  color: var(--wot-color-theme, #0052d9);
+}
+
+.dark .latency-pill {
+  background-color: rgba(0, 82, 217, 0.2);
+}
+
+/* 时间文本 */
+.time-text {
+  font-size: 10px;
+  color: #858585;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+/* 极简复制按钮 */
+.copy-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 4px;
+  border-radius: 4px;
+  opacity: 0.7;
+  transition: opacity 0.15s ease;
+
+  &:active {
+    opacity: 1;
+    background-color: rgba(0, 0, 0, 0.06);
+  }
+}
+
+.dark .copy-btn:active {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* 代码/数据块 */
+.code-box {
+  background-color: rgba(0, 0, 0, 0.025);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dark .code-box {
+  background-color: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.code-box-err {
+  background-color: rgba(250, 53, 52, 0.04);
+  border: 1px solid rgba(250, 53, 52, 0.12);
+}
+
+.dark .code-box-err {
+  background-color: rgba(250, 53, 52, 0.08);
+  border: 1px solid rgba(250, 53, 52, 0.2);
+}
+
+.code-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: #858585;
+}
+
+.code-content {
+  font-size: 11px;
+  color: var(--wot-text-main, #1d1f29);
+  word-break: break-all;
+}
+
+.text-danger {
+  color: #fa3534 !important;
+}
+
+/* 指令流单行 */
+.stream-row {
+  display: flex;
+  flex-direction: column;
+  border-radius: 6px;
+}
+
+.stream-tx {
+  background-color: rgba(0, 82, 217, 0.035);
+  border: 1px solid rgba(0, 82, 217, 0.08);
+}
+
+.dark .stream-tx {
+  background-color: rgba(0, 82, 217, 0.08);
+  border: 1px solid rgba(0, 82, 217, 0.16);
+}
+
+.stream-rx {
+  background-color: rgba(43, 164, 113, 0.035);
+  border: 1px solid rgba(43, 164, 113, 0.08);
+}
+
+.dark .stream-rx {
+  background-color: rgba(43, 164, 113, 0.08);
+  border: 1px solid rgba(43, 164, 113, 0.16);
+}
+
+.stream-tag {
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.tag-tx {
+  color: var(--wot-color-theme, #0052d9);
+}
+
+.tag-rx {
+  color: #2ba471;
+}
+
+.hex-text {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--wot-text-main, #1d1f29);
+  word-break: break-all;
+  letter-spacing: 0.4px;
+}
+
+/* 系统环境参数行 */
+.card-section-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed rgba(0, 0, 0, 0.06);
+}
+
+.dark .card-section-title {
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.08);
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+}
+
+.info-k {
+  color: #858585;
+}
+
+.info-v {
+  color: var(--wot-text-main, #1d1f29);
+  font-weight: 600;
+}
+
+/* 等宽字体 */
 .monospace {
-  font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Monaco, Consolas, monospace;
-}
-
-.time-stamp {
-  font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Monaco, Consolas, monospace;
-}
-
-.code-title {
-  letter-spacing: 0.5px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .control-bar {
   padding-bottom: calc(12px + env(safe-area-inset-bottom));
-}
-
-/* 日志卡片顶部标题栏对齐微调 */
-.log-title-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 4px 0 8px 0;
-  margin-bottom: 8px;
-  width: 100%;
-  box-sizing: border-box;
-  
-  &.has-divider {
-    border-bottom: 1px dashed rgba(241, 245, 249, 1);
-  }
-
-  text, .time-stamp {
-    line-height: 1.2;
-    display: inline-block;
-    vertical-align: middle;
-  }
-}
-
-.dark .log-title-header.has-divider {
-  border-bottom: 1px dashed rgba(63, 63, 70, 0.8);
 }
 </style>

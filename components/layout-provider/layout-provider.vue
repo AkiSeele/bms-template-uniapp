@@ -16,7 +16,8 @@
  
  
  
-      <!-- 全局「连接/自动连接中」Popup：底部浮动加载层 -->      <wd-popup
+      <!-- 全局「连接/自动连接中」Popup：底部浮动加载层 -->
+      <wd-popup
         v-model="showConnectingPopup"
         position="bottom"
         :close-on-click-modal="false"
@@ -31,7 +32,8 @@
             v-if="isAutoConnecting && isAutoConnectingCancelable"
             class="wot-absolute wot-right-4 wot-top-4 wot-p-1 wot-cursor-pointer"
             @click="triggerCancelAutoConnect"
-          >            <wd-icon css-icon="i-ri-close-line" size="20px" color="#858585" />
+          >
+            <wd-icon css-icon="i-ri-close-line" size="20px" color="#858585" />
           </view>
           <!-- 环形旋转加载组件 -->
           <view 
@@ -45,23 +47,26 @@
         </view>
       </wd-popup>
 
-      <!-- 全局「连接失败」Popup：居中弹出，展示失败具体原因 -->      <wd-popup
+      <!-- 全局「连接失败」Popup：居中弹出，展示失败具体原因 -->
+      <wd-popup
         v-model="isConnectionErrorVisible"
         position="center"
         :close-on-click-modal="true"
         :modal="true"
         :round="true"
         :z-index="2000"
-        custom-style="width: 82%; padding: 28px 24px 20px; z-index: 2000;"
+        custom-style="width: 290px; max-width: 80vw; padding: 28px 24px 20px; z-index: 2000; box-sizing: border-box;"
       >
         <view class="wot-flex wot-flex-col wot-items-center">
-          <view class="error-icon-ring wot-flex wot-items-center wot-justify-center wot-rounded-full wot-mb-3">            <wd-icon css-icon="i-ri-close-circle-fill" size="36px" color="#ea4335" />
+          <view class="error-icon-ring wot-flex wot-items-center wot-justify-center wot-rounded-full wot-mb-3">
+            <wd-icon css-icon="i-ri-close-circle-fill" size="36px" color="#ea4335" />
           </view>
           <text class="wot-text-base wot-font-bold wot-text-text-main wot-mb-2">
             {{ $t("bms.ble.connectFailed") }}
           </text>
-          <text class="wot-text-sm wot-text-text-secondary wot-text-center">{{ connectionError }}</text>
-          <view class="wot-mt-6 wot-w-full">            <wd-button block type="primary" @click="isConnectionErrorVisible = false">
+          <text class="wot-text-sm wot-text-text-secondary wot-text-center wot-break-all">{{ connectionError }}</text>
+          <view class="wot-mt-6 wot-w-full">
+            <wd-button block type="primary" @click="isConnectionErrorVisible = false">
               {{ $t("bms.common.confirm") }}
             </wd-button>
           </view>

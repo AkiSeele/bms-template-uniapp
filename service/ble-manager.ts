@@ -320,8 +320,7 @@ export const bleManager = {
    */
   setMTU(deviceId: string, mtu: number): Promise<UniApp.GeneralCallbackResult> {
     return new Promise((resolve) => {
-      // #ifdef APP-PLUS || MP-WEIXIN
-      // iOS 不支持在应用层主动设置 MTU，由系统自动协商；Android 与微信小程序必须手动发起
+      // iOS 不支持在应用层主动设置 MTU，由系统自动协商；Android 与微信小程序如果支持则发起协商
       if (typeof uni.setBLEMTU === "function") {
         uni.setBLEMTU({
           deviceId,
@@ -341,7 +340,6 @@ export const bleManager = {
         });
         return;
       }
-      // #endif
       resolve({ errMsg: "setBLEMTU:not supported on this platform" });
     });
   },

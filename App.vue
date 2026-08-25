@@ -7,7 +7,7 @@ import { useAppStore } from "@/stores/app";
 export default {
   onLaunch: function () {
     console.log("App Launch");
-    // 阶段二：在应用实例完全就绪后（getApp() 可正常调用），安全读取系统语言并同步到 i18n。
+    // 阶段一：在应用实例完全就绪后（getApp() 可正常调用），安全读取系统语言并同步到 i18n。
     // 此时调用 uni.getStorageSync / uni.getLocale 不会再触发 getApp() failed 警告。
     initI18nLocale();
 
@@ -27,10 +27,8 @@ export default {
     const bleStore = useBleStore();
     bleStore.initGlobalListeners();
 
-    // #ifdef APP-PLUS
-    // 调用解耦后的系统与应用权限管理器，在启动时进行预检测与申请
+    // 调用分平台权限管理器，在启动时进行预检测与申请
     permissionManager.requestAppPermissionsOnLaunch();
-    // #endif
   },
   onShow: function () {
     console.log("App Show");
