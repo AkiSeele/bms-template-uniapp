@@ -20,15 +20,14 @@ export default defineConfig(async () => {
         dts: "types/components.d.ts",
       }),
       UniPlatform(),
-      uni(),
       UnoCSS({
         configFile: path.resolve(__dirname, "uno.config.js"),
       }),
+      uni(),
     ],
     resolve: {
       alias: {
         "pdf-lib": path.resolve(__dirname, "node_modules/pdf-lib/dist/pdf-lib.min.js"),
-        "@antv/f2": path.resolve(__dirname, "node_modules/@antv/f2/dist/index.min.js"),
       },
     },
     // 强制编译器与打包链将 ES2020 可选链、空值合并等语法降级转译，保障小程序全端预览与上传兼容性

@@ -303,7 +303,7 @@
       "pdfSectionTitle": "PDF 纯数据报告生成测试",
       "pdfSectionDesc": "基于纯数据流构建矢量 PDF 报告，跨端支持 App 与微信小程序",
       "exportReportBtn": "生成诊断报告 PDF",
-      "exportChartPdfBtn": "导出 AntV F2 图表为 PDF",
+      "exportChartPdfBtn": "导出 ECharts 图表为 PDF",
       "exporting": "正在生成 PDF 报告...",
       "exportSuccess": "PDF 报告生成成功",
       "exportFail": "生成 PDF 报告失败",
@@ -311,10 +311,10 @@
       "savedDesc": "PDF 报告已成功生成并保存至本地：",
       "openPdfBtn": "打开 PDF",
       "close": "关闭",
-      "f2ChartTitle": "AntV F2 电池遥测可视化",
+      "f2ChartTitle": "ECharts 电池遥测可视化",
       "f2LineType": "充放电 SOC 趋势曲线",
       "f2BarType": "16串电芯单体电压离散图",
-      "f2ToggleBtn": "切换 F2 图表类型",
+      "f2ToggleBtn": "切换 ECharts 图表类型",
       "chartCaptureFail": "图表快照提取失败，请等待图表渲染完成"
     },
     "scan": {

@@ -1,7 +1,7 @@
 <template>
-  <view class="bms-f2-chart-card wot-w-full wot-bg-filled-oppo wot-rounded-2xl wot-p-4 wot-border wot-border-solid wot-border-border-main wot-shadow-sm wot-box-border">
-    <!-- 图表标题与切换选项 -->
-    <view class="wot-flex wot-items-center wot-justify-between wot-mb-3">
+  <view class="bms-chart-card wot-w-full wot-bg-filled-oppo wot-rounded-2xl wot-p-4 wot-border wot-border-solid wot-border-border-main wot-shadow-sm wot-box-border">
+    <!-- 图表标题与类型指示栏 -->
+    <view class="wot-flex wot-items-center wot-justify-between wot-mb-2">
       <view class="wot-flex wot-items-center wot-gap-2">
         <view class="wot-w-2 wot-h-3.5 wot-rounded-full wot-bg-primary"></view>
         <text class="wot-text-xs wot-font-bold wot-text-text-main">{{ title || $t('bms.testPage.f2ChartTitle') }}</text>
@@ -13,61 +13,41 @@
       </view>
     </view>
 
-    <!-- Canvas 渲染容器 (固定宽高与边界裁剪，确保图表 100% 贴合容器) -->
-    <view class="chart-canvas-wrapper wot-w-full wot-h-[190px] wot-relative wot-rounded-xl wot-overflow-hidden wot-bg-filled-main wot-box-border">
-      <!-- 微信小程序与 H5：原生 Canvas 2D 架构 -->
-      <!-- #ifndef APP-PLUS -->
-      <canvas
-        type="2d"
-        :id="canvasId"
-        class="f2-canvas wot-w-full wot-h-full"
-        @touchstart="handleTouchStart"
-        @touchmove="handleTouchMove"
-        @touchend="handleTouchEnd"
-      ></canvas>
-      <!-- #endif -->
-
-      <!-- App 原生端：通过 renderjs 动态挂载原生 HTML5 Canvas 2D，完全绕过 uni-app 的 <uni-canvas> 包装器 -->
-      <!-- #ifdef APP-PLUS -->
-      <view
-        :id="canvasId"
-        :prop="chartRenderProp"
-        :change:prop="f2Render.updateChart"
-        class="f2-canvas wot-w-full wot-h-full"
-      ></view>
-      <!-- #endif -->
+    <!-- LimeEchart 跨端渲染容器 (支持微信小程序 Canvas 2D 同层渲染，彻底消灭弹窗穿透) -->
+    <view class="chart-canvas-wrapper wot-w-full wot-h-[200px] wot-relative wot-rounded-xl wot-overflow-hidden wot-bg-filled-main wot-box-border">
+      <l-echart ref="chartRef" custom-style="width: 100%; height: 100%;" />
     </view>
   </view>
 </template>
 
-<script lang="ts">
-// Options API 桥接层：接收来自 App-Plus renderjs 视图层的 callMethod 事件回调
-export default {
-  methods: {
-    onAppChartSnapshot(base64: string) {
-      if (typeof (this as any).handleSnapshotFromRenderjs === "function") {
-        (this as any).handleSnapshotFromRenderjs(base64);
-      }
-    },
-  },
-};
-</script>
-
 <script setup lang="ts">
-import { ref, onMounted, getCurrentInstance, watch, computed } from "vue";
+import { ref, onMounted, onUnmounted, watch, computed, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
-// #ifndef APP-PLUS
-import { Canvas, Chart, Line, Area, Axis, Point, Interval, jsx } from "@antv/f2";
-// #endif
+import { useAppStore } from "@/stores/app";
+import { storeToRefs } from "pinia";
+import LEchart from "@/uni_modules/lime-echart/components/l-echart/l-echart.vue";
+
+// 引入插件预打包的 ESM 单文件产物（已内联合并 zrender，彻底杜绝散列文件路径解析异常）
+// @ts-ignore
+import * as echarts from "@/uni_modules/lime-echart/lib/echarts.esm.min.js";
+
+declare const wx: any;
+declare const plus: any;
 
 /**
- * AntV F2 电池图表组件对外暴露的方法定义
+ * 图表数据项接口定义
+ */
+export interface ChartDataItem {
+  label: string;
+  value: number;
+}
+
+/**
+ * 电池图表组件对外暴露的方法定义
  */
 export interface BmsF2ChartExpose {
-  /** 导出当前 AntV F2 图表的高清 PNG Base64 数据串 */
+  /** 导出当前图表的高清 PNG Base64/本地路径数据串 */
   exportChartBase64: () => Promise<string>;
-  /** 接收 renderjs 视图层回传的高清 Base64 快照 */
-  handleSnapshotFromRenderjs: (base64: string) => void;
 }
 
 // 接收组件属性
@@ -80,10 +60,10 @@ const props = withDefaults(
     /** 图表呈现形式：line 趋势线 / bar 柱状离散 */
     chartType?: "line" | "bar";
     /** 图表数据源列表 */
-    chartData?: Array<{ label: string; value: number }>;
+    chartData?: ChartDataItem[];
   }>(),
   {
-    canvasId: "bmsF2ChartCanvas",
+    canvasId: "bmsChartCanvas",
     title: "",
     chartType: "line",
     chartData: () => [],
@@ -91,43 +71,24 @@ const props = withDefaults(
 );
 
 const { t } = useI18n();
-const instance = getCurrentInstance();
+const appStore = useAppStore();
+const { actualTheme } = storeToRefs(appStore);
 
-// 内部状态维护
-const rawCanvasNode = ref<any>(null);
-const f2CanvasInstance = ref<any>(null);
-const containerWidth = ref(300);
-const containerHeight = ref(190);
-const appChartSnapshot = ref("");
+const chartRef = ref<any>(null);
+let myChart: any = null;
 
-// 声明 renderjs 占位引用，防止模板类型检查器报找不到 f2Render 属性
-const f2Render = (ref<any>({ updateChart: () => {} }) as any);
-
-/**
- * 接收来自 renderjs 回传的高清图表快照
- */
-const handleSnapshotFromRenderjs = (base64: string) => {
-  if (base64 && base64.length > 50) {
-    appChartSnapshot.value = base64;
-  }
-};
-
-// 挂载到组件实例上下文，供 Options API 的 methods 桥接调用
-if (instance) {
-  (instance as any).ctx.handleSnapshotFromRenderjs = handleSnapshotFromRenderjs;
-}
-
-// 计算当前图表类型显示标签
+// 计算当前图表类型显示标签（收拢三目运算符）
 const currentTypeLabel = computed(() => {
-  return props.chartType === "bar"
-    ? t("bms.testPage.f2BarType")
-    : t("bms.testPage.f2LineType");
+  if (props.chartType === "bar") {
+    return t("bms.testPage.f2BarType");
+  }
+  return t("bms.testPage.f2LineType");
 });
 
 /**
- * 默认模拟数据生成（用于未传入数据时的优雅保底展示）
+ * 默认模拟数据生成
  */
-const getDefaultData = () => {
+const getDefaultData = (): ChartDataItem[] => {
   if (props.chartData && props.chartData.length > 0) {
     return props.chartData;
   }
@@ -150,530 +111,261 @@ const getDefaultData = () => {
   ];
 };
 
-// 传递给 renderjs 的渲染参数响应式对象
-const chartRenderProp = computed(() => ({
-  canvasId: props.canvasId,
-  chartType: props.chartType,
-  data: getDefaultData(),
-  timestamp: Date.now(),
-}));
-
-// #ifndef APP-PLUS
 /**
- * 微信小程序与 H5 端：使用 AntV F2 核心引擎绘制图表
+ * 构建 ECharts 标准配置对象
  */
-const renderF2 = (ctx: any, width: number, height: number, pixelRatio: number) => {
-  if (!ctx) return;
+const buildChartOption = () => {
+  const isDark = actualTheme.value === "dark";
   const data = getDefaultData();
+  const labels = data.map((d) => d.label);
+  const values = data.map((d) => d.value);
 
-  try {
-    let chartElement;
-    const createJSX: any = jsx;
+  const textColor = isDark ? "#94a3b8" : "#64748b";
+  const gridColor = isDark ? "#334155" : "#f1f5f9";
+  const splitLineColor = isDark ? "#334155" : "#e2e8f0";
+  const primaryColor = "#0052d9";
 
-    if (props.chartType === "bar") {
-      // 柱状图：电芯单体电压离散分布
-      chartElement = createJSX(Chart, {
-        data,
-        padding: [16, 16, 32, 45],
-        scale: {
-          value: {
-            min: 3.25,
-            max: 3.4,
-            tickCount: 4,
-            formatter: (v: number) => `${Number(v).toFixed(2)}V`,
-          },
-          label: {
-            range: [0.05, 0.95],
-          },
+  if (props.chartType === "bar") {
+    return {
+      animation: false,
+      grid: { top: 28, right: 12, bottom: 24, left: 48 },
+      tooltip: {
+        trigger: "axis",
+        formatter: "{b}: {c} V",
+      },
+      xAxis: {
+        type: "category",
+        data: labels,
+        axisLine: { lineStyle: { color: splitLineColor } },
+        axisLabel: {
+          color: textColor,
+          fontSize: 9,
+          interval: labels.length > 8 ? 1 : 0,
         },
-        children: [
-          createJSX(Axis, {
-            field: "label",
-            style: {
-              label: { fill: "#64748b", fontSize: "10px" },
-              line: { stroke: "#e2e8f0", lineWidth: 1 },
-            },
-          }),
-          createJSX(Axis, {
-            field: "value",
-            style: {
-              label: { fill: "#64748b", fontSize: "10px" },
-              grid: { stroke: "#f1f5f9", lineDash: [2, 2] },
-            },
-          }),
-          createJSX(Interval, {
-            x: "label",
-            y: "value",
-            color: "#0052d9",
-            style: {
-              radius: [2, 2, 0, 0],
-            },
-          }),
-        ],
-      });
-    } else {
-      // 折线面积图：SOC / 电压走势曲线
-      chartElement = createJSX(Chart, {
-        data,
-        padding: [16, 16, 32, 40],
-        scale: {
-          value: {
-            min: 0,
-            max: 100,
-            tickCount: 5,
-            formatter: (v: number) => `${v}%`,
-          },
-          label: {
-            range: [0.06, 0.94],
-          },
+      },
+      yAxis: {
+        type: "value",
+        min: (val: any) => Math.floor((val.min - 0.02) * 100) / 100,
+        max: (val: any) => Math.ceil((val.max + 0.02) * 100) / 100,
+        axisLabel: {
+          formatter: "{value}V",
+          color: textColor,
+          fontSize: 10,
         },
-        children: [
-          createJSX(Axis, {
-            field: "label",
-            style: {
-              label: { fill: "#64748b", fontSize: "10px" },
-              line: { stroke: "#e2e8f0", lineWidth: 1 },
-            },
-          }),
-          createJSX(Axis, {
-            field: "value",
-            style: {
-              label: { fill: "#64748b", fontSize: "10px" },
-              grid: { stroke: "#f1f5f9", lineDash: [2, 2] },
-            },
-          }),
-          createJSX(Area, {
-            x: "label",
-            y: "value",
-            color: "l(90) 0:#0052d9 1:#eff6ff",
-            shape: "smooth",
-          }),
-          createJSX(Line, {
-            x: "label",
-            y: "value",
-            color: "#0052d9",
-            shape: "smooth",
-          }),
-          createJSX(Point, {
-            x: "label",
-            y: "value",
-            color: "#0052d9",
-          }),
-        ],
-      });
-    }
-
-    if (f2CanvasInstance.value && typeof f2CanvasInstance.value.destroy === "function") {
-      f2CanvasInstance.value.destroy();
-    }
-
-    const canvas = new Canvas({
-      context: ctx,
-      width,
-      height,
-      pixelRatio,
-      px2hd: (v: any) => v,
-      theme: {
-        fontSize: "10px",
-        fontFamily: "sans-serif",
-        axis: {
-          labelOffset: 8,
-          label: {
-            fontSize: "10px",
-            fill: "#64748b",
-          },
-          line: {
-            stroke: "#e2e8f0",
-            lineWidth: 1,
-          },
-          grid: {
-            stroke: "#f1f5f9",
-            lineDash: [2, 2],
+        splitLine: {
+          lineStyle: {
+            color: gridColor,
+            type: "dashed",
           },
         },
       },
-      children: chartElement,
-    });
+      series: [
+        {
+          data: values,
+          type: "bar",
+          barWidth: "55%",
+          itemStyle: {
+            color: primaryColor,
+            borderRadius: [4, 4, 0, 0],
+          },
+        },
+      ],
+    };
+  }
 
-    f2CanvasInstance.value = canvas;
-    canvas.render();
-  } catch (renderErr) {
-    console.error("[BmsF2Chart] 绘制 AntV F2 图表异常:", renderErr);
+  // 折线平滑趋势图
+  return {
+    animation: false,
+    grid: { top: 28, right: 16, bottom: 24, left: 45 },
+    tooltip: {
+      trigger: "axis",
+      formatter: "{b}: {c}%",
+    },
+    xAxis: {
+      type: "category",
+      data: labels,
+      axisLine: { lineStyle: { color: splitLineColor } },
+      axisLabel: { color: textColor, fontSize: 10 },
+    },
+    yAxis: {
+      type: "value",
+      min: 0,
+      max: 100,
+      axisLabel: {
+        formatter: "{value}%",
+        color: textColor,
+        fontSize: 10,
+      },
+      splitLine: {
+        lineStyle: {
+          color: gridColor,
+          type: "dashed",
+        },
+      },
+    },
+    series: [
+      {
+        data: values,
+        type: "line",
+        smooth: true,
+        symbol: "circle",
+        symbolSize: 6,
+        itemStyle: {
+          color: primaryColor,
+          borderColor: "#ffffff",
+          borderWidth: 1.5,
+        },
+        lineStyle: { width: 2.5, color: primaryColor },
+        areaStyle: {
+          color: {
+            type: "linear",
+            x: 0,
+            y: 0,
+            x2: 0,
+            y2: 1,
+            colorStops: [
+              { offset: 0, color: "rgba(0, 82, 217, 0.3)" },
+              { offset: 1, color: "rgba(0, 82, 217, 0.02)" },
+            ],
+          },
+        },
+      },
+    ],
+  };
+};
+
+/**
+ * 驱动 LimeEchart 执行图表初始化与渲染
+ */
+const renderChart = async () => {
+  if (!chartRef.value) return;
+
+  try {
+    if (!myChart) {
+      myChart = await chartRef.value.init(echarts);
+    }
+    const option = buildChartOption();
+    if (myChart && typeof myChart.setOption === "function") {
+      myChart.setOption(option, true);
+    }
+  } catch (err) {
+    console.error("[LimeEchart] 图表渲染异常:", err);
   }
 };
 
 /**
- * 微信小程序与 H5：初始化并挂载 Canvas 节点
+ * 导出图表的高清快照 Base64 数据串（支持微信小程序与 App 端）
  */
-const initChart = () => {
-  const query = uni.createSelectorQuery().in(instance?.proxy as any);
-
-  // #ifdef MP-WEIXIN
-  query
-    .select(`#${props.canvasId}`)
-    .fields({ node: true, size: true } as any)
-    .exec((res) => {
-      if (!res || !res[0] || !res[0].node) return;
-      const canvasNode = res[0].node;
-      const ctx = canvasNode.getContext("2d");
-      const dpr = uni.getSystemInfoSync().pixelRatio || 1;
-
-      containerWidth.value = res[0].width;
-      containerHeight.value = res[0].height;
-
-      canvasNode.width = res[0].width * dpr;
-      canvasNode.height = res[0].height * dpr;
-
-      rawCanvasNode.value = canvasNode;
-      renderF2(ctx, res[0].width, res[0].height, dpr);
-    });
-  // #endif
-
-  // #ifdef H5
-  query
-    .select(`#${props.canvasId}`)
-    .boundingClientRect((res: any) => {
-      if (!res || Array.isArray(res) || !res.width) return;
-      containerWidth.value = res.width;
-      containerHeight.value = res.height;
-
-      const canvasElem = document.getElementById(props.canvasId) as HTMLCanvasElement;
-      if (canvasElem) {
-        const ctx = canvasElem.getContext("2d");
-        const dpr = window.devicePixelRatio || 1;
-        canvasElem.style.width = res.width + "px";
-        canvasElem.style.height = res.height + "px";
-        canvasElem.width = res.width * dpr;
-        canvasElem.height = res.height * dpr;
-        if (ctx) {
-          rawCanvasNode.value = canvasElem;
-          renderF2(ctx, res.width, res.height, dpr);
-        }
-      }
-    })
-    .exec();
-  // #endif
-};
-// #endif
-
-/**
- * 触摸交互事件桥接派发 (非 App 端)
- */
-const handleTouchStart = (e: any) => {
-  if (f2CanvasInstance.value && typeof f2CanvasInstance.value.dispatchTouchEvent === "function") {
-    f2CanvasInstance.value.dispatchTouchEvent(e, "touchstart");
-  }
-};
-
-const handleTouchMove = (e: any) => {
-  if (f2CanvasInstance.value && typeof f2CanvasInstance.value.dispatchTouchEvent === "function") {
-    f2CanvasInstance.value.dispatchTouchEvent(e, "touchmove");
-  }
-};
-
-const handleTouchEnd = (e: any) => {
-  if (f2CanvasInstance.value && typeof f2CanvasInstance.value.dispatchTouchEvent === "function") {
-    f2CanvasInstance.value.dispatchTouchEvent(e, "touchend");
-  }
-};
-
-/**
- * 核心对外暴露方法：将当前 AntV F2 图表导出为高分辨率 PNG Base64 格式 (用于无损嵌入 PDF 报告)
- */
-const exportChartBase64 = (): Promise<string> => {
+const exportChartBase64 = async (): Promise<string> => {
   return new Promise((resolve) => {
-    // 方案 1: App 原生端优先使用 renderjs 提取的高清 Base64 快照
-    // #ifdef APP-PLUS
-    if (appChartSnapshot.value && appChartSnapshot.value.length > 50) {
-      resolve(appChartSnapshot.value);
+    if (!chartRef.value || typeof chartRef.value.canvasToTempFilePath !== "function") {
+      console.warn("[LimeEchart] chartRef 尚未就绪，无法提取快照");
+      resolve("");
       return;
     }
-    // #endif
 
-    // 方案 2: Canvas 2D 直接通过 toDataURL 提取 Base64 (微信小程序与 H5 原生最快)
-    if (rawCanvasNode.value && typeof rawCanvasNode.value.toDataURL === "function") {
+    const readBase64FromPath = (path: string): string => {
+      // #ifdef MP-WEIXIN
       try {
-        const base64 = rawCanvasNode.value.toDataURL("image/png");
-        if (base64 && base64.length > 50) {
-          resolve(base64);
-          return;
-        }
-      } catch {}
-    }
-
-    // 方案 3: 降级调用 uni.canvasToTempFilePath
-    // #ifdef MP-WEIXIN
-    uni.canvasToTempFilePath(
-      {
-        canvas: rawCanvasNode.value,
-        canvasId: props.canvasId,
-        fileType: "png",
-        success: (res: any) => {
-          try {
-            const fs = (uni as any).getFileSystemManager?.() || (globalThis as any).wx?.getFileSystemManager?.();
-            if (fs && typeof fs.readFileSync === "function") {
-              const base64 = fs.readFileSync(res.tempFilePath, "base64");
-              resolve(`data:image/png;base64,${base64}`);
-            } else {
-              resolve(res.tempFilePath);
-            }
-          } catch (readErr) {
-            resolve(res.tempFilePath);
+        const fs = typeof wx !== "undefined" ? wx.getFileSystemManager() : null;
+        if (fs && typeof fs.readFileSync === "function") {
+          const fileData = fs.readFileSync(path, "base64");
+          if (fileData) {
+            return `data:image/png;base64,${fileData}`;
           }
-        },
-        fail: () => {
-          resolve(appChartSnapshot.value || "");
-        },
-      } as any,
-      instance?.proxy as any,
-    );
-    return;
-    // #endif
+        }
+      } catch (e) {
+        console.warn("[LimeEchart] 小程序 readFileSync 异常:", e);
+      }
+      // #endif
 
-    // #ifndef MP-WEIXIN
-    resolve(appChartSnapshot.value || "");
-    // #endif
+      // #ifdef APP-PLUS
+      try {
+        if (typeof plus !== "undefined" && plus.io) {
+          plus.io.resolveLocalFileSystemURL(
+            path,
+            (entry: any) => {
+              entry.file((file: any) => {
+                const reader = new plus.io.FileReader();
+                reader.onloadend = (e: any) => {
+                  resolve(e.target.result || path);
+                };
+                reader.onerror = () => {
+                  resolve(path);
+                };
+                reader.readAsDataURL(file);
+              });
+            },
+            () => {
+              resolve(path);
+            },
+          );
+          return "";
+        }
+      } catch (appErr) {
+        console.warn("[LimeEchart] App FileReader 异常:", appErr);
+      }
+      // #endif
+
+      return path;
+    };
+
+    chartRef.value.canvasToTempFilePath({
+      fileType: "png",
+      quality: 1,
+      success: (res: any) => {
+        if (res && res.tempFilePath) {
+          const base64 = readBase64FromPath(res.tempFilePath);
+          if (base64) {
+            resolve(base64);
+          }
+        } else {
+          resolve("");
+        }
+      },
+      fail: (err: any) => {
+        console.error("[LimeEchart] canvasToTempFilePath 失败:", err);
+        resolve("");
+      },
+    });
   });
 };
 
-// #ifndef APP-PLUS
-// 监听数据源与类型动态变动重绘
+// 监听类型、数据和主题变化自动重绘
 watch(
-  () => [props.chartType, props.chartData],
+  () => [props.chartType, props.chartData, actualTheme.value],
   () => {
-    initChart();
+    renderChart();
   },
   { deep: true },
 );
 
 onMounted(() => {
-  setTimeout(() => {
-    initChart();
-  }, 100);
+  nextTick(() => {
+    setTimeout(() => {
+      renderChart();
+    }, 100);
+  });
 });
-// #endif
 
-// 对外暴露主动控制接口
+onUnmounted(() => {
+  if (myChart && typeof myChart.dispose === "function") {
+    myChart.dispose();
+    myChart = null;
+  }
+});
+
 defineExpose({
   exportChartBase64,
-  handleSnapshotFromRenderjs,
 });
 </script>
 
-<!-- App-Plus 视图层专属 renderjs 模块：直接运行在真机 WebView 渲染层中，拥有真实 W3C DOM 与 Canvas 2D -->
-<!-- #ifdef APP-PLUS -->
-<script module="f2Render" lang="renderjs">
-import { Canvas, Chart, Line, Area, Axis, Point, Interval, jsx } from "@antv/f2";
-
-export default {
-  data() {
-    return {
-      f2Instance: null,
-    };
-  },
-  mounted() {
-    this.$nextTick(() => {
-      setTimeout(() => {
-        this.renderAppChart(this.chartRenderProp);
-      }, 60);
-    });
-  },
-  methods: {
-    updateChart(newVal) {
-      if (newVal) {
-        this.$nextTick(() => {
-          this.renderAppChart(newVal);
-        });
-      }
-    },
-    renderAppChart(config) {
-      if (!config) return;
-      const container = document.getElementById(config.canvasId);
-      if (!container) return;
-
-      const rect = container.getBoundingClientRect();
-      const width = Math.floor(rect.width) || 320;
-      const height = Math.floor(rect.height) || 190;
-      const dpr = window.devicePixelRatio || 1;
-
-      // 动态在普通 DOM 容器内挂载标准 HTML5 <canvas> 元素，完全绕过 uni-app 的 <uni-canvas> 包装器
-      let canvasElem = container.querySelector("canvas");
-      if (!canvasElem) {
-        canvasElem = document.createElement("canvas");
-        canvasElem.id = config.canvasId + "_html5_canvas";
-        canvasElem.style.display = "block";
-        container.appendChild(canvasElem);
-      }
-
-      // 明确设置 Canvas CSS 布局显示尺寸与底层像素分辨率
-      canvasElem.style.width = width + "px";
-      canvasElem.style.height = height + "px";
-      canvasElem.width = width * dpr;
-      canvasElem.height = height * dpr;
-
-      const ctx = canvasElem.getContext("2d", { willReadFrequently: true });
-      if (!ctx) return;
-
-      const data = config.data;
-      let chartElement;
-      const createJSX = jsx;
-
-      if (config.chartType === "bar") {
-        chartElement = createJSX(Chart, {
-          data,
-          padding: [16, 16, 32, 45],
-          scale: {
-            value: {
-              min: 3.25,
-              max: 3.4,
-              tickCount: 4,
-              formatter: (v) => `${Number(v).toFixed(2)}V`,
-            },
-            label: {
-              range: [0.05, 0.95],
-            },
-          },
-          children: [
-            createJSX(Axis, {
-              field: "label",
-              style: {
-                label: { fill: "#64748b", fontSize: "10px" },
-                line: { stroke: "#e2e8f0", lineWidth: 1 },
-              },
-            }),
-            createJSX(Axis, {
-              field: "value",
-              style: {
-                label: { fill: "#64748b", fontSize: "10px" },
-                grid: { stroke: "#f1f5f9", lineDash: [2, 2] },
-              },
-            }),
-            createJSX(Interval, {
-              x: "label",
-              y: "value",
-              color: "#0052d9",
-              style: {
-                radius: [2, 2, 0, 0],
-              },
-            }),
-          ],
-        });
-      } else {
-        chartElement = createJSX(Chart, {
-          data,
-          padding: [16, 16, 32, 40],
-          scale: {
-            value: {
-              min: 0,
-              max: 100,
-              tickCount: 5,
-              formatter: (v) => `${v}%`,
-            },
-            label: {
-              range: [0.06, 0.94],
-            },
-          },
-          children: [
-            createJSX(Axis, {
-              field: "label",
-              style: {
-                label: { fill: "#64748b", fontSize: "10px" },
-                line: { stroke: "#e2e8f0", lineWidth: 1 },
-              },
-            }),
-            createJSX(Axis, {
-              field: "value",
-              style: {
-                label: { fill: "#64748b", fontSize: "10px" },
-                grid: { stroke: "#f1f5f9", lineDash: [2, 2] },
-              },
-            }),
-            createJSX(Area, {
-              x: "label",
-              y: "value",
-              color: "l(90) 0:#0052d9 1:#eff6ff",
-              shape: "smooth",
-            }),
-            createJSX(Line, {
-              x: "label",
-              y: "value",
-              color: "#0052d9",
-              shape: "smooth",
-            }),
-            createJSX(Point, {
-              x: "label",
-              y: "value",
-              color: "#0052d9",
-            }),
-          ],
-        });
-      }
-
-      if (this.f2Instance && typeof this.f2Instance.destroy === "function") {
-        this.f2Instance.destroy();
-      }
-
-      // 关键：显式设置 px2hd: (v) => v 与 theme.axis 默认字号，彻底禁用移动端 750px rem 放大机制
-      const canvas = new Canvas({
-        context: ctx,
-        width,
-        height,
-        pixelRatio: dpr,
-        px2hd: (v) => v,
-        theme: {
-          fontSize: "10px",
-          fontFamily: "sans-serif",
-          axis: {
-            labelOffset: 8,
-            label: {
-              fontSize: "10px",
-              fill: "#64748b",
-            },
-            line: {
-              stroke: "#e2e8f0",
-              lineWidth: 1,
-            },
-            grid: {
-              stroke: "#f1f5f9",
-              lineDash: [2, 2],
-            },
-          },
-        },
-        children: chartElement,
-      });
-
-      this.f2Instance = canvas;
-      canvas.render();
-
-      // 在图表渲染完成后，提取清晰的 Base64 快照并同步给逻辑层
-      setTimeout(() => {
-        try {
-          const base64 = canvasElem.toDataURL("image/png");
-          if (base64 && base64.length > 50) {
-            this.$ownerInstance.callMethod("onAppChartSnapshot", base64);
-          }
-        } catch (e) {
-          console.warn("[BmsF2Chart] 提取 Base64 异常:", e);
-        }
-      }, 100);
-    },
-  },
-};
-</script>
-<!-- #endif -->
-
 <style scoped>
-.bms-f2-chart-card {
+.bms-chart-card {
   transition: all 0.25s ease;
 }
 
 .chart-canvas-wrapper {
   background-color: var(--wot-color-bg-base, #f8fafc);
-}
-
-.f2-canvas {
-  width: 100%;
-  height: 100%;
-  display: block;
 }
 </style>

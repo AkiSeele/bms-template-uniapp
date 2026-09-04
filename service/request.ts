@@ -1,5 +1,5 @@
 import axios, { type AxiosRequestConfig, type AxiosResponse, type InternalAxiosRequestConfig } from "axios";
-import { createUniAppAxiosAdapter } from "@uni-helper/axios-adapter";
+import { createUniAppAxiosAdapter } from "@/service/adapter/uni-axios-adapter";
 import { APP_CONFIG } from "@/config";
 import { useUserStore } from "@/stores/user";
 import { translate as t } from "@/locale/i18n";

@@ -1,6 +1,7 @@
 <template>
   <layout-provider>
-    <!-- 自定义顶部导航栏，固定在顶部并生成占位元素 -->    <wd-navbar
+    <!-- 自定义顶部导航栏 -->
+    <wd-navbar
       :title="$t('bms.settings.title')"
       fixed
       placeholder
@@ -40,7 +41,8 @@
                 v-if="themeColor"
                 class="clear-btn wot-flex wot-items-center wot-justify-center wot-p-0.5"
                 @click="themeColor = ''"
-              >                <wd-icon css-icon="i-ri-close-fill" size="14px" color="#80868b" />
+              >
+                <wd-icon css-icon="i-ri-close-fill" size="14px" color="#80868b" />
               </view>
             </view>
             <!-- 预设色块选项 -->
@@ -54,7 +56,8 @@
                   boxShadow: themeColor === color ? `0 0 0 1.5px #ffffff, 0 0 0 3px ${color}` : 'none',
                 }"
                 @click="themeColor = color"
-              >                <wd-icon v-if="themeColor === color" css-icon="i-ri-check-line" size="12px" color="#fff" />
+              >
+                <wd-icon v-if="themeColor === color" css-icon="i-ri-check-line" size="12px" color="#fff" />
               </view>
             </view>
           </view>
@@ -79,7 +82,8 @@
                 v-if="warningColor"
                 class="clear-btn wot-flex wot-items-center wot-justify-center wot-p-0.5"
                 @click="warningColor = ''"
-              >                <wd-icon css-icon="i-ri-close-fill" size="14px" color="#80868b" />
+              >
+                <wd-icon css-icon="i-ri-close-fill" size="14px" color="#80868b" />
               </view>
             </view>
             <!-- 预设色块选项 -->
@@ -93,7 +97,8 @@
                   boxShadow: warningColor === color ? `0 0 0 1.5px #ffffff, 0 0 0 3px ${color}` : 'none',
                 }"
                 @click="warningColor = color"
-              >                <wd-icon v-if="warningColor === color" css-icon="i-ri-check-line" size="12px" color="#fff" />
+              >
+                <wd-icon v-if="warningColor === color" css-icon="i-ri-check-line" size="12px" color="#fff" />
               </view>
             </view>
           </view>
@@ -118,7 +123,8 @@
                 v-if="successColor"
                 class="clear-btn wot-flex wot-items-center wot-justify-center wot-p-0.5"
                 @click="successColor = ''"
-              >                <wd-icon css-icon="i-ri-close-fill" size="14px" color="#80868b" />
+              >
+                <wd-icon css-icon="i-ri-close-fill" size="14px" color="#80868b" />
               </view>
             </view>
             <!-- 预设色块选项 -->
@@ -132,7 +138,8 @@
                   boxShadow: successColor === color ? `0 0 0 1.5px #ffffff, 0 0 0 3px ${color}` : 'none',
                 }"
                 @click="successColor = color"
-              >                <wd-icon v-if="successColor === color" css-icon="i-ri-check-line" size="12px" color="#fff" />
+              >
+                <wd-icon v-if="successColor === color" css-icon="i-ri-check-line" size="12px" color="#fff" />
               </view>
             </view>
           </view>
@@ -155,7 +162,8 @@
                 v-if="dangerColor"
                 class="clear-btn wot-flex wot-items-center wot-justify-center wot-p-0.5"
                 @click="dangerColor = ''"
-              >                <wd-icon css-icon="i-ri-close-fill" size="14px" color="#80868b" />
+              >
+                <wd-icon css-icon="i-ri-close-fill" size="14px" color="#80868b" />
               </view>
             </view>
             <!-- 预设色块选项 -->
@@ -169,13 +177,13 @@
                   boxShadow: dangerColor === color ? `0 0 0 1.5px #ffffff, 0 0 0 3px ${color}` : 'none',
                 }"
                 @click="dangerColor = color"
-              >                <wd-icon v-if="dangerColor === color" css-icon="i-ri-check-line" size="12px" color="#fff" />
+              >
+                <wd-icon v-if="dangerColor === color" css-icon="i-ri-check-line" size="12px" color="#fff" />
               </view>
             </view>
           </view>
         </view>
       </view>
-
     </view>
   </layout-provider>
 </template>
@@ -196,15 +204,12 @@ const appStore = useAppStore();
 const { actualTheme } = storeToRefs(appStore);
 
 // 配置数据双向绑定状态
-// ------------------------------------------------------------
 const themeColor = ref(appStore.customThemeColor);
 const warningColor = ref(appStore.customWarningColor);
 const successColor = ref(appStore.customSuccessColor);
 const dangerColor = ref(appStore.customDangerColor);
 
-// ------------------------------------------------------------
-// 预设配色大色板定义 (选用宝石及莫兰迪色系，禁直出高饱和)
-// ------------------------------------------------------------
+// 预设配色大色板定义
 const themePresets = ["#0052d9", "#1a73e8", "#0f9d58", "#f4b400", "#7c4dff"];
 const warningPresets = ["#e37318", "#f4b400", "#ff9800", "#e67e22"];
 const successPresets = ["#2ba471", "#0f9d58", "#12b886", "#2ecc71"];

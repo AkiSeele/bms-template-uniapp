@@ -1,9 +1,11 @@
 <template>
   <view class="wot-w-full wot-bg-filled-bottom wot-box-border wot-px-4">
-    <!-- 自定义顶部导航栏，固定在顶部并生成占位元素 -->    <wd-navbar :title="$t('bms.tab.params')" fixed safe-area-inset-top />
+    <!-- 自定义顶部导航栏 -->
+    <wd-navbar :title="$t('bms.tab.params')" fixed safe-area-inset-top />
 
     <view class="tab-content-wrap page-body-animate" :style="{ 'padding-top': (navbarHeight + 16) + 'px' }">
-      <!-- 蓝牙未连接时的空状态展示 -->      <view v-if="!isConnected" class="empty-wrap wot-flex wot-flex-col wot-items-center wot-justify-center">
+      <!-- 蓝牙未连接时的空状态展示 -->
+      <view v-if="!isConnected" class="empty-wrap wot-flex wot-flex-col wot-items-center wot-justify-center">
         <wd-empty icon="empty" :tip="$t('bms.battery.noData')">
           <template #bottom>
             <wd-button size="small" plain @click="toConnect" custom-class="wot-mt-3 wot-min-w-[180rpx] wot-rounded-lg">
@@ -36,7 +38,8 @@
               v-if="runTimeStr"
               class="wot-flex wot-items-center wot-text-text-auxiliary"
               :style="{ fontSize: '22rpx' }"
-            >              <wd-icon css-icon="i-ri-time-line" size="12px" color="var(--wot-icon-auxiliary)" class="wot-mr-1" />
+            >
+              <wd-icon css-icon="i-ri-time-line" size="12px" color="var(--wot-icon-auxiliary)" class="wot-mr-1" />
               <text>{{ runTimeStr }}</text>
             </view>
           </view>
@@ -110,7 +113,7 @@ const navbarHeight = computed(() => {
 // 导航至蓝牙搜寻连接页
 const toConnect = () => {
   uni.navigateTo({
-    url: "/pages/ble-search/index",
+    url: "/pagesSub/ble-search/index",
   });
 };
 

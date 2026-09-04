@@ -42,6 +42,27 @@ export interface BmsReportData {
 }
 
 /**
+ * 辅助函数：格式化生成标准英文字符时间戳 (例如 2026-08-26 10:01:30)
+ */
+export function formatPdfDateTime(date = new Date()): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  const seconds = String(date.getSeconds()).padStart(2, "0");
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+}
+
+/**
+ * 辅助函数：清洗字符串，过滤非 WinAnsi (ASCII) 字符，防止 pdf-lib 标准字体抛出 WinAnsi cannot encode 错误
+ */
+export function sanitizeWinAnsi(text: string | number | undefined | null): string {
+  if (text === undefined || text === null) return "";
+  return String(text).replace(/[^\x20-\x7E\xA0-\xFF]/g, " ").trim();
+}
+
+/**
  * 辅助函数：格式化生成默认 PDF 文件名 (带时间戳)
  */
 export function formatPdfFileName(prefix = "bms_report"): string {
@@ -122,7 +143,7 @@ export async function buildBmsReportPdf(reportData: BmsReportData): Promise<Uint
   currentY -= 20;
 
   // 报告主标题
-  page.drawText(reportData.title || "BMS BATTERY TELEMETRY & DIAGNOSTIC REPORT", {
+  page.drawText(sanitizeWinAnsi(reportData.title || "BMS BATTERY TELEMETRY & DIAGNOSTIC REPORT"), {
     x: margin,
     y: currentY,
     size: 16,
@@ -132,7 +153,7 @@ export async function buildBmsReportPdf(reportData: BmsReportData): Promise<Uint
   currentY -= 16;
 
   // 设备元信息栏 (Device, MAC, Report Time)
-  const metaLine = `Device: ${reportData.deviceName} | MAC: ${reportData.deviceMac} | Generated: ${reportData.reportTime}`;
+  const metaLine = sanitizeWinAnsi(`Device: ${reportData.deviceName} | MAC: ${reportData.deviceMac} | Generated: ${reportData.reportTime}`);
   page.drawText(metaLine, {
     x: margin,
     y: currentY,
@@ -167,22 +188,22 @@ export async function buildBmsReportPdf(reportData: BmsReportData): Promise<Uint
   const rowHeight = 32;
 
   const summaryItems = [
-    { label: "Total Voltage", value: reportData.summary.totalVoltage },
-    { label: "Current", value: reportData.summary.current },
-    { label: "SOC", value: reportData.summary.soc },
-    { label: "SOH", value: reportData.summary.soh },
-    { label: "Rem. Capacity", value: reportData.summary.remainingCapacity },
-    { label: "Cycle Count", value: reportData.summary.cycleCount },
-    { label: "Cell Count", value: reportData.summary.cellCount },
-    { label: "Cell Max-V", value: reportData.summary.maxCellVoltage },
-    { label: "Cell Min-V", value: reportData.summary.minCellVoltage },
-    { label: "Diff-V", value: reportData.summary.cellDiffVoltage },
-    { label: "Max Temp", value: reportData.summary.maxTemperature },
-    { label: "Min Temp", value: reportData.summary.minTemperature },
-    { label: "Temp Diff", value: reportData.summary.tempDiff },
-    { label: "Charge MOS", value: reportData.summary.chargeMos },
-    { label: "Discharge MOS", value: reportData.summary.dischargeMos },
-    { label: "Balance Status", value: reportData.summary.balanceStatus },
+    { label: "Total Voltage", value: sanitizeWinAnsi(reportData.summary.totalVoltage) },
+    { label: "Current", value: sanitizeWinAnsi(reportData.summary.current) },
+    { label: "SOC", value: sanitizeWinAnsi(reportData.summary.soc) },
+    { label: "SOH", value: sanitizeWinAnsi(reportData.summary.soh) },
+    { label: "Rem. Capacity", value: sanitizeWinAnsi(reportData.summary.remainingCapacity) },
+    { label: "Cycle Count", value: sanitizeWinAnsi(reportData.summary.cycleCount) },
+    { label: "Cell Count", value: sanitizeWinAnsi(reportData.summary.cellCount) },
+    { label: "Cell Max-V", value: sanitizeWinAnsi(reportData.summary.maxCellVoltage) },
+    { label: "Cell Min-V", value: sanitizeWinAnsi(reportData.summary.minCellVoltage) },
+    { label: "Diff-V", value: sanitizeWinAnsi(reportData.summary.cellDiffVoltage) },
+    { label: "Max Temp", value: sanitizeWinAnsi(reportData.summary.maxTemperature) },
+    { label: "Min Temp", value: sanitizeWinAnsi(reportData.summary.minTemperature) },
+    { label: "Temp Diff", value: sanitizeWinAnsi(reportData.summary.tempDiff) },
+    { label: "Charge MOS", value: sanitizeWinAnsi(reportData.summary.chargeMos) },
+    { label: "Discharge MOS", value: sanitizeWinAnsi(reportData.summary.dischargeMos) },
+    { label: "Balance Status", value: sanitizeWinAnsi(reportData.summary.balanceStatus) },
   ];
 
   const totalRows = Math.ceil(summaryItems.length / cols);

@@ -95,10 +95,16 @@ const controlPanelComponent = computed(() => {
   return resolveControlPanel(activeProtocolParser.value?.protocolType);
 });
 
-// 核心能耗优化：监听当前激活 Tab 变化，切离实时数据页面与状态页面时自动挂起蓝牙遥测轮询
+// 核心能耗优化与视图滚动重置：监听当前激活 Tab 变化，切离实时数据页面与状态页面时自动挂起蓝牙遥测轮询，并重置页面级滚动
 watch(
   [activeTab, isBleConnected],
   ([newTab, connected]) => {
+    // 每次切换 Tab 时，强制将页面级滚动归零，杜绝不同 Tab 间的页面滚动偏移污染
+    uni.pageScrollTo({
+      scrollTop: 0,
+      duration: 0,
+    });
+
     if ((newTab === "realtime" || newTab === "param") && connected) {
       console.log("[Shell] 切换到实时数据/状态页，激活蓝牙数据轮询");
       bleStore.setPollingActive(true);
@@ -129,11 +135,17 @@ onUnload(() => {
 </script>
 
 <style scoped>
-/* 壳页面容器样式 */
+/* 壳页面容器样式：实时数据页面采用 fixed 绝对视口锁定，彻底免疫外层页面的滚动偏移 */
 .realtime-page-wrapper {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
   height: 100vh;
   overflow: hidden;
-  position: relative;
   box-sizing: border-box;
+  z-index: 1;
 }
 </style>

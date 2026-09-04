@@ -1,6 +1,7 @@
 <template>
   <view class="scan-button-wrapper">
-    <!-- 调起系统原生扫码的交互按钮组件 -->    <wd-button
+    <!-- 调起系统原生扫码的交互按钮组件 -->
+    <wd-button
       :size="size"
       :type="type"
       :plain="plain"
@@ -9,7 +10,8 @@
       @click="triggerScan"
     >
       <template #icon>
-        <!-- 扫码图标 -->        <wd-icon :css-icon="icon" size="18px" class="wot-mr-1" />
+        <!-- 扫码图标 -->
+        <wd-icon :css-icon="icon" size="18px" class="wot-mr-1" />
       </template>
       {{ buttonText || $t("bms.ble.scanTitle") }}
     </wd-button>

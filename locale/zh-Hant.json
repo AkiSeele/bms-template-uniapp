@@ -303,7 +303,7 @@
       "pdfSectionTitle": "PDF 純數據報告生成測試",
       "pdfSectionDesc": "基於純數據流構建矢量 PDF 報告，跨端支援 App 與微信小程式",
       "exportReportBtn": "生成診斷報告 PDF",
-      "exportChartPdfBtn": "導出 AntV F2 圖表為 PDF",
+      "exportChartPdfBtn": "導出 ECharts 圖表為 PDF",
       "exporting": "正在生成 PDF 報告...",
       "exportSuccess": "PDF 報告生成成功",
       "exportFail": "生成 PDF 報告失敗",
@@ -311,10 +311,10 @@
       "savedDesc": "PDF 報告已成功生成並儲存至本機：",
       "openPdfBtn": "開啟 PDF",
       "close": "關閉",
-      "f2ChartTitle": "AntV F2 電池遙測可視化",
+      "f2ChartTitle": "ECharts 電池遙測可視化",
       "f2LineType": "充放電 SOC 趨勢曲線",
       "f2BarType": "16串電芯單體電壓離散圖",
-      "f2ToggleBtn": "切換 F2 圖表類型",
+      "f2ToggleBtn": "切換 ECharts 圖表類型",
       "chartCaptureFail": "圖表快照擷取失敗，請等待圖表渲染完成"
     },
     "scan": {

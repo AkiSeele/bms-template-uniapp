@@ -1,6 +1,7 @@
 <template>
   <view>
-    <!-- 自定义顶部导航栏，固定在顶部并生成占位元素 -->    <wd-navbar :title="$t('bms.mine.title')" fixed safe-area-inset-top />
+    <!-- 自定义顶部导航栏 -->
+    <wd-navbar :title="$t('bms.mine.title')" fixed safe-area-inset-top />
 
     <!-- 用户个人中心头部卡片 -->
     <view class="tab-content-wrap wot-px-3 wot-py-4 page-body-animate" :style="{ 'padding-top': (navbarHeight + 16) + 'px' }">
@@ -10,11 +11,12 @@
         v-if="!isOfflineMode"
       >
         <view class="wot-flex wot-items-center wot-gap-4">
-          <!-- 根据登录状态和模式动态变化头像底色与小图标 -->
+          <!-- 头像区 -->
           <view
             :class="[isOfflineMode ? 'wot-bg-slate-100' : isLoggedIn ? 'wot-bg-primary/10' : 'wot-bg-orange-50']"
             class="wot-w-16 wot-h-16 wot-rounded-full wot-flex wot-items-center wot-justify-center"
-          >            <wd-icon
+          >
+            <wd-icon
               :css-icon="isOfflineMode ? 'i-lucide-user' : isLoggedIn ? 'i-lucide-user-check' : 'i-lucide-user'"
               size="36px"
               :color="isOfflineMode ? '#858585' : isLoggedIn ? activeThemeColor : '#ff9900'"
@@ -32,50 +34,54 @@
           </view>
         </view>
 
-        <!-- 模式徽章胶囊（云端已联 / 单机离线 / 去登录） -->
+        <!-- 模式徽章胶囊 -->
         <view>
-          <!-- 单机离线标签 -->
           <view
             v-if="isOfflineMode"
             class="wot-bg-slate-100 wot-text-slate-600 wot-border wot-border-slate-200/50 wot-rounded-full wot-px-2.5 wot-py-0.5 wot-text-caption wot-flex wot-items-center wot-gap-1 wot-font-semibold"
-          >            <wd-icon css-icon="i-lucide-cloud-off" size="12px" />
+          >
+            <wd-icon css-icon="i-lucide-cloud-off" size="12px" />
             <text>{{ $t("bms.mine.offlineMode") }}</text>
           </view>
-
-          <!-- 云端已联标签 -->
           <view
             v-else-if="isLoggedIn"
             class="wot-bg-green-50 wot-text-green-700 wot-border wot-border-green-200/50 wot-rounded-full wot-px-2.5 wot-py-0.5 wot-text-caption wot-flex wot-items-center wot-gap-1 wot-font-semibold"
-          >            <wd-icon css-icon="i-lucide-cloud" size="12px" />
+          >
+            <wd-icon css-icon="i-lucide-cloud" size="12px" />
             <text>{{ $t("bms.mine.cloudOnline") }}</text>
           </view>
-
-          <!-- 去登录标签 -->
           <view
             v-else
             class="wot-bg-orange-50 wot-text-orange-700 wot-border wot-border-orange-200/50 wot-rounded-full wot-px-2.5 wot-py-0.5 wot-text-caption wot-flex wot-items-center wot-gap-1 wot-font-semibold"
-          >            <wd-icon css-icon="i-lucide-user-x" size="12px" />
+          >
+            <wd-icon css-icon="i-lucide-user-x" size="12px" />
             <text>{{ $t("bms.mine.clickToLogin") }}</text>
           </view>
         </view>
       </view>
 
       <!-- 系统设置项单元格列表 -->
-      <view class="wot-bg-filled-oppo wot-rounded-2xl wot-overflow-hidden wot-shadow-sm wot-mb-4">        <wd-cell-group border custom-class="custom-settings-group">
-          <!-- 手动切换语言的单元格 -->          <wd-cell
+      <view class="wot-bg-filled-oppo wot-rounded-2xl wot-overflow-hidden wot-shadow-sm wot-mb-4">
+        <wd-cell-group border custom-class="custom-settings-group">
+          <!-- 切换语言 -->
+          <wd-cell
             :title="$t('bms.mine.language')"
             :value="currentLanguageLabel"
             is-link
             @click="showLanguagePicker = true"
           >
-            <template #prefix>              <wd-icon css-icon="i-lucide-globe" size="20px" class="wot-mr-2" color="#858585" />
+            <template #prefix>
+              <wd-icon css-icon="i-lucide-globe" size="20px" class="wot-mr-2" color="#858585" />
             </template>
           </wd-cell>
 
-          <!-- 现代化主题模式设置，Google 分段选择卡片设计 -->          <wd-cell :title="$t('bms.mine.themeMode')" center custom-class="compact-cell">
-            <template #prefix>              <wd-icon css-icon="i-lucide-palette" size="20px" class="wot-mr-2" color="#858585" />
+          <!-- 主题模式 -->
+          <wd-cell :title="$t('bms.mine.themeMode')" center custom-class="compact-cell">
+            <template #prefix>
+              <wd-icon css-icon="i-lucide-palette" size="20px" class="wot-mr-2" color="#858585" />
             </template>
-            <view class="wot-flex wot-justify-end">              <wd-segmented
+            <view class="wot-flex wot-justify-end">
+              <wd-segmented
                 v-if="activeTab === 'mine'"
                 v-model:value="themeMode"
                 :options="themeOptions"
@@ -83,71 +89,82 @@
                 custom-style="width: 160px"
                 custom-class="custom-segmented"
               >
-                <!-- 自定义分段器选项的插槽渲染，在选项中增加对应图标 -->
                 <template #label="{ option }">
-                  <view class="wot-flex wot-items-center wot-justify-center wot-py-0.5">                    <wd-icon :css-icon="getThemeIcon(option.value)" size="18px" />
+                  <view class="wot-flex wot-items-center wot-justify-center wot-py-0.5">
+                    <wd-icon :css-icon="getThemeIcon(option.value)" size="18px" />
                   </view>
                 </template>
               </wd-segmented>
             </view>
           </wd-cell>
 
-          <!-- 自动连接设置单元格 -->          <wd-cell :title="$t('bms.mine.autoConnect')" center custom-class="compact-cell">
-            <template #prefix>              <wd-icon css-icon="i-lucide-zap" size="20px" class="wot-mr-2" color="#858585" />
-            </template>            <wd-switch v-model="autoConnectEnabled" @change="handleAutoConnectChange" size="20px" />
+          <!-- 自动连接 -->
+          <wd-cell :title="$t('bms.mine.autoConnect')" center custom-class="compact-cell">
+            <template #prefix>
+              <wd-icon css-icon="i-lucide-zap" size="20px" class="wot-mr-2" color="#858585" />
+            </template>
+            <wd-switch v-model="autoConnectEnabled" @change="handleAutoConnectChange" size="20px" />
           </wd-cell>
 
-          <!-- 项目配置入口单元格：点击跳转至独立的设置页面 -->          <wd-cell :title="$t('bms.settings.title')" is-link @click="navigateToSettings">
-            <template #prefix>              <wd-icon css-icon="i-lucide-settings" size="20px" class="wot-mr-2" color="#858585" />
+          <!-- 项目配置 -->
+          <wd-cell :title="$t('bms.settings.title')" is-link @click="navigateToSettings">
+            <template #prefix>
+              <wd-icon css-icon="i-lucide-settings" size="20px" class="wot-mr-2" color="#858585" />
             </template>
           </wd-cell>
 
-          <!-- 系统权限诊断入口单元格：点击跳转至独立的诊断页面 -->          <wd-cell :title="$t('bms.mine.permissionsTitle')" is-link @click="navigateToPermissionCheck">
-            <template #prefix>              <wd-icon css-icon="i-lucide-shield-check" size="20px" class="wot-mr-2" color="#858585" />
+          <!-- 系统权限诊断 -->
+          <wd-cell :title="$t('bms.mine.permissionsTitle')" is-link @click="navigateToPermissionCheck">
+            <template #prefix>
+              <wd-icon css-icon="i-lucide-shield-check" size="20px" class="wot-mr-2" color="#858585" />
             </template>
           </wd-cell>
 
-          <!-- 设备授权激活单元格：跳转至独立的授权激活页面 -->          <wd-cell :title="$t('bms.auth.title')" :value="authStateLabel" is-link @click="navigateToAuth">
-            <template #prefix>              <wd-icon css-icon="i-ri-shield-keyhole-line" size="20px" class="wot-mr-2" color="#858585" />
+          <!-- 设备授权激活 -->
+          <wd-cell :title="$t('bms.auth.title')" :value="authStateLabel" is-link @click="navigateToAuth">
+            <template #prefix>
+              <wd-icon css-icon="i-ri-shield-keyhole-line" size="20px" class="wot-mr-2" color="#858585" />
             </template>
           </wd-cell>
 
-          <!-- 固件升级入口单元格：跳转至固件写入页面 -->          <wd-cell :title="$t('bms.firmware.title')" is-link @click="navigateToFirmwareUpdate">
-            <template #prefix>              <wd-icon css-icon="i-lucide-cpu" size="20px" class="wot-mr-2" color="#858585" />
+          <!-- 固件升级 -->
+          <wd-cell :title="$t('bms.firmware.title')" is-link @click="navigateToFirmwareUpdate">
+            <template #prefix>
+              <wd-icon css-icon="i-lucide-cpu" size="20px" class="wot-mr-2" color="#858585" />
             </template>
           </wd-cell>
 
-          <!-- 系统日志入口单元格，仅在解锁时显示 -->
+          <!-- 系统日志 -->
           <wd-cell v-if="isSystemLogsUnlocked" :title="$t('bms.mine.systemLogs')" is-link @click="navigateToSystemLogs">
             <template #prefix>
               <wd-icon css-icon="i-lucide-scroll-text" size="20px" class="wot-mr-2" color="#858585" />
             </template>
           </wd-cell>
 
-          <!-- 调试测试页面入口单元格，仅在解锁时显示 -->
+          <!-- 调试测试页面 -->
           <wd-cell v-if="isSystemLogsUnlocked" :title="$t('bms.mine.testPage')" is-link @click="navigateToTestPage">
             <template #prefix>
               <wd-icon css-icon="i-lucide-flask-conical" size="20px" class="wot-mr-2" color="#858585" />
             </template>
           </wd-cell>
 
-          <!-- 安全退出登录单元格：仅在云端联机且已登录时展现 -->          <wd-cell v-if="!isOfflineMode && isLoggedIn" :title="$t('bms.mine.logout')" is-link @click="handleLogout">
-            <template #prefix>              <wd-icon css-icon="i-lucide-log-out" size="20px" class="wot-mr-2" color="#d54941" />
+          <!-- 退出登录 -->
+          <wd-cell v-if="!isOfflineMode && isLoggedIn" :title="$t('bms.mine.logout')" is-link @click="handleLogout">
+            <template #prefix>
+              <wd-icon css-icon="i-lucide-log-out" size="20px" class="wot-mr-2" color="#d54941" />
             </template>
           </wd-cell>
         </wd-cell-group>
       </view>
 
-      <!-- 底部备案号与版本号显示区域，符合规范 -->
+      <!-- 底部备案与版本号 -->
       <view class="mine-footer wot-flex wot-flex-col wot-items-center wot-justify-center wot-mt-8 wot-pb-6">
         <text class="icp-text wot-text-text-auxiliary">
           {{ $t("bms.mine.icpLicense") }}
         </text>
         <view class="version-text wot-mt-1.5 wot-flex wot-items-center wot-text-text-auxiliary">
           <text class="wot-mr-1">{{ $t("bms.mine.appVersion") }}:</text>
-          <!-- 离线模式：纯文本不可点击 -->
           <text v-if="isOfflineMode">{{ appVersionDisplay }}</text>
-          <!-- 云端模式：仅版本号为纯文字按钮，点击后显示文字 loading -->
           <view
             v-else
             class="version-btn-online"
@@ -160,7 +177,7 @@
       </view>
     </view>
 
-    <!-- 语言选择的动作面板弹出层组件，双向绑定 showLanguagePicker 控制显隐，开启 root-portal 与高 z-index 防止被自定义 Tabbar 遮挡 -->
+    <!-- 语言选择弹窗 -->
     <wd-action-sheet
       v-model="showLanguagePicker"
       :actions="languageActions"
@@ -186,7 +203,6 @@ import { APP_CONFIG } from "@/config";
 import { appVersionService } from "@/service/app-version";
 import { onLoad } from "@dcloudio/uni-app";
 
-// 获取国际化和消息提示 hooks、对话框 hooks 以及全局 appStore 状态实例
 const { locale, t } = useI18n();
 const appStore = useAppStore();
 const userStore = useUserStore();
@@ -194,10 +210,8 @@ const logStore = useLogStore();
 const toast = useToast();
 const dialog = useDialog();
 
-// 引入 wot-ui 底层设备信息适配，以彻底破除微信小程序 v-show 保活机制下 placeholder 测量塌陷的 bug
 const { statusBarHeight, navBarTotalHeight } = useDeviceInfo();
 
-// 动态计算系统的导航栏高度以彻底保障安全区高度自适应
 const navbarHeight = computed(() => {
   const minHeight = (statusBarHeight.value || 0) + 44;
   if (navBarTotalHeight.value && navBarTotalHeight.value >= minHeight) {
@@ -206,7 +220,6 @@ const navbarHeight = computed(() => {
   return minHeight;
 });
 
-// 如果直接作为独立页面加载（比如外部回跳），则自动重定向至主 Shell 页面的“我的”标签页以防布局错乱
 onLoad(() => {
   try {
     const pages = getCurrentPages();
@@ -223,83 +236,63 @@ onLoad(() => {
   }
 });
 
-// 解构状态仓中的身份凭证、资料和激活截止时间
 const { token, userInfo, isAuthorized } = storeToRefs(userStore);
 const { isSystemLogsUnlocked, passwordPromptTrigger } = storeToRefs(logStore);
 
-// 自动连接开关状态的响应式状态，默认从本地缓存初始化，若无缓存则读取全局 APP_CONFIG 配置项
 const autoConnectStorage = uni.getStorageSync("auto_connect_enabled");
 const autoConnectEnabled = ref(autoConnectStorage === "" ? APP_CONFIG.AUTO_CONNECT : !!autoConnectStorage);
 
-// 自动连接开关变更时的回调函数，持久化状态至本地缓存
 const handleAutoConnectChange = ({ value }: { value: boolean }) => {
   uni.setStorageSync("auto_connect_enabled", value);
 };
 
-// 响应式解构 appStore 中的明暗主题状态和 activeTab，符合规范
 const { theme, activeThemeColor, activeTab } = storeToRefs(appStore);
 
-// 双向绑定分段器选中的当前主题模式值，以保障多端切换的顺畅与同步
 const themeMode = ref(theme.value);
 
-// 监听全局主题状态变化，同步分段器的值
 watch(theme, (newVal) => {
   themeMode.value = newVal;
 });
 
-// 选项列表数据定义，支持国际化
 const themeOptions = computed(() => [
   { value: "light", label: t("bms.mine.themeLight") },
   { value: "dark", label: t("bms.mine.themeDark") },
   { value: "system", label: t("bms.mine.themeSystem") },
 ]);
 
-// 获取各个主题对应图标的辅助函数
 const getThemeIcon = (val: string | number) => {
   if (val === "light") return "i-lucide-sun";
   if (val === "dark") return "i-lucide-moon";
   return "i-lucide-smartphone";
 };
 
-// 切换主题模式的回调，触发 Pinia
 const handleThemeModeChange = (option: { value: "light" | "dark" | "system" }) => {
   appStore.setTheme(option.value);
 };
 
-// 控制语言选择动作面板显隐的响应式状态
 const showLanguagePicker = ref(false);
 
-// 语言可选项数据列表定义，通过计算属性动态拼装以支持完全零硬编码中文字符和实时翻译
 const languageActions = computed(() => [
   { name: t("bms.mine.chinese"), value: "zh-Hans" },
   { name: t("bms.mine.traditional"), value: "zh-Hant" },
   { name: t("bms.mine.english"), value: "en" },
 ]);
 
-// 计算属性：当前选中语言在单元格右侧的显示标签文案，使用翻译辅助函数规避任何硬编码字符
 const currentLanguageLabel = computed(() => {
   if (appStore.locale === "zh-Hans") return t("bms.mine.chinese");
   if (appStore.locale === "zh-Hant") return t("bms.mine.traditional");
   return t("bms.mine.english");
 });
 
-// 处理语言选择确认的回调逻辑
 const handleLanguageSelect = ({ item }: { item: { name: string; value: "zh-Hans" | "zh-Hant" | "en" } }) => {
   const selectedLocale = item.value;
-
   if (appStore.locale !== selectedLocale) {
-    // 1. 更新全局状态、本地缓存和内置语言设置
     appStore.setLocale(selectedLocale);
-
-    // 2. 同步当前页面的语言实例值
     locale.value = selectedLocale;
-
-    // 3. 弹出修改成功的信息提示，提示完毕后重新拉起应用彻底刷新以让新语言生效
     toast.success({
       msg: t("bms.mine.switchSuccess"),
       duration: 1000,
       closed: () => {
-        // 在 SPA 模式下，直接刷新当前页面即可
         uni.reLaunch({
           url: "/pages/index/index?tab=mine",
         });
@@ -308,48 +301,35 @@ const handleLanguageSelect = ({ item }: { item: { name: string; value: "zh-Hans"
   }
 };
 
-// ------------------------------------------------------------
-// 页面路由跳转逻辑
-// ------------------------------------------------------------
-
-/**
- * 点击配置项，直接跳转至独立的系统配置页
- */
 const navigateToSettings = () => {
   uni.navigateTo({
-    url: "/pages/mine/settings",
+    url: "/pagesSub/mine/settings",
   });
 };
 
-/**
- * 点击系统权限诊断，跳转至独立的权限诊断大页
- */
 const navigateToPermissionCheck = () => {
   uni.navigateTo({
-    url: "/pages/mine/permission-check",
+    url: "/pagesSub/mine/permission-check",
   });
 };
 
-// 计算属性：分平台自适应获取当前应用的真实版本号
 const appVersionDisplay = computed(() => {
   return appVersionService.getAppVersion(t);
 });
 
-// 版本号点击检测更新的 loading 状态
 const isChecking = ref(false);
 
-// 处理版本号点击事件，离线模式或正在检测中不响应
 const handleVersionClick = () => {
+  // 点击版本号也计入连续点击统计，方便在个人中心直接连击 5 次版本号触发密码输入框
+  logStore.recordMineTabClick();
   if (isOfflineMode.value || isChecking.value) return;
   checkUpdate();
 };
 
-// 分平台自适应的版本检测升级函数
 const checkUpdate = async () => {
   if (APP_CONFIG.APP_MODE === "offline" || isChecking.value) {
     return;
   }
-
   isChecking.value = true;
   try {
     await appVersionService.checkAppUpdate(toast, t);
@@ -358,42 +338,37 @@ const checkUpdate = async () => {
   }
 };
 
-// 计算属性：动态编排当前已连接设备之激活授权指示标签
 const authStateLabel = computed(() => {
   return isAuthorized.value ? t("bms.auth.statusAuthorized") : t("bms.auth.statusUnAuthorized");
 });
 
-/**
- * 点击设备授权激活，跳转至独立的授权激活页面
- */
 const navigateToAuth = () => {
   uni.navigateTo({
-    url: "/pages/mine/auth",
+    url: "/pagesSub/mine/auth",
   });
 };
 
-// 监听密码输入弹窗触发事件
 watch(passwordPromptTrigger, (newVal) => {
   if (newVal > 0) {
     showPasswordPrompt();
   }
 });
 
-// 显示输入 6 位密码的弹窗
 const showPasswordPrompt = () => {
   dialog
     .prompt({
       title: t("bms.logs.inputPasswordTitle"),
       inputValue: "",
-      zIndex: 2000,
+      zIndex: 3000,
       inputProps: {
         type: "text",
         showPassword: true,
         maxlength: 6,
         placeholder: t("bms.logs.inputPasswordPlaceholder"),
       },
-      beforeConfirm: (value: string | number) => {
-        if (String(value) === APP_CONFIG.DEBUG_CONFIG.PASSWORD) {
+      beforeConfirm: (options: any) => {
+        const rawVal = typeof options === "object" && options !== null && "value" in options ? options.value : options;
+        if (String(rawVal) === APP_CONFIG.DEBUG_CONFIG.PASSWORD) {
           return true;
         } else {
           toast.error(t("bms.logs.passwordError"));
@@ -405,48 +380,36 @@ const showPasswordPrompt = () => {
       logStore.unlockSystemLogs();
       toast.success(t("bms.logs.unlocked"));
     })
-    .catch(() => {
-      // 用户取消
-    });
+    .catch(() => {});
 };
 
-/**
- * 点击固件升级，跳转至固件写入页面
- */
 const navigateToFirmwareUpdate = () => {
   uni.navigateTo({
-    url: "/pages/mine/firmware-update",
+    url: "/pagesSub/mine/firmware-update",
   });
 };
 
-// 跳转至系统日志页面
 const navigateToSystemLogs = () => {
   uni.navigateTo({
-    url: "/pages/mine/system-logs",
+    url: "/pagesSub/mine/system-logs",
   });
 };
 
-// 跳转至调试测试页面
 const navigateToTestPage = () => {
   uni.navigateTo({
-    url: "/pages/mine/test-page",
+    url: "/pagesSub/mine/test-page",
   });
 };
 
-// 监听系统调试日志解锁状态变化：当再次连续点击 5 次关闭时，给予提示
 watch(isSystemLogsUnlocked, (unlocked) => {
   if (!unlocked) {
     toast.show(t("bms.mine.debugLocked"));
   }
 });
 
-// 判定当前运行模式是否为单机离线模式
 const isOfflineMode = computed(() => APP_CONFIG.APP_MODE === "offline");
-
-// 判定当前是否已处于联机登录状态
 const isLoggedIn = computed(() => !!token.value);
 
-// 个人卡片动态显示的展示名
 const userDisplayName = computed(() => {
   if (isOfflineMode.value) {
     return t("bms.mine.offlineGuest");
@@ -456,7 +419,6 @@ const userDisplayName = computed(() => {
     : t("bms.mine.notLoggedIn");
 });
 
-// 个人卡片动态显示的标志ID或点击引导
 const userDisplayId = computed(() => {
   if (isOfflineMode.value) {
     return "ID: " + t("bms.mine.offlineMode");
@@ -464,7 +426,6 @@ const userDisplayId = computed(() => {
   return isLoggedIn.value ? "ID: " + (userInfo.value.userId || "BMS-CLOUD-USER") : t("bms.mine.clickToLogin");
 });
 
-// 处理个人中心头像卡片的点击动作
 const handleUserCardClick = () => {
   if (isOfflineMode.value) {
     toast.show({
@@ -472,7 +433,6 @@ const handleUserCardClick = () => {
     });
     return;
   }
-
   if (!isLoggedIn.value) {
     dialog
       .confirm({
@@ -493,13 +453,10 @@ const handleUserCardClick = () => {
           toast.close();
         }
       })
-      .catch(() => {
-        // 用户取消
-      });
+      .catch(() => {});
   }
 };
 
-// 处理退出登录，注销云端账号
 const handleLogout = () => {
   dialog
     .confirm({
@@ -510,9 +467,7 @@ const handleLogout = () => {
     .then(() => {
       userStore.logout();
     })
-    .catch(() => {
-      // 用户取消
-    });
+    .catch(() => {});
 };
 </script>
 
@@ -520,58 +475,41 @@ const handleLogout = () => {
 .page-container {
   box-sizing: border-box;
 }
-
 .user-card {
   transition: all 0.2s ease-in-out;
 }
-
-/* 通过 CSS 局部变量控制单元格高度对齐，杜绝 :deep 深度覆盖组件库内部类名，完全符合规范 */
 .custom-settings-group {
-  /* 统一减小默认上下 padding，让普通单元格更紧凑 */
   --wot-cell-padding: 10px 16px;
 }
-
 .compact-cell {
-  /* 针对包含 Switch 和 Segmented 的单元格进一步缩减 padding，对齐到整体 40px 高度 */
   --wot-cell-padding: 6px 16px;
 }
-
 .custom-segmented {
-  /* 针对分段器进行尺寸与内边距的微调以对齐 Switch 的高度 */
   --wot-segmented-padding: 2px;
   --wot-segmented-item-padding: 2px 12px;
 }
-
-/* 顶部安全区域与自定义导航栏高度自适应占位 */
 .tab-content-wrap {
   box-sizing: border-box;
 }
-
-/* 底部 Footer 备案区与版本样式 */
 .mine-footer {
   text-align: center;
 }
-
 .icp-text {
   font-size: 24rpx;
   opacity: 0.85;
 }
-
 .version-text {
   font-size: 24rpx;
 }
-
 .version-btn-online {
   font-size: 24rpx;
   color: var(--wot-color-theme, #0052d9);
   cursor: pointer;
   transition: opacity 0.2s ease-in-out;
 }
-
 .version-btn-online:active {
   opacity: 0.6;
 }
-
 .version-btn-checking {
   opacity: 0.5;
   cursor: not-allowed;

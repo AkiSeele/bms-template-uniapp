@@ -10,6 +10,8 @@ import riIcons from "@iconify-json/ri/icons.json";
 export default defineConfig({
   presets: [
     presetUni({
+      // 显式禁用属性模式及 transformerAttributify，杜绝组件 props 误识别与 magic-string chunk 冲突
+      attributify: false,
       uno: {
         prefix: "wot-",
         presetOptions: {
@@ -28,13 +30,24 @@ export default defineConfig({
         ri: () => riIcons,
       },
       scale: 1.2,
-      warn: true,
+      warn: false,
       extraProperties: {
         display: "inline-block",
         "vertical-align": "middle",
       },
     }),
   ],
-  safelist: ["i-lucide-file-check-2", "i-lucide-file-up"],
+  safelist: [
+    "i-lucide-file-check-2",
+    "i-lucide-file-up",
+    "i-ri-signal-tower-fill",
+    "i-ri-signal-tower-line",
+    "i-ri-bluetooth-fill",
+    "i-ri-bluetooth-line",
+    "i-ri-search-line",
+    "i-ri-close-circle-fill",
+    "i-ri-close-fill",
+    "i-ri-check-line",
+    "i-ri-arrow-right-s-line",
+  ],
 });
-

@@ -197,6 +197,19 @@ const showSuccessModal = ref(false);
 const exportedPdfPath = ref("");
 
 /**
+ * 本地时间格式化函数，生成纯 ASCII YYYY-MM-DD HH:mm:ss 字符串
+ */
+const formatCurrentDateTime = (date = new Date()): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  const seconds = String(date.getSeconds()).padStart(2, "0");
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+};
+
+/**
  * 切换 AntV F2 图表呈现形式（折线趋势 <-> 电芯离散柱状）
  */
 const toggleChartType = () => {
@@ -220,7 +233,7 @@ const goBack = () => {
  * 组装当前 BMS 电池运行与遥测报告模拟数据源
  */
 const getBmsReportPayload = async (includeChart = false): Promise<BmsReportData> => {
-  const dateStr = new Date().toLocaleString();
+  const dateStr = formatCurrentDateTime(new Date());
   const cellVoltages: Array<{ index: number; voltage: string }> = [];
 
   // 纯模拟数据：16 串锂电池单体电芯数据

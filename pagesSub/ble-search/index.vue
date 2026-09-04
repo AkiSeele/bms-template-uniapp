@@ -1,11 +1,5 @@
 <template>
   <layout-provider>
-    <!-- 
-      使用 z-paging 插件进行列表展示
-      :use-local-list="true" 开启本地分页数据托管，适合蓝牙上报列表的本地去重管理
-      :refresher-only="true" 开启仅下拉刷新模式，完全禁用滚动底部的分页加载，彻底解决触底触发 query 导致的扫描中断 bug
-      @query 绑定下拉刷新或初始加载触发的扫描函数
-    -->
     <z-paging
       ref="paging"
       v-model="deviceList"
@@ -15,20 +9,18 @@
       :refresher-only="true"
       class="wot-min-h-0 wot-bg-filled-bottom"
     >
-      <!-- 将自定义顶部导航栏放在 z-paging 内部的 slot="top" 内，让组件自动精确计算高度，防止白边及首项遮挡 -->
+      <!-- 自定义顶部导航与搜索栏 -->
       <template #top>
         <wd-navbar :title="$t('bms.ble.searchTitle')" left-arrow safe-area-inset-top @click-left="goBack" />
 
-        <!-- Google 风格的水平流光进度条：展现现代无边框加载的流场感 -->
+        <!-- 扫描流光进度条 -->
         <view class="progress-bar-container" :class="{ 'is-active': isScanning }">
           <view class="progress-bar-indicator"></view>
         </view>
 
-        <!-- 搜索控制台：手写极其轻量精致的 Google Material 圆角输入框，无任何多余嵌套 -->
+        <!-- 搜索输入框 -->
         <view class="search-box-wrapper wot-px-4 wot-py-3 wot-bg-filled-bottom">
-          <view
-            class="google-search-box wot-flex wot-items-center wot-bg-filled-oppo wot-rounded-lg wot-px-3 wot-h-9 wot-border wot-border-solid wot-border-border-main"
-          >
+          <view class="google-search-box wot-flex wot-items-center wot-bg-filled-oppo wot-rounded-lg wot-px-3 wot-h-9 wot-border wot-border-solid wot-border-border-main">
             <wd-icon css-icon="i-ri-search-line" size="16px" color="var(--wot-icon-secondary)" class="wot-mr-2" />
             <input
               v-model="searchQuery"
@@ -37,7 +29,6 @@
               placeholder-class="search-placeholder"
               class="search-input wot-flex-1 wot-text-sm wot-text-text-main"
             />
-            <!-- 文本清空按钮 -->
             <view
               v-if="searchQuery"
               class="clear-btn wot-flex wot-items-center wot-justify-center wot-p-1"
@@ -49,23 +40,19 @@
         </view>
       </template>
 
-      <!-- 搜索到的蓝牙设备列表区域 -->
+      <!-- 蓝牙设备列表 -->
       <view class="wot-px-4 wot-pt-1 wot-pb-10" v-if="deviceList.length > 0">
         <view
           v-for="device in deviceList"
           :key="device.deviceId"
           @click="handleConnect(device)"
-          class="device-card wot-bg-filled-oppo wot-rounded-lg wot-px-3 wot-py-2.5 wot-mb-2 wot-flex wot-items-center wot-justify-between wot-border wot-border-solid wot-border-border-main active:wot-bg-filled-content"
+          class="device-card wot-bg-filled-oppo wot-rounded-lg wot-px-3 wot-py-2.5 wot-mb-2 wot-flex wot-items-center wot-justify-between wot-border wot-border-solid wot-border-border-main"
         >
-          <!-- Left side device info -->
+          <!-- 左侧设备信息 -->
           <view class="wot-flex wot-items-center wot-gap-3 wot-min-w-0 wot-flex-1">
-            <!-- Bluetooth icon circle -->
-            <view
-              class="icon-circle wot-flex wot-items-center wot-justify-center wot-bg-primary-1 wot-rounded-full wot-flex-shrink-0"
-            >
+            <view class="icon-circle wot-flex wot-items-center wot-justify-center wot-bg-primary-1 wot-rounded-full wot-flex-shrink-0">
               <wd-icon css-icon="i-ri-bluetooth-fill" size="18px" color="var(--wot-primary-color)" />
             </view>
-            <!-- Name & MAC container -->
             <view class="wot-flex wot-flex-col wot-min-w-0 wot-flex-1">
               <text class="wot-text-sm wot-font-bold wot-text-text-main wot-truncate">
                 {{ device.name || device.localName || "Unknown Device" }}
@@ -76,24 +63,20 @@
             </view>
           </view>
 
-          <!-- Right side status -->
+          <!-- 右侧信号状态 -->
           <view class="wot-flex wot-items-center wot-gap-3 wot-flex-shrink-0 wot-ml-2">
-            <!-- Signal strength -->
             <view class="wot-flex wot-items-center wot-gap-1">
               <wd-icon :css-icon="getSignalIcon(device.RSSI)" size="16px" :color="getSignalColor(device.RSSI)" />
               <text class="wot-text-xs wot-font-medium wot-text-text-secondary">{{ device.RSSI }} dBm</text>
             </view>
-
-            <!-- Arrow icon -->
             <wd-icon css-icon="i-ri-arrow-right-s-line" size="18px" color="var(--wot-icon-secondary)" />
           </view>
         </view>
       </view>
 
-      <!-- Empty state -->
+      <!-- 空状态 -->
       <template #empty>
         <view class="wot-flex wot-flex-col wot-items-center wot-justify-center wot-py-12 wot-px-6 wot-mt-10">
-          <!-- Radar animation -->
           <view class="radar-container wot-mb-8" v-if="isScanning">
             <view class="radar-ripple ripple-1"></view>
             <view class="radar-ripple ripple-2"></view>
@@ -102,14 +85,11 @@
               <wd-icon css-icon="i-ri-bluetooth-line" size="32px" color="var(--wot-primary-color)" />
             </view>
           </view>
-
-          <!-- Static empty view -->
           <view class="wot-flex wot-flex-col wot-items-center" v-else>
             <view class="empty-icon-wrapper wot-bg-filled-content wot-rounded-full wot-p-4 wot-mb-4">
               <wd-icon css-icon="i-ri-bluetooth-line" size="48px" color="var(--wot-icon-secondary)" />
             </view>
           </view>
-
           <text class="wot-text-base wot-font-medium wot-text-text-main wot-mt-2">
             {{ isScanning ? $t("bms.ble.scanning") : $t("bms.ble.searchEmpty") }}
           </text>
@@ -125,7 +105,6 @@
 <script setup lang="ts">
 import { ref, watch, nextTick, onMounted } from "vue";
 import { onShow, onHide, onUnload } from "@dcloudio/uni-app";
-
 import { useI18n } from "vue-i18n";
 import { useToast } from "@wot-ui/ui";
 import { gsap } from "gsap";
@@ -469,6 +448,7 @@ onShow(async () => {
 }
 .device-card:active {
   transform: scale(0.98);
+  background-color: var(--wot-color-bg-content, #e2e8f0);
 }
 
 /* Google 风格水平流光进度条 */

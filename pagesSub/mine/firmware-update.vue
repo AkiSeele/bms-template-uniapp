@@ -1,5 +1,6 @@
 <template>
-  <layout-provider>    <wd-navbar
+  <layout-provider>
+    <wd-navbar
       :title="$t('bms.firmware.title')"
       fixed
       left-arrow
@@ -10,37 +11,41 @@
 
     <!-- 顶部渐变装饰背景层（绝对定位，不影响文档流） -->
     <view class="fw-header-bg" :style="headerBgStyle">
-      <!-- 浮动圆圈由 GSAP 补间驱动 translateY，will-change 已在 CSS 中声明 -->
       <view class="fw-circle fw-circle--a" :style="circleAStyle" />
       <view class="fw-circle fw-circle--b" :style="circleBStyle" />
     </view>
 
     <view class="fw-container wot-px-3 wot-pb-4 wot-relative wot-z-1">
-
       <!-- ① 设备状态英雄卡片 -->
       <view class="fw-hero wot-flex wot-items-center wot-mb-4 wot-rounded-3xl wot-p-4 page-body-animate">
         <!-- 脉冲图标容器 -->
         <view class="fw-hero__icon wot-relative wot-flex-shrink-0 wot-flex wot-items-center wot-justify-center">
-          <!-- 脉冲圆环由 GSAP 补间驱动 scale + opacity -->
-          <view class="fw-pulse-ring" :style="pulseRingStyle" />          <wd-icon css-icon="i-lucide-cpu" size="32px" color="#fff" />
+          <view class="fw-pulse-ring" :style="pulseRingStyle" />
+          <wd-icon css-icon="i-lucide-cpu" size="32px" color="#fff" />
         </view>
 
         <view class="wot-flex wot-flex-col wot-ml-4">
           <text class="wot-text-2xl wot-font-bold wot-text-white">{{ $t("bms.firmware.deviceName") }}</text>
           <!-- 状态胶囊 -->
           <view class="fw-capsule wot-flex wot-items-center wot-mt-2" :class="statusCapsuleClass">
-            <!-- 闪烁动画由 GSAP 补间驱动 opacity -->
             <view class="fw-capsule__dot" :class="{ 'fw-capsule__dot--blink': isUpdating }" :style="isUpdating ? blinkStyle : undefined" />
             <text class="wot-text-xs wot-text-white wot-ml-1 wot-font-medium">{{ statusCapsuleText }}</text>
           </view>
         </view>
       </view>
 
-      <!-- ② 流程步骤条 -->      <wd-card class="wot-mb-4">        <wd-steps :active="currentStep" align-center>          <wd-step :title="$t('bms.firmware.stepSelect')" />          <wd-step :title="$t('bms.firmware.stepVerify')" />          <wd-step :title="$t('bms.firmware.stepFlash')" />          <wd-step :title="$t('bms.firmware.stepDone')" />
+      <!-- ② 流程步骤条 -->
+      <wd-card class="wot-mb-4">
+        <wd-steps :active="currentStep" align-center>
+          <wd-step :title="$t('bms.firmware.stepSelect')" />
+          <wd-step :title="$t('bms.firmware.stepVerify')" />
+          <wd-step :title="$t('bms.firmware.stepFlash')" />
+          <wd-step :title="$t('bms.firmware.stepDone')" />
         </wd-steps>
       </wd-card>
 
-      <!-- ③ 文件选择卡片 -->      <wd-card class="wot-mb-4" :title="$t('bms.firmware.selectFile')">
+      <!-- ③ 文件选择卡片 -->
+      <wd-card class="wot-mb-4" :title="$t('bms.firmware.selectFile')">
         <view
           class="fw-file-zone wot-flex wot-items-center wot-rounded-xl wot-p-3"
           :class="{ 'fw-file-zone--active': hasFileSelected }"
@@ -65,18 +70,22 @@
             </text>
             <text v-if="fileSizeText" class="wot-text-xs wot-text-green-500 wot-mt-1">{{ fileSizeText }}</text>
             <text v-else class="wot-text-xs wot-text-text-secondary wot-mt-1">{{ $t("bms.firmware.supportedFormats") }}</text>
-          </view>          <wd-icon css-icon="i-lucide-chevron-right" size="18px" color="#94a3b8" />
+          </view>
+          <wd-icon css-icon="i-lucide-chevron-right" size="18px" color="#94a3b8" />
         </view>
       </wd-card>
 
-      <!-- ④ 进度卡片（写入中或完成后显示） -->      <wd-card v-if="showProgressCard" class="wot-mb-4">
+      <!-- ④ 进度卡片（写入中或完成后显示） -->
+      <wd-card v-if="showProgressCard" class="wot-mb-4">
         <!-- 进度头部行 -->
         <view class="wot-flex wot-items-center wot-justify-between wot-mb-3">
-          <view class="wot-flex wot-items-center">            <wd-icon css-icon="i-lucide-download" size="18px" color="#22c55e" class="wot-mr-2" />
+          <view class="wot-flex wot-items-center">
+            <wd-icon css-icon="i-lucide-download" size="18px" color="#22c55e" class="wot-mr-2" />
             <text class="wot-text-sm wot-font-semibold wot-text-text-main">{{ $t("bms.firmware.flashProgress") }}</text>
           </view>
           <text class="fw-progress-pct">{{ displayProgressValue }}%</text>
-        </view>        <wd-progress
+        </view>
+        <wd-progress
           :percentage="displayProgressValue"
           :color="progressBarColor"
           :hide-text="true"
@@ -85,7 +94,6 @@
 
         <!-- 阶段文案行 -->
         <view class="wot-flex wot-items-center wot-justify-between wot-mt-3">
-          <!-- 进度阶段文字呼吸灯由 GSAP blinkStyle 驱动 -->
           <text class="wot-text-xs wot-font-medium" :class="isUpdating ? 'wot-text-blue-500' : 'wot-text-text-secondary'" :style="isUpdating ? blinkStyle : undefined">
             {{ progressPhaseText }}
           </text>
@@ -93,7 +101,12 @@
         </view>
       </wd-card>
 
-      <!-- ⑤ 固件信息卡片（选中文件后显示） -->      <wd-card v-if="hasFileSelected" class="wot-mb-4" :title="$t('bms.firmware.fwInfo')">        <wd-cell-group border>          <wd-cell :title="$t('bms.firmware.fwFileName')" :value="selectedFileName" />          <wd-cell :title="$t('bms.firmware.fwSize')" :value="fileSizeText" />          <wd-cell :title="$t('bms.firmware.fwStatus')">
+      <!-- ⑤ 固件信息卡片（选中文件后显示） -->
+      <wd-card v-if="hasFileSelected" class="wot-mb-4" :title="$t('bms.firmware.fwInfo')">
+        <wd-cell-group border>
+          <wd-cell :title="$t('bms.firmware.fwFileName')" :value="selectedFileName" />
+          <wd-cell :title="$t('bms.firmware.fwSize')" :value="fileSizeText" />
+          <wd-cell :title="$t('bms.firmware.fwStatus')">
             <template #default>
               <text class="wot-text-green-500 wot-font-medium">{{ $t("bms.firmware.fwReadyToFlash") }}</text>
             </template>
@@ -103,7 +116,8 @@
 
       <!-- ⑥ 底部操作按钮区 -->
       <view class="wot-mt-4 wot-mb-6">
-        <!-- 开始写入 / 更新中 / 完成 主按钮 -->        <wd-button
+        <!-- 开始写入 / 更新中 / 完成 主按钮 -->
+        <wd-button
           block
           size="large"
           :type="mainBtnType"
@@ -115,7 +129,8 @@
           {{ mainBtnText }}
         </wd-button>
 
-        <!-- 取消/重置 次要按钮 -->        <wd-button
+        <!-- 取消/重置 次要按钮 -->
+        <wd-button
           v-if="showCancelBtn"
           block
           size="large"
@@ -127,7 +142,6 @@
         </wd-button>
       </view>
     </view>
-
   </layout-provider>
 </template>
 

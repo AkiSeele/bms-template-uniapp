@@ -139,6 +139,9 @@
             "postcss" : true
         },
         "usingComponents" : true,
+        "optimization" : {
+            "subPackages" : true
+        },
         "permission" : {
             "scope.userLocation" : {
                 "desc" : "%mpWeixinLocationDesc%"

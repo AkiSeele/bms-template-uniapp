@@ -8,12 +8,6 @@
       }
     },
     {
-      "path": "pages/ble-search/index",
-      "style": {
-        "navigationStyle": "custom"
-      }
-    },
-    {
       "path": "pages/param/index",
       "style": {
         "navigationStyle": "custom"
@@ -30,42 +24,55 @@
       "style": {
         "navigationStyle": "custom"
       }
-    },
+    }
+  ],
+  "subPackages": [
     {
-      "path": "pages/mine/settings",
-      "style": {
-        "navigationStyle": "custom"
-      }
-    },
-    {
-      "path": "pages/mine/permission-check",
-      "style": {
-        "navigationStyle": "custom"
-      }
-    },
-    {
-      "path": "pages/mine/auth",
-      "style": {
-        "navigationStyle": "custom"
-      }
-    },
-    {
-      "path": "pages/mine/system-logs",
-      "style": {
-        "navigationStyle": "custom"
-      }
-    },
-    {
-      "path": "pages/mine/firmware-update",
-      "style": {
-        "navigationStyle": "custom"
-      }
-    },
-    {
-      "path": "pages/mine/test-page",
-      "style": {
-        "navigationStyle": "custom"
-      }
+      "root": "pagesSub",
+      "pages": [
+        {
+          "path": "ble-search/index",
+          "style": {
+            "navigationStyle": "custom"
+          }
+        },
+        {
+          "path": "mine/settings",
+          "style": {
+            "navigationStyle": "custom"
+          }
+        },
+        {
+          "path": "mine/permission-check",
+          "style": {
+            "navigationStyle": "custom"
+          }
+        },
+        {
+          "path": "mine/auth",
+          "style": {
+            "navigationStyle": "custom"
+          }
+        },
+        {
+          "path": "mine/system-logs",
+          "style": {
+            "navigationStyle": "custom"
+          }
+        },
+        {
+          "path": "mine/firmware-update",
+          "style": {
+            "navigationStyle": "custom"
+          }
+        },
+        {
+          "path": "mine/test-page",
+          "style": {
+            "navigationStyle": "custom"
+          }
+        }
+      ]
     }
   ],
   "globalStyle": {

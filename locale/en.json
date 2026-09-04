@@ -303,7 +303,7 @@
       "pdfSectionTitle": "PDF Data-Driven Export Test",
       "pdfSectionDesc": "Build vector PDF reports from pure data stream, fully cross-platform (App & Mini Program)",
       "exportReportBtn": "Generate Diagnostics PDF",
-      "exportChartPdfBtn": "Export AntV F2 Chart to PDF",
+      "exportChartPdfBtn": "Export ECharts to PDF",
       "exporting": "Generating PDF Report...",
       "exportSuccess": "PDF Report generated successfully",
       "exportFail": "Failed to generate PDF Report",
@@ -311,10 +311,10 @@
       "savedDesc": "PDF report has been saved to local storage:",
       "openPdfBtn": "Open PDF",
       "close": "Close",
-      "f2ChartTitle": "AntV F2 Battery Telemetry Graph",
+      "f2ChartTitle": "ECharts Battery Telemetry Graph",
       "f2LineType": "Charge/Discharge SOC Trend",
       "f2BarType": "16-Cell Voltage Distribution",
-      "f2ToggleBtn": "Toggle F2 Chart Type",
+      "f2ToggleBtn": "Toggle ECharts Type",
       "chartCaptureFail": "Failed to capture chart snapshot, please wait for chart to finish rendering"
     },
     "scan": {

@@ -1,5 +1,6 @@
 <template>
-  <!-- 全局配置提供者，动态接收当前主题与自定义 CSS 主题色变量 -->  <wd-config-provider :theme="actualTheme" :theme-vars="themeVars">
+  <!-- 全局配置提供者，动态接收当前主题与自定义 CSS 主题色变量 -->
+  <wd-config-provider :theme="actualTheme" :theme-vars="themeVars">
     <!-- 独立的背景容器，铺垫明暗切换的平滑颜色过渡，避免影响页面内 fixed 组件的定位上下文 -->
     <view 
       :class="[actualTheme === 'dark' ? 'wot-theme-dark bg-dark-gradient' : 'wot-theme-light bg-light-gradient']" 
@@ -13,9 +14,7 @@
     >
       <!-- 插槽投影承载具体的页面正文内容 -->
       <slot />
- 
- 
- 
+
       <!-- 全局「连接/自动连接中」Popup：底部浮动加载层 -->
       <wd-popup
         v-model="showConnectingPopup"
@@ -73,7 +72,9 @@
         </view>
       </wd-popup>
 
-      <!-- 统一全局的 Toast 和 Dialog 实例进行兜底注入 -->      <wd-toast />      <wd-dialog root-portal />
+      <!-- 统一全局的 Toast 和 Dialog 实例进行兜底注入 -->
+      <wd-toast />
+      <wd-dialog root-portal />
     </view>
   </wd-config-provider>
 </template>

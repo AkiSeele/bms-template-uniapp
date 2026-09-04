@@ -1,9 +1,11 @@
 <template>
   <view class="wot-w-full wot-bg-filled-bottom wot-box-border wot-px-4">
-    <!-- 自定义顶部导航栏 -->    <wd-navbar :title="$t('bms.tab.control')" fixed safe-area-inset-top />
+    <!-- 自定义顶部导航栏 -->
+    <wd-navbar :title="$t('bms.tab.control')" fixed safe-area-inset-top />
 
     <view class="tab-content-wrap page-body-animate" :style="{ 'padding-top': (navbarHeight + 16) + 'px' }">
-      <!-- 蓝牙未连接时的空状态 -->      <view v-if="!isConnected" class="empty-wrap wot-flex wot-flex-col wot-items-center wot-justify-center">
+      <!-- 蓝牙未连接时的空状态 -->
+      <view v-if="!isConnected" class="empty-wrap wot-flex wot-flex-col wot-items-center wot-justify-center">
         <wd-empty icon="empty" :tip="$t('bms.battery.noData')">
           <template #bottom>
             <wd-button size="small" plain @click="toConnect" custom-class="wot-mt-3 wot-min-w-[180rpx] wot-rounded-lg">
@@ -15,11 +17,12 @@
 
       <!-- 已连接时的控制面板 -->
       <view v-else class="wot-flex wot-flex-col wot-gap-4">
-        <!-- 1. 核心开关控制卡片 (开启/关闭按钮组方式，解决读不到状态值引起的 Switch 假滑动问题) -->
+        <!-- 1. 核心开关控制卡片 -->
         <view class="wot-bg-filled-oppo wot-p-4 wot-rounded-2xl wot-shadow-sm">
           <view
             class="wot-flex wot-items-center wot-gap-2 wot-mb-4 wot-border-0 wot-border-b wot-border-solid wot-border-divider-main wot-pb-2.5"
-          >            <wd-icon css-icon="i-ri-toggle-line" size="20px" color="var(--wot-icon-auxiliary)" />
+          >
+            <wd-icon css-icon="i-ri-toggle-line" size="20px" color="var(--wot-icon-auxiliary)" />
             <text class="wot-font-bold wot-text-text-main" :style="{ fontSize: '30rpx' }">
               {{ $t("bms.control.title") }}
             </text>
@@ -31,7 +34,8 @@
               <text class="wot-font-semibold wot-text-text-main" :style="{ fontSize: '28rpx' }">
                 {{ $t("bms.control.chargeMos") }}
               </text>
-              <view class="wot-flex wot-items-center wot-gap-1.5 wot-flex-shrink-0">                <wd-button
+              <view class="wot-flex wot-items-center wot-gap-1.5 wot-flex-shrink-0">
+                <wd-button
                   size="small"
                   type="primary"
                   plain
@@ -39,7 +43,8 @@
                   custom-class="wot-min-w-[110rpx] wot-font-semibold wot-rounded-md"
                 >
                   {{ $t("bms.common.enable") }}
-                </wd-button>                <wd-button
+                </wd-button>
+                <wd-button
                   size="small"
                   type="danger"
                   plain
@@ -58,7 +63,8 @@
               <text class="wot-font-semibold wot-text-text-main" :style="{ fontSize: '28rpx' }">
                 {{ $t("bms.control.dischargeMos") }}
               </text>
-              <view class="wot-flex wot-items-center wot-gap-1.5 wot-flex-shrink-0">                <wd-button
+              <view class="wot-flex wot-items-center wot-gap-1.5 wot-flex-shrink-0">
+                <wd-button
                   size="small"
                   type="primary"
                   plain
@@ -66,7 +72,8 @@
                   custom-class="wot-min-w-[110rpx] wot-font-semibold wot-rounded-md"
                 >
                   {{ $t("bms.common.enable") }}
-                </wd-button>                <wd-button
+                </wd-button>
+                <wd-button
                   size="small"
                   type="danger"
                   plain
@@ -85,7 +92,8 @@
               <text class="wot-font-semibold wot-text-text-main" :style="{ fontSize: '28rpx' }">
                 {{ $t("bms.control.heatMos") }}
               </text>
-              <view class="wot-flex wot-items-center wot-gap-1.5 wot-flex-shrink-0">                <wd-button
+              <view class="wot-flex wot-items-center wot-gap-1.5 wot-flex-shrink-0">
+                <wd-button
                   size="small"
                   type="primary"
                   plain
@@ -93,7 +101,8 @@
                   custom-class="wot-min-w-[110rpx] wot-font-semibold wot-rounded-md"
                 >
                   {{ $t("bms.common.enable") }}
-                </wd-button>                <wd-button
+                </wd-button>
+                <wd-button
                   size="small"
                   type="danger"
                   plain
@@ -112,7 +121,8 @@
               <text class="wot-font-semibold wot-text-text-main" :style="{ fontSize: '28rpx' }">
                 {{ $t("bms.control.testMode") }}
               </text>
-              <view class="wot-flex wot-items-center wot-gap-1.5 wot-flex-shrink-0">                <wd-button
+              <view class="wot-flex wot-items-center wot-gap-1.5 wot-flex-shrink-0">
+                <wd-button
                   size="small"
                   type="primary"
                   plain
@@ -120,7 +130,8 @@
                   custom-class="wot-min-w-[110rpx] wot-font-semibold wot-rounded-md"
                 >
                   {{ $t("bms.common.enable") }}
-                </wd-button>                <wd-button
+                </wd-button>
+                <wd-button
                   size="small"
                   type="danger"
                   plain
@@ -138,7 +149,8 @@
         <view class="wot-bg-filled-oppo wot-p-4 wot-rounded-2xl wot-shadow-sm">
           <view
             class="wot-flex wot-items-center wot-gap-2 wot-mb-4 wot-border-0 wot-border-b wot-border-solid wot-border-divider-main wot-pb-2.5"
-          >            <wd-icon css-icon="i-ri-settings-5-line" size="20px" color="var(--wot-icon-secondary)" />
+          >
+            <wd-icon css-icon="i-ri-settings-5-line" size="20px" color="var(--wot-icon-secondary)" />
             <text class="wot-font-bold wot-text-text-main" :style="{ fontSize: '30rpx' }">
               {{ $t("bms.control.systemMaintenance") }}
             </text>
@@ -150,7 +162,8 @@
             <view class="wot-flex wot-items-center wot-justify-between">
               <text class="wot-font-semibold wot-text-text-main" :style="{ fontSize: '28rpx' }">
                 {{ $t("bms.control.clearStatus") }}
-              </text>              <wd-button size="small" plain @click="confirmAction('clear')" custom-class="wot-min-w-[140rpx] wot-font-semibold wot-rounded-md">
+              </text>
+              <wd-button size="small" plain @click="confirmAction('clear')" custom-class="wot-min-w-[140rpx] wot-font-semibold wot-rounded-md">
                 {{ $t("bms.control.btnClear") }}
               </wd-button>
             </view>
@@ -161,7 +174,8 @@
             >
               <text class="wot-font-semibold wot-text-text-main" :style="{ fontSize: '28rpx' }">
                 {{ $t("bms.control.clearParam") }}
-              </text>              <wd-button size="small" plain @click="confirmAction('clearParam')" custom-class="wot-min-w-[140rpx] wot-font-semibold wot-rounded-md">
+              </text>
+              <wd-button size="small" plain @click="confirmAction('clearParam')" custom-class="wot-min-w-[140rpx] wot-font-semibold wot-rounded-md">
                 {{ $t("bms.control.btnClear") }}
               </wd-button>
             </view>
@@ -172,7 +186,8 @@
             >
               <text class="wot-font-semibold wot-text-text-main" :style="{ fontSize: '28rpx' }">
                 {{ $t("bms.control.forceStart") }}
-              </text>              <wd-button size="small" plain @click="confirmAction('start')" custom-class="wot-min-w-[140rpx] wot-font-semibold wot-rounded-md">
+              </text>
+              <wd-button size="small" plain @click="confirmAction('start')" custom-class="wot-min-w-[140rpx] wot-font-semibold wot-rounded-md">
                 {{ $t("bms.control.btnStart") }}
               </wd-button>
             </view>
@@ -183,7 +198,8 @@
             >
               <text class="wot-font-semibold wot-text-text-main" :style="{ fontSize: '28rpx' }">
                 {{ $t("bms.control.forceSleep") }}
-              </text>              <wd-button size="small" plain @click="confirmAction('sleep')" custom-class="wot-min-w-[140rpx] wot-font-semibold wot-rounded-md">
+              </text>
+              <wd-button size="small" plain @click="confirmAction('sleep')" custom-class="wot-min-w-[140rpx] wot-font-semibold wot-rounded-md">
                 {{ $t("bms.control.btnSleep") }}
               </wd-button>
             </view>
@@ -240,7 +256,7 @@ const { isBleConnected: isConnected } = storeToRefs(bleStore);
 // 导航至蓝牙搜寻连接页
 const toConnect = () => {
   uni.navigateTo({
-    url: "/pages/ble-search/index",
+    url: "/pagesSub/ble-search/index",
   });
 };
 
@@ -254,7 +270,7 @@ const showAuthRequiredDialog = () => {
     })
     .then(() => {
       uni.navigateTo({
-        url: "/pages/mine/auth",
+        url: "/pagesSub/mine/auth",
       });
     })
     .catch(() => {

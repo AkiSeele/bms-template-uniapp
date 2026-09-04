@@ -15,15 +15,18 @@
       }"
     />
 
-    <!-- 顶部固定定位导航栏（背景始终保持透明） -->    <wd-navbar
+    <!-- 顶部固定定位导航栏（背景始终保持透明） -->
+    <wd-navbar
       fixed
       safe-area-inset-top
       custom-style="background-color: transparent !important; border-bottom: none !important; z-index: 200 !important; box-shadow: none !important; transition: none !important;"
       @click-left="handleScanConnect"
     >
       <template #left>
-        <view class="wot-flex wot-items-center wot-gap-2">          <wd-icon name="scan" size="20px" :color="navbarContentColor" />
-          <view v-if="!isOfflineMode" class="wot-flex wot-items-center wot-gap-1">            <wd-icon css-icon="i-lucide-cloud" size="14px" :color="navbarContentColor" />
+        <view class="wot-flex wot-items-center wot-gap-2">
+          <wd-icon name="scan" size="20px" :color="navbarContentColor" />
+          <view v-if="!isOfflineMode" class="wot-flex wot-items-center wot-gap-1">
+            <wd-icon css-icon="i-lucide-cloud" size="14px" :color="navbarContentColor" />
             <text class="wot-font-bold wot-text-caption wot-scale-90" :style="{ color: navbarContentColor }">
               {{ $t("bms.mine.cloudOnline") }}
             </text>
@@ -47,7 +50,7 @@
       class="scroll-mode-layout"
       :show-scrollbar="false"
       :enhanced="true"
-      :scroll-top="scrollResetTop"
+      :bounces="false"
       :data-target-scroll="targetScroll"
       :data-navbar-height="navbarHeight"
       :data-theme="actualTheme"
@@ -77,7 +80,8 @@
               <view class="telemetry-panel wot-flex wot-items-center wot-justify-between wot-py-4">
                 <!-- 电流展示项 -->
                 <view class="telemetry-item wot-flex wot-items-center wot-justify-center wot-flex-1">
-                  <view class="telemetry-icon-wrapper wot-flex wot-items-center wot-justify-center wot-mr-3">                    <wd-icon
+                  <view class="telemetry-icon-wrapper wot-flex wot-items-center wot-justify-center wot-mr-3">
+                    <wd-icon
                       css-icon="i-ri-pulse-line"
                       size="18px"
                       :color="actualTheme === 'dark' ? '#ffffff' : activeThemeColor"
@@ -99,7 +103,8 @@
 
                 <!-- 电压展示项 -->
                 <view class="telemetry-item wot-flex wot-items-center wot-justify-center wot-flex-1">
-                  <view class="telemetry-icon-wrapper wot-flex wot-items-center wot-justify-center wot-mr-3">                    <wd-icon
+                  <view class="telemetry-icon-wrapper wot-flex wot-items-center wot-justify-center wot-mr-3">
+                    <wd-icon
                       css-icon="i-ri-flashlight-line"
                       size="18px"
                       :color="actualTheme === 'dark' ? '#ffffff' : activeThemeColor"
@@ -130,55 +135,58 @@
         />
       </view>
 
-      <!-- 粘性蓝牙状态栏：它在 scroll-view 中是独立的 sticky 元素，其父容器是整个 scroll-view -->
-      <view
-        class="sticky-bluetooth-wrapper bluetooth-sticky-target"
-        :style="{
-          top: navbarHeight + 'px',
-          backgroundColor: 'var(--wot-filled-bottom)',
-          borderRadius: '16px 16px 0 0',
-          padding: '12px 16px 8px',
-        }"
-      >
-        <!-- 蓝牙连接状态面板（内容区域融合卡片） -->
-        <view class="bluetooth-status-panel wot-flex wot-items-center wot-justify-between wot-p-4">
-          <view class="wot-flex wot-items-center wot-min-w-0">
-            <!-- 蓝牙图标呼吸闪烁动画 -->
-            <view
-              class="status-icon-wrapper wot-flex wot-items-center wot-justify-center wot-mr-3 wot-flex-shrink-0"
-              :class="isConnected ? 'bg-primary-light' : 'bg-neutral-light'"
-              :style="isConnected ? pulseStyle : undefined"
-            >              <wd-icon
-                :css-icon="isConnected ? 'i-ri-bluetooth-fill' : 'i-ri-bluetooth-line'"
-                size="20px"
-                :color="isConnected ? activeThemeColor : '#858585'"
-              />
-            </view>
-            <view class="wot-flex wot-flex-col wot-min-w-0">
-              <text class="wot-text-text-main wot-font-bold wot-truncate" :style="{ fontSize: '26rpx' }">
-                {{ isConnected ? connectedName : $t("bms.ble.disconnected") }}
-              </text>
-              <text class="wot-text-text-secondary wot-mt-[2rpx] wot-truncate" :style="{ fontSize: '20rpx' }">
-                {{ isConnected ? $t("bms.ble.deviceMac") + connectedMac : $t("bms.ble.promptConnect") }}
-              </text>
-            </view>
-          </view>
-
-          <!-- 快速连接/断开按钮 -->          <wd-button size="small" :type="isConnected ? 'danger' : 'primary'" @click="toggleConnection" plain>
-            {{ isConnected ? $t("bms.ble.disconnect") : $t("bms.ble.connect") }}
-          </wd-button>
-        </view>
-      </view>
-
-      <!-- 下半部分卡片容器 -->
+      <!-- 下半部分卡片容器：包裹粘性悬浮栏与全部内容卡片，提供完整的 sticky 作用域 -->
       <view class="scroll-bottom-container wot-bg-filled-bottom">
+        <!-- 粘性蓝牙状态栏：作为 scroll-bottom-container 的头部粘性元素，全程持续吸顶 -->
+        <view
+          class="sticky-bluetooth-wrapper bluetooth-sticky-target"
+          :style="{
+            top: navbarHeight + 'px',
+            backgroundColor: 'var(--wot-filled-bottom)',
+            borderRadius: '16px 16px 0 0',
+            padding: '12px 16px 8px',
+          }"
+        >
+          <!-- 蓝牙连接状态面板（内容区域融合卡片） -->
+          <view class="bluetooth-status-panel wot-flex wot-items-center wot-justify-between wot-p-4">
+            <view class="wot-flex wot-items-center wot-min-w-0">
+              <!-- 蓝牙图标呼吸闪烁动画 -->
+              <view
+                class="status-icon-wrapper wot-flex wot-items-center wot-justify-center wot-mr-3 wot-flex-shrink-0"
+                :class="isConnected ? 'bg-primary-light' : 'bg-neutral-light'"
+                :style="isConnected ? pulseStyle : undefined"
+              >
+                <wd-icon
+                  :css-icon="isConnected ? 'i-ri-bluetooth-fill' : 'i-ri-bluetooth-line'"
+                  size="20px"
+                  :color="isConnected ? activeThemeColor : '#858585'"
+                />
+              </view>
+              <view class="wot-flex wot-flex-col wot-min-w-0">
+                <text class="wot-text-text-main wot-font-bold wot-truncate" :style="{ fontSize: '26rpx' }">
+                  {{ isConnected ? connectedName : $t("bms.ble.disconnected") }}
+                </text>
+                <text class="wot-text-text-secondary wot-mt-[2rpx] wot-truncate" :style="{ fontSize: '20rpx' }">
+                  {{ isConnected ? $t("bms.ble.deviceMac") + connectedMac : $t("bms.ble.promptConnect") }}
+                </text>
+              </view>
+            </view>
+
+            <!-- 快速连接/断开按钮 -->
+            <wd-button size="small" :type="isConnected ? 'danger' : 'primary'" @click="toggleConnection" plain>
+              {{ isConnected ? $t("bms.ble.disconnect") : $t("bms.ble.connect") }}
+            </wd-button>
+          </view>
+        </view>
+
         <!-- 下半部分主要数据面板（普通文档流跟随滚动） -->
-        <view class="scroll-body-content wot-px-4 wot-pb-24">
+        <view class="scroll-body-content wot-px-4">
           <!-- 4 个核心参数 Google MD3 规格卡片网格 -->
           <view class="wot-grid wot-grid-cols-4 wot-gap-3 wot-pt-2">
             <!-- 剩余容量卡片 -->
             <view class="md3-metric-card">
-              <view class="card-icon-wrapper bg-primary-light wot-flex wot-items-center wot-justify-center">                <wd-icon css-icon="i-ri-battery-2-charge-line" size="18px" :color="activeThemeColor" />
+              <view class="card-icon-wrapper bg-primary-light wot-flex wot-items-center wot-justify-center">
+                <wd-icon css-icon="i-ri-battery-2-charge-line" size="18px" :color="activeThemeColor" />
               </view>
               <text class="metric-label wot-text-text-secondary wot-font-semibold wot-text-center wot-mt-2">
                 {{ $t("bms.battery.remainingCapacity") }}
@@ -192,7 +200,8 @@
 
             <!-- 健康度 SOH 卡片 -->
             <view class="md3-metric-card">
-              <view class="card-icon-wrapper bg-success-light wot-flex wot-items-center wot-justify-center">                <wd-icon css-icon="i-ri-heart-pulse-line" size="18px" color="#10b981" />
+              <view class="card-icon-wrapper bg-success-light wot-flex wot-items-center wot-justify-center">
+                <wd-icon css-icon="i-ri-heart-pulse-line" size="18px" color="#10b981" />
               </view>
               <text class="metric-label wot-text-text-secondary wot-font-semibold wot-text-center wot-mt-2">
                 {{ $t("bms.params.soh") }}
@@ -204,7 +213,8 @@
 
             <!-- 循环次数卡片 -->
             <view class="md3-metric-card">
-              <view class="card-icon-wrapper bg-warning-light wot-flex wot-items-center wot-justify-center">                <wd-icon css-icon="i-ri-loop-left-line" size="18px" color="#f59e0b" />
+              <view class="card-icon-wrapper bg-warning-light wot-flex wot-items-center wot-justify-center">
+                <wd-icon css-icon="i-ri-loop-left-line" size="18px" color="#f59e0b" />
               </view>
               <text class="metric-label wot-text-text-secondary wot-font-semibold wot-text-center wot-mt-2">
                 {{ $t("bms.params.cycleCount") }}
@@ -216,7 +226,8 @@
 
             <!-- 运行总时长卡片 -->
             <view class="md3-metric-card">
-              <view class="card-icon-wrapper bg-info-light wot-flex wot-items-center wot-justify-center">                <wd-icon css-icon="i-ri-time-line" size="18px" color="#06b6d4" />
+              <view class="card-icon-wrapper bg-info-light wot-flex wot-items-center wot-justify-center">
+                <wd-icon css-icon="i-ri-time-line" size="18px" color="#06b6d4" />
               </view>
               <text class="metric-label wot-text-text-secondary wot-font-semibold wot-text-center wot-mt-2">
                 {{ $t("bms.params.runTime") }}
@@ -239,7 +250,8 @@
               <view class="wot-flex wot-items-center wot-min-w-0 wot-flex-1">
                 <view
                   class="control-icon-wrapper bg-primary-light wot-flex wot-items-center wot-justify-center wot-mr-2 wot-flex-shrink-0"
-                >                  <wd-icon css-icon="i-ri-battery-charge-line" size="18px" :color="activeThemeColor" />
+                >
+                  <wd-icon css-icon="i-ri-battery-charge-line" size="18px" :color="activeThemeColor" />
                 </view>
                 <view class="wot-flex wot-flex-col wot-min-w-0">
                   <text
@@ -256,7 +268,8 @@
                   </text>
                 </view>
               </view>
-              <view class="wot-flex wot-justify-end wot-items-center wot-flex-shrink-0" :style="{ width: '80rpx' }">                <wd-switch
+              <view class="wot-flex wot-justify-end wot-items-center wot-flex-shrink-0" :style="{ width: '80rpx' }">
+                <wd-switch
                   :model-value="isCharging"
                   :disabled="!isConnected"
                   @change="toggleCharge"
@@ -274,7 +287,8 @@
               <view class="wot-flex wot-items-center wot-min-w-0 wot-flex-1">
                 <view
                   class="control-icon-wrapper bg-success-light wot-flex wot-items-center wot-justify-center wot-mr-2 wot-flex-shrink-0"
-                >                  <wd-icon css-icon="i-ri-flashlight-line" size="18px" color="#10b981" />
+                >
+                  <wd-icon css-icon="i-ri-flashlight-line" size="18px" color="#10b981" />
                 </view>
                 <view class="wot-flex wot-flex-col wot-min-w-0">
                   <text
@@ -291,7 +305,8 @@
                   </text>
                 </view>
               </view>
-              <view class="wot-flex wot-justify-end wot-items-center wot-flex-shrink-0" :style="{ width: '80rpx' }">                <wd-switch
+              <view class="wot-flex wot-justify-end wot-items-center wot-flex-shrink-0" :style="{ width: '80rpx' }">
+                <wd-switch
                   :model-value="isDischarging"
                   :disabled="!isConnected"
                   @change="toggleDischarge"
@@ -321,7 +336,8 @@
               <view
                 class="wot-mr-4 wot-flex wot-items-center wot-justify-center wot-flex-shrink-0"
                 :style="{ width: '80rpx', height: '80rpx' }"
-              >                <wd-icon css-icon="i-ri-temp-hot-line" size="80rpx" color="#10b981" />
+              >
+                <wd-icon css-icon="i-ri-temp-hot-line" size="80rpx" color="#10b981" />
               </view>
               <view class="wot-grid wot-grid-cols-2 wot-gap-2 wot-flex-1">
                 <view v-for="(tItem, index) in temperatureList" :key="index" class="temp-item-pill">
@@ -332,7 +348,8 @@
                 </view>
               </view>
             </view>
-            <view v-else class="wot-py-4">              <wd-empty icon="empty" :tip="$t('bms.battery.noData')" />
+            <view v-else class="wot-py-4">
+              <wd-empty icon="empty" :tip="$t('bms.battery.noData')" />
             </view>
           </view>
 
@@ -377,7 +394,8 @@
                 </view>
               </view>
             </view>
-            <view v-else class="wot-py-4">              <wd-empty icon="empty" :tip="$t('bms.battery.noData')" />
+            <view v-else class="wot-py-4">
+              <wd-empty icon="empty" :tip="$t('bms.battery.noData')" />
             </view>
           </view>
 
@@ -395,7 +413,8 @@
             </view>
             <view class="wot-flex wot-flex-col wot-gap-3 wot-pt-3.5">
               <view class="wot-flex wot-items-center wot-justify-between">
-                <view class="wot-flex wot-items-center">                  <wd-icon css-icon="i-ri-shield-flash-line" size="18px" color="#10b981" class="wot-mr-2" />
+                <view class="wot-flex wot-items-center">
+                  <wd-icon css-icon="i-ri-shield-flash-line" size="18px" color="#10b981" class="wot-mr-2" />
                   <text class="wot-text-sm wot-text-text-secondary">{{ $t("bms.protect.overTemp") }}</text>
                 </view>
                 <view
@@ -406,7 +425,8 @@
                 </view>
               </view>
               <view class="wot-flex wot-items-center wot-justify-between">
-                <view class="wot-flex wot-items-center">                  <wd-icon css-icon="i-ri-shield-flash-line" size="18px" color="#10b981" class="wot-mr-2" />
+                <view class="wot-flex wot-items-center">
+                  <wd-icon css-icon="i-ri-shield-flash-line" size="18px" color="#10b981" class="wot-mr-2" />
                   <text class="wot-text-sm wot-text-text-secondary">{{ $t("bms.protect.overVolt") }}</text>
                 </view>
                 <view
@@ -417,7 +437,8 @@
                 </view>
               </view>
               <view class="wot-flex wot-items-center wot-justify-between">
-                <view class="wot-flex wot-items-center">                  <wd-icon css-icon="i-ri-shield-keyhole-line" size="18px" color="#10b981" class="wot-mr-2" />
+                <view class="wot-flex wot-items-center">
+                  <wd-icon css-icon="i-ri-shield-keyhole-line" size="18px" color="#10b981" class="wot-mr-2" />
                   <text class="wot-text-sm wot-text-text-secondary">{{ $t("bms.protect.shortCircuit") }}</text>
                 </view>
                 <view
@@ -521,29 +542,6 @@ function onScroll(event, ownerInstance) {
       opacity: scrollHeaderMaskOpacity,
     });
   }
-
-  // 6. 蓝牙状态栏的圆角和 padding 平滑插值 (吸顶前 80px 开始由 16px 变形至 0px 直角贴合)
-  var startSticky = targetScroll - 80;
-  var endSticky = targetScroll;
-  var radius = 16;
-  var paddingTop = 12;
-
-  if (scrollTop >= endSticky) {
-    radius = 0;
-    paddingTop = 8;
-  } else if (scrollTop > startSticky) {
-    var progress = (scrollTop - startSticky) / (endSticky - startSticky);
-    radius = 16 * (1 - progress);
-    paddingTop = 12 - 4 * progress;
-  }
-
-  var bluetoothSticky = ownerInstance.selectComponent(".bluetooth-sticky-target");
-  if (bluetoothSticky) {
-    bluetoothSticky.setStyle({
-      "border-radius": radius + "px " + radius + "px 0 0",
-      "padding-top": paddingTop + "px",
-    });
-  }
 }
 
 module.exports = {
@@ -582,7 +580,7 @@ const bleStore = useBleStore();
 
 // 获取全局应用配置 Store
 const appStore = useAppStore();
-const { activeThemeColor, actualTheme } = storeToRefs(appStore);
+const { activeThemeColor, actualTheme, activeTab } = storeToRefs(appStore);
 
 // 联动全局蓝牙连接状态、已连接设备信息及电池物理遥测响应式状态
 const {
@@ -601,24 +599,9 @@ const {
 // 蓝牙图标呼吸动画脉冲效果
 const { pulseStyle, stopPulse } = usePulseAnimation(isConnected);
 
-// scroll-view 受控 scroll-top 重置信号：
-// 在 onShow 时短暂赋值为 0 将 scroll-view 物理位置归零，再立即恢复为 -1（非受控）以不阻断用户滚动
-const scrollResetTop = ref(-1);
-
 // 组件销毁时清理
 onUnmounted(() => {
   stopPulse();
-});
-
-// 每次页面显示（Tab 切换回来）时，将 scroll-view 物理位置同步归零，
-// 防止 v-show 保活场景下状态与实际位置脱节导致整页偏高的布局 Bug
-onShow(() => {
-  // 将受控 scroll-top 置 0，触发 scroll-view 物理归零
-  scrollResetTop.value = 0;
-  // 在下一个 tick 将受控值还原为 -1，恢复自由滚动模式，不持续干扰用户手势
-  setTimeout(() => {
-    scrollResetTop.value = -1;
-  }, 50);
 });
 
 // 引入 wot-ui 底层设备信息适配
@@ -638,6 +621,29 @@ const isOfflineMode = computed(() => APP_CONFIG.APP_MODE === "offline");
 // 获取当前组件实例，用以执行物理布局测量
 const instance = getCurrentInstance();
 const headerHeight = ref(380);
+
+// 测量顶部大背景层高度，以精确计算吸顶临界点 targetScroll
+const measureHeaderHeight = () => {
+  setTimeout(() => {
+    uni
+      .createSelectorQuery()
+      .in(instance)
+      .select(".scroll-header-wrap")
+      .boundingClientRect((rect: any) => {
+        if (rect && rect.height) {
+          headerHeight.value = rect.height;
+        }
+      })
+      .exec();
+  }, 100);
+};
+
+// 监听当前激活 Tab 变化，切回实时数据首页时重新校准高度
+watch(activeTab, (tab) => {
+  if (tab === "realtime") {
+    measureHeaderHeight();
+  }
+});
 
 // 动态计算蓝牙卡片吸顶时所需的精确滚动距离，彻底杜绝硬编码误差
 const targetScroll = computed(() => {
@@ -734,7 +740,7 @@ const cellVoltageList = computed(() => {
 const toggleConnection = () => {
   if (!isConnected.value) {
     uni.navigateTo({
-      url: "/pages/ble-search/index",
+      url: "/pagesSub/ble-search/index",
     });
   } else {
     dialog
@@ -835,19 +841,7 @@ const runTimeStr = computed(() => {
 
 onMounted(() => {
   triggerAutoConnect();
-  // 延迟一小段时间，确保布局完全就绪后，动态测量上半部分包装器的实际高度
-  setTimeout(() => {
-    uni
-      .createSelectorQuery()
-      .in(instance)
-      .select(".scroll-header-wrap")
-      .boundingClientRect((rect: any) => {
-        if (rect && rect.height) {
-          headerHeight.value = rect.height;
-        }
-      })
-      .exec();
-  }, 100);
+  measureHeaderHeight();
 });
 </script>
 
@@ -870,6 +864,9 @@ onMounted(() => {
   height: 100vh;
   box-sizing: border-box;
   touch-action: pan-y;
+  overscroll-behavior: none;
+  overscroll-behavior-y: none;
+  -webkit-overflow-scrolling: touch;
 }
 
 .scroll-header-wrap {
@@ -897,18 +894,20 @@ onMounted(() => {
 
 .scroll-bottom-container {
   width: 100%;
+  min-height: 100vh;
   box-sizing: border-box;
   position: relative;
   display: flex;
   flex-direction: column;
   z-index: 3;
-  margin-top: 0;
+  margin-top: -24px;
 }
 
 .scroll-body-content {
   width: 100%;
   box-sizing: border-box;
   background-color: transparent;
+  padding-bottom: calc(64px + env(safe-area-inset-bottom) + 32px);
 }
 
 .navbar-placeholder {
@@ -917,13 +916,15 @@ onMounted(() => {
 
 .sticky-bluetooth-wrapper {
   position: sticky;
+  top: calc(var(--status-bar-height) + 44px);
   left: 0;
   right: 0;
-  z-index: 10;
-  /* border-radius 与 padding 已完全由 stickyBluetoothStyle 内联样式实时差值驱动，CSS 中仅保留结构定位属性 */
+  z-index: 20;
   box-sizing: border-box;
-  margin-top: -24px;
-  /* 移除 transition 和 will-change，圆角和间距变化已为逐帧跟手，无需过渡补帧 */
+  margin-top: 0;
+  padding: 12px 16px 8px;
+  border-radius: 16px 16px 0 0;
+  background-color: var(--wot-filled-bottom);
   box-shadow: none;
 }
 
