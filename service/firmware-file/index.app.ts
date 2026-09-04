@@ -3,9 +3,15 @@
  * 依赖 lemonjk-FileSelect 原生插件与 HTML5+ IO 接口。
  */
 
-import { isAppAndroid } from "@uni-helper/uni-env";
+import { isAppAndroid as _envIsAppAndroid } from "@uni-helper/uni-env";
 
 declare const plus: any;
+
+const isAppAndroid: boolean = Boolean(
+  _envIsAppAndroid ||
+    (typeof plus !== "undefined" && plus.os?.name?.toLowerCase() === "android") ||
+    (typeof uni !== "undefined" && (uni.getSystemInfoSync().platform || "").toLowerCase() === "android"),
+);
 
 export interface FirmwareSelectedFile {
   name: string;

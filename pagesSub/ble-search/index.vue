@@ -124,7 +124,7 @@ const toast = useToast();
 const bleStore = useBleStore();
 
 // 引入统一封装的可复用蓝牙与定位权限管理 Hook
-const { checkStatus, resolveEnvAlert } = useBlePermission();
+const { checkStatus, resolveEnvAlert, handleBleScanError } = useBlePermission();
 
 // z-paging 绑定数据与实例 Ref
 const paging = ref<any>(null);
@@ -311,8 +311,20 @@ const onQuery = async () => {
     console.error("启动蓝牙扫描或适配器初始化失败:", err);
     await stopScanProcess();
     paging.value?.complete(deviceList.value);
-    const errMsg = err.message || err.errMsg || String(err);
-    toast.error(`${t("bms.ble.scanStartFailed")}: ${errMsg}`);
+
+    // 核心状态重置：扫描异常时重置权限诊断状态，确保下一次下拉刷新或返回时能重新进行全量硬件检测
+    hasCheckedPermission.value = false;
+
+    // 优先交由权限 Hook 进行 10016 (系统定位未开)、10001 (蓝牙未开) 或应用权限被拒的针对性弹窗与跳转引导
+    const handled = handleBleScanError(err, () => {
+      // 用户在弹窗中取消了引导，返回上一页
+      goBack();
+    });
+
+    if (!handled) {
+      const errMsg = err.message || err.errMsg || String(err);
+      toast.error(`${t("bms.ble.scanStartFailed")}: ${errMsg}`);
+    }
   }
 };
 
@@ -426,6 +438,8 @@ onShow(async () => {
   if (isFirstShow || returnedFromSettings) {
     isFirstShow = false;
     uni.removeStorageSync("returned_from_settings");
+    // 用户刚从系统设置页面修复返回，重置权限诊断状态，重新进行全量硬件检测
+    hasCheckedPermission.value = false;
     // 增加 200ms 缓冲延时，避开小程序页面初始化渲染与蓝牙硬件适配器唤醒（openBluetoothAdapter）的 CPU 并发争抢，彻底消灭首屏瞬时卡顿
     setTimeout(() => {
       paging.value?.reload();

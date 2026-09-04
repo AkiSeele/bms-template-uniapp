@@ -114,10 +114,10 @@
           </view>
         </wd-tab>
 
-        <!-- 2. 连接日志 Tab -->
+        <!-- 2. API 回调日志 Tab -->
         <wd-tab
-          name="connection"
-          :title="$t('bms.logs.tabConnection')"
+          name="apiCallback"
+          :title="$t('bms.logs.tabApiCallback')"
         >
           <view class="tab-pane-wrapper wot-flex wot-flex-col wot-h-full wot-overflow-hidden">
             <!-- 快捷搜索与筛选工具栏 -->
@@ -160,16 +160,16 @@
             <!-- 列表滚动区容器：100% 充满剩余空间 -->
             <view class="scroll-wrapper wot-flex-1 wot-overflow-hidden wot-min-h-0">
               <scroll-view scroll-y style="height: 100%; width: 100%;" class="scroll-container wot-p-2.5 wot-box-border">
-                <view v-if="filteredConnectionLogs.length === 0" class="wot-py-12">
+                <view v-if="filteredApiCallbackLogs.length === 0" class="wot-py-12">
                   <wd-empty icon="empty" :tip="$t('bms.logs.empty')" />
                 </view>
                 <view v-else class="wot-flex wot-flex-col wot-gap-2">
                   <view
-                    v-for="(log, index) in filteredConnectionLogs"
-                    :key="index"
+                    v-for="log in filteredApiCallbackLogs"
+                    :key="log.id"
                     class="log-item-card wot-p-3 wot-rounded-lg wot-bg-filled-oppo wot-shadow-sm"
                   >
-                    <!-- 卡片头部：状态徽标 + API名称 + 时间戳与复制 -->
+                    <!-- 卡片头部：状态徽标 + API名称 + 耗时 + 时间戳与复制 -->
                     <view class="wot-flex wot-items-center wot-justify-between wot-mb-2">
                       <view class="wot-flex wot-items-center wot-gap-1.5 wot-flex-1 wot-min-w-0">
                         <text
@@ -179,10 +179,13 @@
                           {{ log.status.toUpperCase() }}
                         </text>
                         <text class="wot-text-xs wot-font-bold wot-text-text-main wot-truncate monospace">{{ log.apiName }}</text>
+                        <view v-if="log.duration !== undefined" class="latency-pill">
+                          ⚡ {{ log.duration }}ms
+                        </view>
                       </view>
                       <view class="wot-flex wot-items-center wot-gap-2">
                         <text class="time-text">{{ log.timestamp }}</text>
-                        <view class="copy-btn" @click.stop="copyText(log.apiName + (log.params ? ' ' + log.params : ''))">
+                        <view class="copy-btn" @click.stop="copyText(log.apiName + (log.params ? ' ' + log.params : '') + (log.result ? ' -> ' + log.result : ''))">
                           <wd-icon css-icon="i-lucide-copy" size="12px" color="#858585" />
                         </view>
                       </view>
@@ -190,13 +193,13 @@
 
                     <!-- 参数展示区 -->
                     <view v-if="log.params" class="code-box wot-p-2 wot-rounded-md wot-mb-1.5" @click.stop="copyText(log.params)">
-                      <text class="code-label">{{ $t('bms.logs.directionTx') }}:</text>
+                      <text class="code-label">Params:</text>
                       <text class="code-content monospace">{{ log.params }}</text>
                     </view>
 
                     <!-- 结果展示区 -->
                     <view v-if="log.result" class="code-box wot-p-2 wot-rounded-md" :class="{ 'code-box-err': log.status !== 'success' }" @click.stop="copyText(log.result)">
-                      <text class="code-label" :class="{ 'text-danger': log.status !== 'success' }">{{ $t('bms.logs.directionRx') }}:</text>
+                      <text class="code-label" :class="{ 'text-danger': log.status !== 'success' }">Callback Result:</text>
                       <text class="code-content monospace" :class="{ 'text-danger': log.status !== 'success' }">{{ log.result }}</text>
                     </view>
                   </view>
@@ -510,7 +513,7 @@ const bleStore = useBleStore();
 const appStore = useAppStore();
 
 // 解构获取响应式日志列表与蓝牙真实状态
-const { connectionLogs, commandLogs, apiLogs } = storeToRefs(logStore);
+const { apiCallbackLogs, commandLogs, apiLogs } = storeToRefs(logStore);
 const { isBleConnected, connectedDeviceId, connectedDeviceMac, connectedDeviceName } = storeToRefs(bleStore);
 
 // 当前高亮选中的 Tab 页签
@@ -636,9 +639,9 @@ const commandGroups = computed(() => {
   return groups;
 });
 
-// 过滤并排序后的连接日志 (默认最新在前)
-const filteredConnectionLogs = computed(() => {
-  let list = connectionLogs.value;
+// 过滤并排序后的 API 回调日志 (默认最新在前)
+const filteredApiCallbackLogs = computed(() => {
+  let list = apiCallbackLogs.value;
   const kw = searchKeyword.value.trim().toLowerCase();
 
   if (kw) {
@@ -1007,7 +1010,8 @@ const handleExportLogs = async () => {
     // 2. 生成多 Sheet Excel ArrayBuffer
     const buffer = buildLogsExcelBuffer({
       commandLogs: commandLogs.value,
-      connectionLogs: connectionLogs.value,
+      apiCallbackLogs: apiCallbackLogs.value,
+      connectionLogs: apiCallbackLogs.value,
       apiLogs: apiLogs.value,
       systemReport,
     });

@@ -1,9 +1,17 @@
 import { useI18n } from "vue-i18n";
 import { useToast } from "@wot-ui/ui";
-import { isAppAndroid } from "@uni-helper/uni-env";
+import { isAppAndroid as _envIsAppAndroid } from "@uni-helper/uni-env";
+
+declare const plus: any;
+const isAppAndroid: boolean = Boolean(
+  _envIsAppAndroid ||
+    (typeof plus !== "undefined" && plus.os?.name?.toLowerCase() === "android") ||
+    (typeof uni !== "undefined" && (uni.getSystemInfoSync().platform || "").toLowerCase() === "android"),
+);
 import { useBleStore } from "@/stores/ble-store";
 import { bleManager } from "@/service/ble-manager";
 import { permissionManager } from "@/service/permission";
+import { useBlePermission } from "@/composables/use-ble-permission";
 import { resolveDeviceMac } from "@/utils/bms-helper";
 import { APP_CONFIG } from "@/config";
 
@@ -15,6 +23,7 @@ export function useScanConnect() {
   const toast = useToast();
   const { t } = useI18n();
   const bleStore = useBleStore();
+  const { handleBleScanError } = useBlePermission();
 
   /**
    * 调起扫码与设备一键连接流程（提供给外部视图调用的统一出口）
@@ -33,7 +42,10 @@ export function useScanConnect() {
       }
     } catch (err: any) {
       console.error("[扫码连接] 蓝牙底层环境校验抛出异常:", err);
-      toast.error(err.message || t("bms.ble.initFailed"));
+      const handled = handleBleScanError(err);
+      if (!handled) {
+        toast.error(err.message || t("bms.ble.initFailed"));
+      }
       return;
     }
 
@@ -131,11 +143,14 @@ export function useScanConnect() {
           connectWithToast(device.deviceId, device.name || "BMS Device", formattedMac);
         }
       });
-    } catch (err) {
+    } catch (err: any) {
       console.error("[扫码配对] 开启设备扫描失败:", err);
       clearTimeout(timeoutTimer);
       toast.close();
-      toast.error(t("bms.ble.scanStartFailed"));
+      const handled = handleBleScanError(err);
+      if (!handled) {
+        toast.error(t("bms.ble.scanStartFailed"));
+      }
     }
   };
 
@@ -180,11 +195,14 @@ export function useScanConnect() {
           connectWithToast(device.deviceId, device.name || targetName, deviceMac);
         }
       });
-    } catch (err) {
+    } catch (err: any) {
       console.error("[扫码配对] 开启设备扫描失败:", err);
       clearTimeout(timeoutTimer);
       toast.close();
-      toast.error(t("bms.ble.scanStartFailed"));
+      const handled = handleBleScanError(err);
+      if (!handled) {
+        toast.error(t("bms.ble.scanStartFailed"));
+      }
     }
   };
 

@@ -4,6 +4,7 @@
  */
 
 import { translate } from "@/locale/i18n";
+import type { PermissionDiagnosticState } from "./index";
 
 /**
  * 蓝牙环境诊断错误码枚举常量
@@ -39,13 +40,9 @@ function createBleEnvError(code: string, translateKey: string): Error {
 export const permissionManager = {
   /**
    * 诊断并获取微信小程序环境下的硬件开关与小程序 scope 授权状态
+   * 统一作为全站权限检测与扫描环境的单一真理源 (Single Source of Truth)
    */
-  async diagnosePermissions(): Promise<{
-    btHardware: boolean;
-    gpsHardware: boolean;
-    btPermission: boolean;
-    locPermission: boolean;
-  }> {
+  async diagnosePermissions(): Promise<PermissionDiagnosticState> {
     return new Promise((resolve) => {
       const state = {
         btHardware: false,
@@ -56,12 +53,13 @@ export const permissionManager = {
 
       try {
         const systemInfo = uni.getSystemInfoSync() as any;
+        const isAndroid = (systemInfo.platform || "").toLowerCase() === "android";
 
         // 1. 系统蓝牙硬件开关
         state.btHardware = systemInfo.bluetoothEnabled !== false;
 
-        // 2. 手机系统定位开关 (微信小程序安卓端扫描蓝牙需系统 GPS 开启)
-        state.gpsHardware = systemInfo.locationEnabled !== false;
+        // 2. 手机系统定位开关 (微信小程序安卓端扫描蓝牙需系统 GPS 开启；iOS 环境默认视为就绪)
+        state.gpsHardware = isAndroid ? systemInfo.locationEnabled !== false : true;
 
         // 3. 微信小程序环境下的权限状态检测核查
         uni.getSetting({
@@ -72,174 +70,153 @@ export const permissionManager = {
             state.btPermission = wechatBtOk && auth["scope.bluetooth"] === true;
 
             // 小程序位置状态 = 微信有系统级定位授权 && 小程序自身已授权位置 scope
-            const wechatLocOk = systemInfo.locationAuthorized !== false;
-            state.locPermission = wechatLocOk && auth["scope.userLocation"] === true;
-            resolve(state);
+            if (isAndroid) {
+              const wechatLocOk = systemInfo.locationAuthorized !== false;
+              state.locPermission = wechatLocOk && auth["scope.userLocation"] === true;
+            } else {
+              state.locPermission = true;
+            }
+
+            // 统一计算当前平台是否全部就绪以及首个阻断项类型（单一真理源）
+            let isReady = false;
+            let firstBlockingType: "btHardware" | "gpsHardware" | "btPermission" | "locPermission" | null = null;
+
+            if (isAndroid) {
+              isReady = state.btHardware && state.gpsHardware && state.btPermission && state.locPermission;
+              if (!state.btHardware) {
+                firstBlockingType = "btHardware";
+              } else if (!state.gpsHardware) {
+                firstBlockingType = "gpsHardware";
+              } else if (!state.btPermission) {
+                firstBlockingType = "btPermission";
+              } else if (!state.locPermission) {
+                firstBlockingType = "locPermission";
+              }
+            } else {
+              // iOS 或其他端无需位置约束
+              isReady = state.btHardware && state.btPermission;
+              if (!state.btHardware) {
+                firstBlockingType = "btHardware";
+              } else if (!state.btPermission) {
+                firstBlockingType = "btPermission";
+              }
+            }
+
+            const finalState: PermissionDiagnosticState = {
+              ...state,
+              isReady,
+              firstBlockingType,
+            };
+            resolve(finalState);
           },
           fail: () => {
             state.btPermission = false;
-            state.locPermission = false;
-            resolve(state);
+            state.locPermission = !isAndroid;
+            resolve({
+              ...state,
+              isReady: false,
+              firstBlockingType: "btPermission",
+            });
           },
         });
       } catch (err) {
         console.error("[BLE 权限诊断 MP] diagnosePermissions 异常:", err);
-        resolve(state);
+        resolve({
+          ...state,
+          isReady: false,
+          firstBlockingType: "btHardware",
+        });
       }
     });
   },
 
   /**
-   * 引导用户修复或授予特定权限
+   * 引导用户修复或授予特定权限（底层直接触发小程序设置页跳转或提示，不含任何视图弹窗）
    */
   async requestSettingOrResolve(type: "btHardware" | "gpsHardware" | "btPermission" | "locPermission"): Promise<boolean> {
     try {
-      const systemInfo = uni.getSystemInfoSync() as any;
+      if (type === "btHardware") {
+        this.openBluetoothSettings();
+        return false;
+      }
 
-      return new Promise((resolve) => {
-        // 1. 系统蓝牙硬件开关
-        if (type === "btHardware") {
-          uni.showModal({
-            title: translate("bms.common.bluetoothTitle"),
-            content: translate("bms.ble.env.bluetoothDisabled"),
-            confirmText: translate("bms.common.confirm"),
-            showCancel: false,
-            success: () => resolve(false),
-            fail: () => resolve(false),
-          });
-          return;
-        }
+      if (type === "gpsHardware") {
+        this.openGpsSettings();
+        return false;
+      }
 
-        // 2. 系统定位硬件开关
-        if (type === "gpsHardware") {
-          uni.showModal({
-            title: translate("bms.common.gpsTitle"),
-            content: translate("bms.ble.env.locationDisabled"),
-            confirmText: translate("bms.common.confirm"),
-            showCancel: false,
-            success: () => resolve(false),
-            fail: () => resolve(false),
-          });
-          return;
-        }
-
-        // 3. 应用级蓝牙授权
-        if (type === "btPermission") {
-          if (systemInfo.bluetoothAuthorized === false) {
-            uni.showModal({
-              title: translate("bms.common.authPrompt"),
-              content: translate("bms.ble.env.wechatBluetoothNotAuthorized"),
-              showCancel: false,
-            });
-            return resolve(false);
-          }
-
-          uni.showModal({
-            title: translate("bms.common.authPrompt"),
-            content: translate("bms.ble.env.wechatBluetoothRefused"),
-            confirmText: translate("bms.common.goSettings"),
-            success: (modalRes) => {
-              if (modalRes.confirm) {
-                uni.openSetting({
-                  success: (res) => {
-                    const auth = (res.authSetting || {}) as Record<string, any>;
-                    resolve(!!auth["scope.bluetooth"]);
-                  },
-                  fail: () => resolve(false),
-                });
+      if (type === "btPermission" || type === "locPermission") {
+        return new Promise((resolve) => {
+          uni.openSetting({
+            success: (res) => {
+              const auth = (res.authSetting || {}) as Record<string, any>;
+              if (type === "btPermission") {
+                resolve(!!auth["scope.bluetooth"]);
               } else {
-                resolve(false);
+                resolve(!!auth["scope.userLocation"]);
               }
             },
             fail: () => resolve(false),
           });
-          return;
-        }
+        });
+      }
 
-        // 4. 应用级定位授权
-        if (type === "locPermission") {
-          if (systemInfo.locationAuthorized === false) {
-            uni.showModal({
-              title: translate("bms.common.authPrompt"),
-              content: translate("bms.ble.env.locationNotAuthorized"),
-              showCancel: false,
-            });
-            return resolve(false);
-          }
-
-          uni.showModal({
-            title: translate("bms.common.authPrompt"),
-            content: translate("bms.ble.env.wechatLocationRefused"),
-            confirmText: translate("bms.common.goSettings"),
-            success: (modalRes) => {
-              if (modalRes.confirm) {
-                uni.openSetting({
-                  success: (res) => {
-                    const auth = (res.authSetting || {}) as Record<string, any>;
-                    resolve(!!auth["scope.userLocation"]);
-                  },
-                  fail: () => resolve(false),
-                });
-              } else {
-                resolve(false);
-              }
-            },
-            fail: () => resolve(false),
-          });
-          return;
-        }
-
-        resolve(false);
-      });
+      return false;
     } catch (err) {
       console.error("[BLE 权限修复 MP] requestSettingOrResolve 异常:", err);
-      return Promise.resolve(false);
+      return false;
     }
   },
 
   /**
    * 诊断并检测微信小程序环境下的蓝牙和位置相关权限状态
+   * 完全委托单一真理源 diagnosePermissions 执行检测，消除两套逻辑不一致的隐患
+   * @param initBluetoothCallback 用于进行动态蓝牙适配器初始化的回调函数
    */
   async checkBleEnvironment(initBluetoothCallback: () => Promise<any>): Promise<boolean> {
-    return new Promise(async (resolve, reject) => {
-      const systemInfo = uni.getSystemInfoSync() as any;
+    const systemInfo = uni.getSystemInfoSync() as any;
 
-      // 1. 系统蓝牙硬件开关
-      if (systemInfo.bluetoothEnabled === false) {
-        return reject(createBleEnvError(BLE_ENV_ERROR.BLUETOOTH_DISABLED, "bms.ble.env.bluetoothDisabled"));
+    // 1. 若首次启动尚未授权，尝试动态申请微信小程序对蓝牙及位置的 scope 授权
+    try {
+      await this.checkWechatSetting();
+    } catch (e) {
+      console.warn("[BLE 权限 MP] checkWechatSetting 申请或校验过程异常:", e);
+    }
+
+    // 2. 统一调取全站唯一的系统硬件与权限诊断结果
+    const diagState = await this.diagnosePermissions();
+
+    if (!diagState.isReady) {
+      if (diagState.firstBlockingType === "btHardware") {
+        throw createBleEnvError(BLE_ENV_ERROR.BLUETOOTH_DISABLED, "bms.ble.env.bluetoothDisabled");
       }
-
-      // 2. 微信小程序必须开启手机"系统定位(GPS)"服务
-      if (systemInfo.locationEnabled === false) {
-        return reject(createBleEnvError(BLE_ENV_ERROR.GPS_DISABLED, "bms.ble.env.locationDisabled"));
+      if (diagState.firstBlockingType === "gpsHardware") {
+        throw createBleEnvError(BLE_ENV_ERROR.GPS_DISABLED, "bms.ble.env.locationDisabled");
       }
-
-      // 3. 微信客户端自身在手机系统里的位置授权检测
-      if (systemInfo.locationAuthorized === false) {
-        return reject(createBleEnvError(BLE_ENV_ERROR.LOCATION_NOT_AUTHORIZED, "bms.ble.env.locationNotAuthorized"));
+      if (diagState.firstBlockingType === "btPermission") {
+        if (systemInfo.bluetoothAuthorized === false) {
+          throw createBleEnvError(BLE_ENV_ERROR.WECHAT_BT_REFUSED, "bms.ble.env.wechatBluetoothNotAuthorized");
+        }
+        throw createBleEnvError(BLE_ENV_ERROR.WECHAT_BT_REFUSED, "bms.ble.env.wechatBluetoothRefused");
       }
-
-      // 4. 小程序自身获取并引导申请微信蓝牙及位置的小程序授权
-      try {
-        const authorized = await this.checkWechatSetting();
-        if (!authorized) return resolve(false);
-      } catch (e) {
-        return reject(e);
+      if (diagState.firstBlockingType === "locPermission") {
+        if (systemInfo.locationAuthorized === false) {
+          throw createBleEnvError(BLE_ENV_ERROR.LOCATION_NOT_AUTHORIZED, "bms.ble.env.locationNotAuthorized");
+        }
+        throw createBleEnvError(BLE_ENV_ERROR.WECHAT_LOC_REFUSED, "bms.ble.env.wechatLocationRefused");
       }
+    }
 
-      // 5. 动态验证蓝牙适配器
-      initBluetoothCallback()
-        .then(() => {
-          resolve(true);
-        })
-        .catch((err: any) => {
-          if (err.message && err.message.includes(translate("bms.ble.env.bluetoothDisabled"))) {
-            reject(createBleEnvError(BLE_ENV_ERROR.BLUETOOTH_DISABLED, "bms.ble.env.bluetoothDisabled"));
-          } else {
-            reject(err);
-          }
-        });
-    });
+    // 3. 动态验证补充诊断：尝试调用底层蓝牙适配器初始化
+    try {
+      await initBluetoothCallback();
+      return true;
+    } catch (err: any) {
+      if (err.message && err.message.includes(translate("bms.ble.env.bluetoothDisabled"))) {
+        throw createBleEnvError(BLE_ENV_ERROR.BLUETOOTH_DISABLED, "bms.ble.env.bluetoothDisabled");
+      }
+      throw err;
+    }
   },
 
   /**

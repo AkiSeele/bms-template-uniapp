@@ -315,7 +315,8 @@ export function formatDateTimeForFileName(): string {
  */
 export function buildLogsExcelBuffer(payload: {
   commandLogs: any[];
-  connectionLogs: any[];
+  connectionLogs?: any[];
+  apiCallbackLogs?: any[];
   apiLogs: any[];
   systemReport: any;
 }): ArrayBuffer {
@@ -374,7 +375,7 @@ export function buildLogsExcelBuffer(payload: {
 <workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
   <sheets>
     <sheet name="指令报文日志" sheetId="1" r:id="rId1"/>
-    <sheet name="连接调用日志" sheetId="2" r:id="rId2"/>
+    <sheet name="API 回调日志" sheetId="2" r:id="rId2"/>
     <sheet name="网络接口日志" sheetId="3" r:id="rId3"/>
     <sheet name="系统环境与全量缓存" sheetId="4" r:id="rId4"/>
   </sheets>
@@ -565,15 +566,16 @@ export function buildLogsExcelBuffer(payload: {
   zip.addFile("xl/worksheets/sheet1.xml", buildSheetXml(sheet1Cols, sheet1Rows));
 
   // =========================================================================
-  // 7. Sheet 2: 连接调用日志 (Connection Logs)
+  // 7. Sheet 2: API 回调日志 (API Callback Logs)
   // =========================================================================
   const sheet2Cols = [
     { width: 8 }, // 序号
     { width: 22 }, // 记录时间
     { width: 12 }, // 执行状态
     { width: 30 }, // API 方法名
+    { width: 12 }, // 耗时(ms)
     { width: 35 }, // 输入参数
-    { width: 35 }, // 返回结果
+    { width: 35 }, // 回调结果
   ];
   const sheet2Rows: Array<Array<string | number | ExcelCellData>> = [
     [
@@ -581,17 +583,20 @@ export function buildLogsExcelBuffer(payload: {
       { v: "记录时间", s: 1 },
       { v: "执行状态", s: 1 },
       { v: "API 方法名", s: 1 },
+      { v: "耗时(ms)", s: 1 },
       { v: "输入参数", s: 1 },
-      { v: "返回结果", s: 1 },
+      { v: "回调结果", s: 1 },
     ],
   ];
-  (payload.connectionLogs || []).forEach((item, idx) => {
+  const callbackLogs = payload.apiCallbackLogs || payload.connectionLogs || [];
+  callbackLogs.forEach((item, idx) => {
     const isSuccess = item.status === "success";
     sheet2Rows.push([
       { v: idx + 1, s: 2 },
       { v: item.timestamp || "-", s: 2 },
-      { v: isSuccess ? "SUCCESS" : "ERROR", s: isSuccess ? 5 : 6 },
+      { v: isSuccess ? "SUCCESS" : "FAIL", s: isSuccess ? 5 : 6 },
       { v: item.apiName || "-", s: 3 },
+      { v: item.duration !== undefined ? `${item.duration}ms` : "-", s: 2 },
       { v: item.params || "-", s: 3 },
       { v: item.result || "-", s: 3 },
     ]);

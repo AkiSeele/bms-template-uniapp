@@ -3,10 +3,14 @@ import { permissionManager } from "@/service/permission";
 import { initI18nLocale } from "@/locale/i18n";
 import { useBleStore } from "@/stores/ble-store";
 import { useAppStore } from "@/stores/app";
+import { initUniApiInterceptor } from "@/service/api-interceptor";
 
 export default {
   onLaunch: function () {
     console.log("App Launch");
+    // 初始化全局 uni/wx 运行时 API 回调拦截器，自动捕获所有异步 API 的回调日志
+    initUniApiInterceptor();
+
     // 阶段一：在应用实例完全就绪后（getApp() 可正常调用），安全读取系统语言并同步到 i18n。
     // 此时调用 uni.getStorageSync / uni.getLocale 不会再触发 getApp() failed 警告。
     initI18nLocale();

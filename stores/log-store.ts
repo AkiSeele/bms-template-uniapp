@@ -2,14 +2,20 @@ import { defineStore } from "pinia";
 import { ref } from "vue";
 import { translate as t } from "@/locale/i18n";
 
-// 连接日志数据结构定义
-export interface ConnectionLog {
-  timestamp: string;      // 记录时间戳，格式为 HH:mm:ss.SSS
-  apiName: string;        // 调用的 API 名称或步骤名称
-  params?: string;        // 调用传入的参数（序列化为 JSON 字符串）
-  result?: string;        // 调用返回的结果或错误信息（序列化为 JSON 字符串）
+// uni/wx API 回调日志数据结构定义
+export interface UniApiCallbackLog {
+  id: string;                 // 唯一自增序列标识
+  timestamp: string;          // 记录时间戳，格式为 HH:mm:ss.SSS
+  apiName: string;            // 调用的 API 名称，如 uni.openBluetoothAdapter / wx.getSetting
+  params?: string;            // 调用传入的参数（序列化为 JSON 字符串）
+  result?: string;            // 回调返回的结果或错误信息（序列化为 JSON 字符串）
   status: "success" | "fail"; // 成功或失败状态
+  callbackType?: "success" | "fail" | "complete" | "promise"; // 触发的回调类型
+  duration?: number;          // 调用至回调触发的耗时 (毫秒)
 }
+
+// 兼容别名导出
+export type ConnectionLog = UniApiCallbackLog;
 
 // 指令日志数据结构定义
 export interface CommandLog {
@@ -31,15 +37,20 @@ export interface ApiLog {
 
 /**
  * 全局系统运行调试日志管理 Pinia Store
- * 负责收集、存储及管理：连接日志、指令日志、网络接口日志
+ * 负责收集、存储及管理：uni/wx API 回调日志、蓝牙指令日志、网络接口日志
  */
 export const useLogStore = defineStore("log", () => {
-  // 连接日志集合
-  const connectionLogs = ref<ConnectionLog[]>([]);
+  // API 回调日志集合
+  const apiCallbackLogs = ref<UniApiCallbackLog[]>([]);
+  // 保持兼容别名引用
+  const connectionLogs = apiCallbackLogs;
   // 指令日志集合
   const commandLogs = ref<CommandLog[]>([]);
   // 接口日志集合
   const apiLogs = ref<ApiLog[]>([]);
+
+  // 自增日志序号生成器
+  let callbackLogSeq = 0;
 
   // 连续点击我的 Tab 的计数器
   const mineTabClickCount = ref(0);
@@ -78,25 +89,49 @@ export const useLogStore = defineStore("log", () => {
   };
 
   /**
-   * 上报记录一次低功耗蓝牙物理/时序连接步骤日志
+   * 上报记录一次全局 uni/wx API 回调日志
+   */
+  const addApiCallbackLog = (log: {
+    apiName: string;
+    params?: string;
+    result?: string;
+    status: "success" | "fail";
+    callbackType?: "success" | "fail" | "complete" | "promise";
+    duration?: number;
+  }) => {
+    callbackLogSeq++;
+    apiCallbackLogs.value.unshift({
+      id: `${Date.now()}-${callbackLogSeq}`,
+      timestamp: getFormattedTime(),
+      apiName: log.apiName,
+      params: log.params,
+      result: log.result,
+      status: log.status,
+      callbackType: log.callbackType,
+      duration: log.duration,
+    });
+    // 限制最大缓存数量以防内存泄露
+    if (apiCallbackLogs.value.length > 200) {
+      apiCallbackLogs.value.pop();
+    }
+  };
+
+  /**
+   * 兼容保留的方法：上报记录一次低功耗蓝牙物理/时序连接步骤日志（自动转发至 addApiCallbackLog）
    */
   const addConnectionLog = (
     apiName: string,
     params?: any,
     result?: any,
-    status: "success" | "fail" = "success"
+    status: "success" | "fail" = "success",
   ) => {
-    connectionLogs.value.unshift({
-      timestamp: getFormattedTime(),
+    addApiCallbackLog({
       apiName,
       params: params ? (typeof params === "string" ? params : JSON.stringify(params)) : undefined,
       result: result ? (typeof result === "string" ? result : JSON.stringify(result)) : undefined,
       status,
+      callbackType: "complete",
     });
-    // 限制最大缓存数量以防内存泄露
-    if (connectionLogs.value.length > 200) {
-      connectionLogs.value.pop();
-    }
   };
 
   /**
@@ -169,12 +204,13 @@ export const useLogStore = defineStore("log", () => {
    * 一键清空所有系统日志数据
    */
   const clearLogs = () => {
-    connectionLogs.value = [];
+    apiCallbackLogs.value = [];
     commandLogs.value = [];
     apiLogs.value = [];
   };
 
   return {
+    apiCallbackLogs,
     connectionLogs,
     commandLogs,
     apiLogs,
@@ -182,6 +218,7 @@ export const useLogStore = defineStore("log", () => {
     isSystemLogsUnlocked,
     unlockSystemLogs,
     lockSystemLogs,
+    addApiCallbackLog,
     addConnectionLog,
     addCommandLog,
     addApiLog,

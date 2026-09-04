@@ -152,6 +152,8 @@ export const APP_CONFIG = {
     BLUETOOTH_CONNECT: "android.permission.BLUETOOTH_CONNECT",
     /** Android 11 及以下：蓝牙扫描须绑定精确位置权限（系统强制要求） */
     ACCESS_FINE_LOCATION: "android.permission.ACCESS_FINE_LOCATION",
+    /** Android 定位权限：粗略网络定位权限（与精确位置配合保障定制系统兼容） */
+    ACCESS_COARSE_LOCATION: "android.permission.ACCESS_COARSE_LOCATION",
   },
 
   // 五、 蓝牙多协议主服务 UUID 配置

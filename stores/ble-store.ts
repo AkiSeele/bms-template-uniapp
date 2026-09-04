@@ -802,24 +802,14 @@ export const useBleStore = defineStore("ble", () => {
     activeDisconnect.value = false;
     isUnexpectedDisconnected.value = false;
 
-    const logStore = useLogStore();
-    logStore.addConnectionLog("uni.createBLEConnection:start", { deviceId, name, macAddress });
-
     try {
       console.log(`[BLE 连接] 开始连接目标设备: name=${name}, id=${deviceId}, mac=${macAddress || "未知"}`);
 
       // 步骤 1：连接前必须停止扫描，释放蓝牙天线，防止 Android 抛出 10003 错误
       try {
         await bleManager.stopScan();
-        logStore.addConnectionLog("uni.stopBluetoothDevicesDiscovery", undefined, "success", "success");
       } catch (scanErr: any) {
         console.warn(`[BLE 连接] 停止扫描失败（可忽略）:`, scanErr);
-        logStore.addConnectionLog(
-          "uni.stopBluetoothDevicesDiscovery",
-          undefined,
-          scanErr?.errMsg || String(scanErr),
-          "fail",
-        );
       }
 
       // 给与系统蓝牙栈配置的等待时间释放硬件天线资源，防止高频密集操作引起系统层的操纵超时错误
@@ -828,15 +818,12 @@ export const useBleStore = defineStore("ble", () => {
       // 步骤 2：发起建立物理连接
       try {
         await bleManager.connect(deviceId);
-        logStore.addConnectionLog("uni.createBLEConnection", { deviceId }, "success", "success");
         console.log(`[BLE 连接] 物理连接建立成功 ✓`);
       } catch (connectErr: any) {
         const errMsg = (connectErr.errMsg || String(connectErr)).toLowerCase();
         if (errMsg.includes("already connect")) {
-          logStore.addConnectionLog("uni.createBLEConnection", { deviceId }, "already connected", "success");
           console.warn(`[BLE 连接] 设备已处于连接状态，跳过并保持连接 ✓`);
         } else {
-          logStore.addConnectionLog("uni.createBLEConnection", { deviceId }, connectErr, "fail");
           throw new Error(
             `${translate("bms.ble.steps.physicalConnect")}: ${connectErr.message || connectErr.errMsg || String(connectErr)}`
           );
@@ -854,12 +841,6 @@ export const useBleStore = defineStore("ble", () => {
       try {
         const servicesRes = await bleManager.discoverServices(deviceId);
         const discoveredServiceUuids = (servicesRes.services || []).map((s: { uuid: string }) => s.uuid);
-        logStore.addConnectionLog(
-          "uni.getBLEDeviceServices",
-          { deviceId },
-          { count: discoveredServiceUuids.length, uuids: discoveredServiceUuids },
-          "success",
-        );
 
         // 步骤 5：遍历已发现的服务 UUID，与 config/index.ts 中所有配置项做大小写不敏感匹配
         const allConfigs = Object.values(APP_CONFIG.BLE_SERVICES).flat();
@@ -877,9 +858,7 @@ export const useBleStore = defineStore("ble", () => {
           }
         }
         activeServiceConfig.value = matchedConfig;
-        logStore.addConnectionLog("matchProtocol", { matchedServiceId: matchedConfig.serviceId }, "success", "success");
       } catch (serviceErr: any) {
-        logStore.addConnectionLog("uni.getBLEDeviceServices", { deviceId }, serviceErr, "fail");
         throw new Error(
           `${translate("bms.ble.steps.discoverService")}: ${serviceErr.message || serviceErr.errMsg || String(serviceErr)}`
         );
@@ -889,22 +868,9 @@ export const useBleStore = defineStore("ble", () => {
       const parser = resolveProtocol(activeServiceConfig.value.serviceId);
       if (parser) {
         activeProtocolParser.value = parser;
-        logStore.addConnectionLog(
-          "resolveProtocolParser",
-          { serviceId: activeServiceConfig.value.serviceId },
-          { protocolName: parser.protocolName, protocolType: parser.protocolType },
-          "success",
-        );
         console.log(`[BLE 连接] 协议解析器已绑定: ${parser.protocolName} (type=${parser.protocolType}) ✓`);
       } else {
         activeProtocolParser.value = null;
-        const registered = getRegisteredUuids().join(", ");
-        logStore.addConnectionLog(
-          "resolveProtocolParser",
-          { serviceId: activeServiceConfig.value.serviceId },
-          `Not registered. Available: ${registered}`,
-          "fail",
-        );
         console.warn(
           `[BLE 连接] 协议注册表中未找到匹配项，UUID=${activeServiceConfig.value.serviceId}`,
         );
@@ -916,12 +882,6 @@ export const useBleStore = defineStore("ble", () => {
       try {
         const charRes = await bleManager.discoverCharacteristics(deviceId, serviceId);
         const discoveredCharUuids = (charRes.characteristics || []).map((c: { uuid: string }) => c.uuid);
-        logStore.addConnectionLog(
-          "uni.getBLEDeviceCharacteristics",
-          { deviceId, serviceId },
-          { count: discoveredCharUuids.length, uuids: discoveredCharUuids },
-          "success",
-        );
 
         // 将特征值 UUID 也自动对齐为系统物理发现的原始 UUID 大小写，彻底消除 Android/iOS 特征值大小写不匹配导致的 10008 异常
         const realWriteChar = discoveredCharUuids.find(
@@ -937,7 +897,6 @@ export const useBleStore = defineStore("ble", () => {
           activeServiceConfig.value.notifyCharacteristicId = realNotifyChar;
         }
       } catch (charErr: any) {
-        logStore.addConnectionLog("uni.getBLEDeviceCharacteristics", { deviceId, serviceId }, charErr, "fail");
         throw new Error(
           `${translate("bms.ble.steps.discoverCharacteristics")}: ${charErr.message || charErr.errMsg || String(charErr)}`
         );
@@ -948,17 +907,13 @@ export const useBleStore = defineStore("ble", () => {
       if (!isAppIOS && typeof uni.setBLEMTU === "function") {
         try {
           const targetMtu = APP_CONFIG.BLE_SCAN.TARGET_MTU;
-          const mtuRes = await bleManager.setMTU(deviceId, targetMtu);
-          logStore.addConnectionLog("uni.setBLEMTU", { deviceId, mtu: targetMtu }, mtuRes, "success");
+          await bleManager.setMTU(deviceId, targetMtu);
         } catch (mtuErr: any) {
-          logStore.addConnectionLog("uni.setBLEMTU", { deviceId, mtu: APP_CONFIG.BLE_SCAN.TARGET_MTU }, mtuErr, "fail");
           console.warn(
             `[BLE 连接] MTU 协商失败，将沿用默认 ${APP_CONFIG.BLE_SCAN.DEFAULT_MTU} 字节限额:`,
             mtuErr,
           );
         }
-      } else {
-        logStore.addConnectionLog("uni.setBLEMTU", { deviceId }, "skipped: isAppIOS", "success");
       }
 
       // 步骤 9：订阅通知特征值，使能电池数据通道
@@ -966,21 +921,9 @@ export const useBleStore = defineStore("ble", () => {
       const notifyCharId = activeServiceConfig.value.notifyCharacteristicId;
       await new Promise((resolve) => setTimeout(resolve, APP_CONFIG.BLE_SCAN.PRE_SUBSCRIBE_DELAY_MS));
       try {
-        const notifyRes = await bleManager.subscribeNotify(deviceId, serviceId, notifyCharId);
-        logStore.addConnectionLog(
-          "uni.notifyBLECharacteristicValueChange",
-          { deviceId, serviceId, notifyCharId },
-          notifyRes,
-          "success",
-        );
+        await bleManager.subscribeNotify(deviceId, serviceId, notifyCharId);
         console.log("[BLE 连接] Notify 数据通道订阅就绪 ✓");
       } catch (notifyErr: any) {
-        logStore.addConnectionLog(
-          "uni.notifyBLECharacteristicValueChange",
-          { deviceId, serviceId, notifyCharId },
-          notifyErr,
-          "fail",
-        );
         throw new Error(
           `${translate("bms.ble.steps.subscribeNotify")}: ${notifyErr.message || notifyErr.errMsg || String(notifyErr)}`
         );
@@ -997,7 +940,6 @@ export const useBleStore = defineStore("ble", () => {
         startQueryTimer(deviceId);
       }
       console.log(`[BLE 连接] ━━━━━━ 设备连接并就绪 ━━━━━━`);
-      logStore.addConnectionLog("uni.createBLEConnection:success", { deviceId }, "success", "success");
 
       // 持久化记录上次连接的物理地址与设备名称
       uni.setStorageSync("last_connected_mac", macAddress || deviceId);
@@ -1039,12 +981,9 @@ export const useBleStore = defineStore("ble", () => {
     isUnexpectedDisconnected.value = false;
     lastConnectedDeviceInfo.value = null;
     try {
-      useLogStore().addConnectionLog("uni.closeBLEConnection:start", { deviceId });
-      const res = await bleManager.disconnect(deviceId);
-      useLogStore().addConnectionLog("uni.closeBLEConnection:success", { deviceId }, res, "success");
+      await bleManager.disconnect(deviceId);
     } catch (err: any) {
       console.error("[BLE Store] 断开蓝牙连接异常:", err);
-      useLogStore().addConnectionLog("uni.closeBLEConnection:fail", { deviceId }, err, "fail");
     } finally {
       clearBleState();
     }

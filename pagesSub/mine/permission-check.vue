@@ -122,21 +122,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { computed } from "vue";
 import { onShow, onUnload } from "@dcloudio/uni-app";
-import { useToast } from "@wot-ui/ui";
 import { isAppIOS, isMpWeixin, isApp } from "@uni-helper/uni-env";
-import { permissionManager } from "@/service/permission";
 import { translate } from "@/locale/i18n";
 import { useAppStore } from "@/stores/app";
+import { useBlePermission } from "@/composables/use-ble-permission";
 import { storeToRefs } from "pinia";
-
-// 初始化消息提示实例
-const toast = useToast();
 
 // 初始化并引入全局设备与环境存储仓
 const appStore = useAppStore();
 const { deviceInfo, activeThemeColor } = storeToRefs(appStore);
+
+// 接入统一的蓝牙及定位权限管理 Hook（单一真理源架构）
+const { permissionsState, diagnoseAll: checkAllPermissions, fixPermission } = useBlePermission();
 
 // 诊断当前运行宿主平台所在的端并转换为对应的翻译字词
 const clientPlatform = computed(() => {
@@ -208,67 +207,6 @@ const deviceSystem = computed(() => {
 
 // 判定当前平台是否需要展示定位相关权限
 const showLocationCheck = computed(() => !isAppIOS);
-
-// 四项权限诊断状态
-const permissionsState = ref({
-  btHardware: false,
-  gpsHardware: false,
-  btPermission: false,
-  locPermission: false,
-});
-
-/**
- * 诊断并刷新所有硬件服务开关和应用级权限状态
- */
-const checkAllPermissions = async (manual = false) => {
-  console.log("[系统权限诊断] 启动权限与服务诊断核验流程, manual =", manual);
-  let loadingToast: any = null;
-  if (manual) {
-    loadingToast = toast.loading(translate("bms.mine.diagnosing"));
-  }
-
-  try {
-    const state = await permissionManager.diagnosePermissions();
-    permissionsState.value = state;
-
-    console.log("[系统权限诊断] 诊断流程完结。最终状态为:", JSON.stringify(permissionsState.value));
-
-    if (manual) {
-      setTimeout(() => {
-        if (loadingToast) {
-          toast.close();
-        }
-        const isAllOk =
-          permissionsState.value.btHardware &&
-          permissionsState.value.btPermission &&
-          (!showLocationCheck.value ||
-            (permissionsState.value.gpsHardware && permissionsState.value.locPermission));
-
-        if (isAllOk) {
-          toast.success(translate("bms.mine.diagnoseSuccess"));
-        } else {
-          toast.info(translate("bms.mine.diagnosePartial"));
-        }
-      }, 500);
-    }
-  } catch (err) {
-    console.error("[系统权限诊断] 诊断流程抛错:", err);
-    if (manual) {
-      if (loadingToast) {
-        toast.close();
-      }
-      toast.error(translate("bms.mine.diagnoseError"));
-    }
-  }
-};
-
-/**
- * 原生权限跳转与修复
- */
-const fixPermission = async (type: "btHardware" | "gpsHardware" | "btPermission" | "locPermission") => {
-  console.log("[系统权限诊断] 尝试修复权限/服务并拉起原生跳转流程:", type);
-  await permissionManager.requestSettingOrResolve(type);
-};
 
 const goBack = () => {
   uni.navigateBack();

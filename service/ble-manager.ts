@@ -24,17 +24,12 @@ export const bleManager = {
       // 在 H5 平台下进行防护拦截，防止直接抛出 TypeError 异常导致页面挂起
       if (typeof uni.openBluetoothAdapter !== "function") {
         return reject(
-          new Error(
-            "H5 platform does not support BLE module, please test in WeChat mini program or App containers on real devices.",
-          ),
+          new Error("当前运行环境不支持低功耗蓝牙适配器 (uni.openBluetoothAdapter is not available)"),
         );
       }
 
       uni.openBluetoothAdapter({
         success: (res) => {
-          try {
-            useLogStore().addConnectionLog("uni.openBluetoothAdapter", undefined, res, "success");
-          } catch (e) {}
           resolve(res);
         },
         fail: (err: any) => {
@@ -43,9 +38,6 @@ export const bleManager = {
           const isPowerOff =
             err.errCode === 10001 ||
             (err.errMsg && (err.errMsg.indexOf("not available") !== -1 || err.errMsg.indexOf("power off") !== -1));
-          try {
-            useLogStore().addConnectionLog("uni.openBluetoothAdapter", undefined, err, "fail");
-          } catch (e) {}
           if (isPowerOff) {
             reject(new Error(translate("bms.ble.env.bluetoothDisabled")));
           } else {
@@ -149,7 +141,13 @@ export const bleManager = {
         success: (res) => {
           resolve(res);
         },
-        fail: (err) => {
+        fail: (err: any) => {
+          const code = err.errCode || err.code;
+          // 错误码 10015 表示蓝牙适配器未处于扫描中，此时停止属于安全幂等操作，不作为异常抛出
+          if (code === 10015) {
+            console.warn("[BLE Manager] 蓝牙适配器当前未处于扫描状态或已停止 (10015)，安全放行");
+            return resolve({ errMsg: "stopBluetoothDevicesDiscovery:ok" });
+          }
           console.error("[BLE Manager] 调用停止手机蓝牙硬件扫描接口失败:", err);
           reject(err);
         },
@@ -167,11 +165,11 @@ export const bleManager = {
 
     const attemptConnect = (remainingRetries: number): Promise<UniApp.GeneralCallbackResult> => {
       return new Promise((resolve, reject) => {
-        // H5 platform protection
+        // H5 平台运行环境防御拦截，提示在真机环境调试运行
         if (typeof uni.createBLEConnection !== "function") {
           return reject(
             new Error(
-              "H5 platform does not support creating BLE connection, please test in a real device environment.",
+              "当前运行环境不支持建立低功耗蓝牙物理连接，请在真机或小程序环境中调试测试",
             ),
           );
         }

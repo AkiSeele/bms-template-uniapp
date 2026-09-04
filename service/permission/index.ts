@@ -34,22 +34,39 @@ function createBleEnvError(code: string, translateKey: string): Error {
   return err;
 }
 
+/**
+ * 结构化权限与硬件环境诊断状态对象接口
+ * 作为全平台单一真理源 (Single Source of Truth) 数据契约
+ */
+export interface PermissionDiagnosticState {
+  /** 手机蓝牙硬件开关是否开启 */
+  btHardware: boolean;
+  /** 手机系统定位(GPS)硬件服务开关是否开启（Android 必须） */
+  gpsHardware: boolean;
+  /** 应用蓝牙权限是否已授权（Android 12+ 附近设备 / iOS 蓝牙权限） */
+  btPermission: boolean;
+  /** 应用定位权限是否已授权（Android 11 及以下必须 / 小程序 scope.userLocation） */
+  locPermission: boolean;
+  /** 综合判定当前平台运行环境下所有必要条件是否完全满足并允许开启蓝牙扫描 */
+  isReady: boolean;
+  /** 若环境未就绪，首个阻断性缺失项类型，为 null 表示已全部就绪 */
+  firstBlockingType: "btHardware" | "gpsHardware" | "btPermission" | "locPermission" | null;
+}
+
 export const permissionManager = {
   /**
    * 诊断并获取系统硬件与权限状态（Web/H5 默认全部放行）
    */
-  async diagnosePermissions(): Promise<{
-    btHardware: boolean;
-    gpsHardware: boolean;
-    btPermission: boolean;
-    locPermission: boolean;
-  }> {
+  async diagnosePermissions(): Promise<PermissionDiagnosticState> {
     const systemInfo = uni.getSystemInfoSync();
+    const btHardware = systemInfo.bluetoothEnabled !== false;
     return {
-      btHardware: systemInfo.bluetoothEnabled !== false,
+      btHardware,
       gpsHardware: true,
       btPermission: true,
       locPermission: true,
+      isReady: btHardware,
+      firstBlockingType: btHardware ? null : "btHardware",
     };
   },
 
